@@ -73,7 +73,7 @@ def getHiddenStatus(scene, lights):
     statelist=[]
     temparr=[]
     for light in lights:
-        temparr=[light, bpy.data.objects[light].hide, bpy.data.objects[light].hide_render]
+        temparr=[light[0], bpy.data.objects[light[0]].hide, bpy.data.objects[light[0]].hide_render]
         statelist.append(temparr)
     scene.GafferLightsHiddenRecord = str(statelist)
 
@@ -254,7 +254,7 @@ class GafReOrderUp(bpy.types.Operator):
     
     def execute(self,context):
         if not self.do_nothing:
-            lights=stringToList(context.scene.GafferLights, stripquotes=True)
+            lights=stringToNestedList(context.scene.GafferLights, stripquotes=True)
             i=self.current_index
             lights.insert(i-1, lights.pop(i))
             context.scene.GafferLights=str(lights)
@@ -270,7 +270,7 @@ class GafReOrderDown(bpy.types.Operator):
     
     def execute(self,context):
         if not self.do_nothing:
-            lights=stringToList(context.scene.GafferLights, stripquotes=True)
+            lights=stringToNestedList(context.scene.GafferLights, stripquotes=True)
             i=self.current_index
             lights.insert(i+1, lights.pop(i))
             context.scene.GafferLights=str(lights)
@@ -301,28 +301,28 @@ class GafRefreshLightList(bpy.types.Operator):
         for obj in scene.objects:
             light_mats = []
             if obj.type == 'LAMP':
-                m.append(obj.name)
+                for node in obj.data.node_tree.nodes:
+                    if node.type == 'EMISSION':
+                        if node.outputs[0].is_linked:
+                            m.append([obj.name, None, node.name])
+                            break
             elif obj.type == 'MESH' and len (obj.material_slots) > 0:
                 slot_break = False
                 for slot in obj.material_slots:
                     if slot_break:
                         break  # only use first emission material in slots
                     if slot.material:
-                        # don't check nodes in material if obj uses a mat that was previously approved
-                        if slot.material.name in light_mats:
-                            m.append(obj.name)
-                        elif slot.material.use_nodes:
-                            for node in slot.material.node_tree.nodes:
-                                if node.type == 'EMISSION':
-                                    if node.outputs[0].is_linked:
-                                        light_mats.append(slot.material.name)
-                                        m.append(obj.name)
-                                        slot_break = True
-                                        break  # avoid adding same object for every emission shader
+                        for node in slot.material.node_tree.nodes:
+                            if node.type == 'EMISSION':
+                                if node.outputs[0].is_linked:
+                                    light_mats.append(slot.material)
+                                    m.append([obj.name, slot.material.name, node.name])
+                                    slot_break = True
+                                    break
                 
         # check if anything's changed
         mcheck=m
-        ocheck=stringToList(scene.GafferLights, stripquotes=True)        
+        ocheck=stringToNestedList(scene.GafferLights, stripquotes=True)
         mcheck.sort()
         ocheck.sort()
         if mcheck==ocheck:
@@ -331,7 +331,7 @@ class GafRefreshLightList(bpy.types.Operator):
             scene.GafferLights=str(m)
             self.report({'INFO'}, "Light list refreshed")
             if scene.GafferSoloActive=='':
-                getHiddenStatus(scene, stringToList(scene.GafferLights, True))
+                getHiddenStatus(scene, stringToNestedList(scene.GafferLights, True))
         return {'FINISHED'}
     
 
@@ -347,7 +347,7 @@ class GafferPanel(bpy.types.Panel):
     def draw (self, context):
         scene=context.scene
         lights_str=scene.GafferLights
-        lights=stringToList(lights_str)
+        lights=stringToNestedList(lights_str)
         layout=self.layout
 
         col=layout.column(align=True)
@@ -375,10 +375,10 @@ class GafferPanel(bpy.types.Panel):
         for light in lights:
             try:
                 if scene.GafferVisibleLayersOnly:
-                    if isOnVisibleLayer(bpy.data.objects[light[1:-1]], scene):
+                    if isOnVisibleLayer(bpy.data.objects[light[0][1:-1]], scene):
                         lights_to_show.append(light)
                 else:
-                    l = bpy.data.objects[light[1:-1]]  # var isn't used, but this will cause error
+                    l = bpy.data.objects[light[0][1:-1]]  # var isn't used, but this will cause error
                     lights_to_show.append(light)
             except:
                 box=maincol.box()
@@ -388,7 +388,7 @@ class GafferPanel(bpy.types.Panel):
 
         i=0
         for item in lights_to_show:
-            light=scene.objects[item[1:-1]] #drop the apostrophies
+            light=scene.objects[item[0][1:-1]] #drop the apostrophies
             box=maincol.box()
             rowmain=box.row()
             split=rowmain.split()
