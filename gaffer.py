@@ -16,18 +16,13 @@ from collections import OrderedDict
 '''
 TODO:
     work for BI
-    node input for strength
-    misc node input for col
+    custom node for color or strength
     aim lamp at cursor
     settings for world light
 
     "More" button:
         Connect Wavelength/Blackbody to colour
         Falloff
-        Samples (in branched path tracing)
-
-    For mesh lamps:
-        option to show materials instead of objects
 '''
 
 col_temp={"01_Flame (1700)": 1700,
@@ -261,11 +256,14 @@ class GafReOrderUp(bpy.types.Operator):
     
     def execute(self,context):
         if not self.do_nothing:
+            print ("\n\n"+context.scene.GafferLights)
             lights=stringToNestedList(context.scene.GafferLights, stripquotes=True)
+            print (str(lights))
             i=self.current_index
             lights.insert(i-1, lights.pop(i))
             context.scene.GafferLights=str(lights)
             context.scene.GafferLightUIIndex -= 1
+            #print (context.scene.GafferLights+"\n\n")
         return {'FINISHED'}
 
 class GafReOrderDown(bpy.types.Operator):
@@ -387,7 +385,7 @@ class GafferPanel(bpy.types.Panel):
             try:
                 if scene.GafferVisibleLayersOnly:
                     a = bpy.data.objects[light[0][1:-1]]  # abc vars aren't used, but will cause exception
-                    if light[1] != 'None':
+                    if light[1] != 'None' and light[1] != "'None'":
                         b = bpy.data.materials[light[1][1:-1]]
                         if b.use_nodes:
                             c = b.node_tree.nodes[light[2][1:-1]]
@@ -398,7 +396,7 @@ class GafferPanel(bpy.types.Panel):
                         lights_to_show.append(light)
                 else:
                     a = bpy.data.objects[light[0][1:-1]]  # abc vars aren't used, but will cause exception
-                    if light[1] != 'None':
+                    if light[1] != 'None' and light[1] != "'None'":
                         b = bpy.data.materials[light[1][1:-1]]
                         if b.use_nodes:
                             c = b.node_tree.nodes[light[2][1:-1]]
@@ -517,6 +515,7 @@ class GafferPanel(bpy.types.Panel):
                     row.operator('gaffer.lamp_use_nodes', icon='NODETREE', text='').light=light.name
             else:  # MESH light
                 row.label(text='', icon='MESH_PLANE')
+                row.separator()
                 row.prop(node.inputs[1], 'default_value', text='Strength')
 
 
