@@ -16,6 +16,7 @@ from collections import OrderedDict
 '''
 TODO:
     work for BI
+    poll funcs
     custom node for color or strength
     aim lamp at cursor
     settings for world light
@@ -23,6 +24,9 @@ TODO:
     "More" button:
         Connect Wavelength/Blackbody to colour
         Falloff
+
+    Fix:
+        when emission is disconnected, doesn't register as light
 '''
 
 col_temp={"01_Flame (1700)": 1700,
@@ -114,6 +118,17 @@ def isMeshLight(obj):
                         if node.outputs[0].is_linked:
                             return True
 
+def dictOfLights():
+    # Create dict of light name as key with node name as value
+    lights=stringToNestedList(bpy.context.scene.GafferLights, stripquotes=True)
+    lights_with_nodes = []
+    light_dict = {}
+    if lights:
+        for light in lights:  # TODO check if node still exists
+            lights_with_nodes.append(light[0])
+            lights_with_nodes.append(light[2])
+        light_dict = dict(lights_with_nodes[i:i+2] for i in range(0, len(lights_with_nodes), 2))
+    return light_dict
 
 
 '''
@@ -256,14 +271,11 @@ class GafReOrderUp(bpy.types.Operator):
     
     def execute(self,context):
         if not self.do_nothing:
-            print ("\n\n"+context.scene.GafferLights)
             lights=stringToNestedList(context.scene.GafferLights, stripquotes=True)
-            print (str(lights))
             i=self.current_index
             lights.insert(i-1, lights.pop(i))
             context.scene.GafferLights=str(lights)
             context.scene.GafferLightUIIndex -= 1
-            #print (context.scene.GafferLights+"\n\n")
         return {'FINISHED'}
 
 class GafReOrderDown(bpy.types.Operator):
@@ -295,6 +307,42 @@ class GafLampUseNodes(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def setGafferNode(context, nodetype):
+    if nodetype == 'STRENGTH':
+        list_nodeindex = 2
+        list_socketindex = 3
+    elif nodetype == 'COLOR':
+        list_nodeindex = 4
+        list_socketindex = 5
+
+    node = context.space_data.node_tree.nodes.active
+    lights=stringToNestedList(context.scene.GafferLights, stripquotes=True)
+    for light in lights:
+        # TODO poll for pinned nodetree (active object is not necessarily the one that this tree belongs to) 
+        if light[0] == context.object.name:
+            light[list_nodeindex] = node.name
+            socket_index = 0
+            for inpt in node.inputs:
+                if inpt.type == 'VALUE' and not inpt.is_linked:  # use first Value socket as strength
+                    light[list_socketindex] = socket_index
+                    break
+                socket_index += 1
+            break
+    context.scene.GafferLights=str(lights)
+
+class GafNodeSetStrength(bpy.types.Operator):
+    "Use this node's first Value input as the Strength slider for this light in the Gaffer panel"
+    bl_idname='gaffer.node_set_strength'
+    bl_label='Set as Gaffer Strength'
+    # current_index=bpy.props.IntProperty()
+    # do_nothing=bpy.props.BoolProperty()
+    
+    # TODO poll if object is not light
+    def execute(self,context):
+        setGafferNode(context, 'STRENGTH')
+        return {'FINISHED'}
+
+
 class GafRefreshLightList(bpy.types.Operator):
     'Refresh the list of lights'
     bl_idname='gaffer.refresh_lights'
@@ -303,15 +351,32 @@ class GafRefreshLightList(bpy.types.Operator):
     def execute(self,context):
         scene=context.scene
         m=[]
+
+        light_dict = dictOfLights()
+
         for obj in scene.objects:
             light_mats = []
             if obj.type == 'LAMP':
                 if obj.data.use_nodes:
-                    for node in obj.data.node_tree.nodes:
-                        if node.type == 'EMISSION':
-                            if node.outputs[0].is_linked:
-                                m.append([obj.name, None, node.name])
+                    if obj.name not in light_dict:
+                        for node in obj.data.node_tree.nodes:
+                            if node.type == 'EMISSION':
+                                if node.outputs[0].is_linked:
+                                    socket_index = 0
+                                    for inpt in node.inputs:  # TODO handle if all sockets are linked or non are Value (check nodes connected to inputs)
+                                        if inpt.type == 'VALUE' and not inpt.is_linked:  # use first Value socket as strength
+                                            m.append([obj.name, None, node.name, socket_index])
+                                            break
+                                        socket_index += 1
+                                    break
+                    else:
+                        node = obj.data.node_tree.nodes[light_dict[obj.name]]
+                        socket_index = 0
+                        for inpt in node.inputs:
+                            if inpt.type == 'VALUE' and not inpt.is_linked:  # use first Value socket as strength
+                                m.append([obj.name, None, node.name, socket_index])
                                 break
+                            socket_index += 1
                 else:
                     m.append([obj.name, None, None])
             elif obj.type == 'MESH' and len (obj.material_slots) > 0:
@@ -324,8 +389,14 @@ class GafRefreshLightList(bpy.types.Operator):
                             for node in slot.material.node_tree.nodes:
                                 if node.type == 'EMISSION':
                                     if node.outputs[0].is_linked:
-                                        light_mats.append(slot.material)
-                                        m.append([obj.name, slot.material.name, node.name])
+                                        socket_index = 0
+                                        for inpt in node.inputs:  # TODO handle if all sockets are linked or non are Value (check nodes connected to inputs)
+                                            if inpt.type == 'VALUE' and not inpt.is_linked:  # use first Value socket as strength
+                                                m.append([obj.name, slot.material.name, node.name, socket_index])
+                                                break
+                                            socket_index += 1
+                                        light_mats.append(slot.material)  # TODO (currently unused) if material is already a light, dont loop through nodes
+                                        #m.append([obj.name, slot.material.name, node.name])  # TODO same as above
                                         slot_break = True
                                         break
                 
@@ -416,12 +487,17 @@ class GafferPanel(bpy.types.Panel):
             if light.type == 'LAMP':
                 material = None
                 if light.data.use_nodes:
-                    node = light.data.node_tree.nodes[item[2][1:-1]]
+                    node_strength = light.data.node_tree.nodes[item[2][1:-1]]
                 else:
-                    node = None
+                    node_strength = None
             else:
                 material = bpy.data.materials[item[1][1:-1]]
-                node = material.node_tree.nodes[item[2][1:-1]]
+                node_strength = material.node_tree.nodes[item[2][1:-1]]
+
+            if item[3].startswith("'"):
+                socket_strength = int(item[3][1:-1])
+            else:
+                socket_strength = int(item[3])
 
             box=maincol.box()
             rowmain=box.row()
@@ -456,12 +532,11 @@ class GafferPanel(bpy.types.Panel):
             
             #color
             row.separator()
-            if node:
-                socket=0
-                if not node.inputs[socket].is_linked:
-                    row.prop(node.inputs[socket], 'default_value', text='')
+            if node_strength:
+                if not node_strength.inputs[socket_strength].is_linked:
+                    row.prop(node_strength.inputs[socket_strength], 'default_value', text='')
                 else:
-                    from_node=node.inputs[socket].links[0].from_node
+                    from_node=node_strength.inputs[socket_strength].links[0].from_node
                     if from_node.type=='RGB':
                         row.prop(from_node.outputs[0], 'default_value', text='')
                     elif from_node.type=='TEX_IMAGE' or from_node.type=='TEX_ENVIRONMENT':
@@ -480,8 +555,8 @@ class GafferPanel(bpy.types.Panel):
                                 op.light = light.name
                                 if material:
                                     op.material = material.name
-                                if node:
-                                    op.node = node.name
+                                if node_strength:
+                                    op.node_strength = node_strength.name
                             col.separator()
                         else:
                             row.operator('gaffer.col_temp_show', text='', icon='COLOR').l_index=i
@@ -510,13 +585,13 @@ class GafferPanel(bpy.types.Panel):
                 else:
                     row.prop(light.data, 'shadow_soft_size', text='Size')
                 if light.data.use_nodes: #check if uses nodes
-                    row.prop(node.inputs[1], 'default_value', text='Strength')
+                    row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
                 else:
                     row.operator('gaffer.lamp_use_nodes', icon='NODETREE', text='').light=light.name
             else:  # MESH light
                 row.label(text='', icon='MESH_PLANE')
                 row.separator()
-                row.prop(node.inputs[1], 'default_value', text='Strength')
+                row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
 
 
                 
@@ -562,6 +637,21 @@ class GafferPanel(bpy.types.Panel):
                     row.prop(light.cycles_visibility, "glossy", text='Specular')
             i+=1
 
+        maincol.label("Node: "+node_strength.name)
+        maincol.label("Socket: "+str(socket_strength))
+
+        if len(lights_to_show) == 0:
+            row = maincol.row()
+            row.alignment = 'CENTER'
+            row.label("No lights to show :)")
+
+
+def gaffer_node_menu_func(self, context):
+    # TODO check if object is not light
+    layout = self.layout
+    layout.operator('gaffer.node_set_strength')
+
+
 def register():
     bpy.types.Scene.GafferLights = bpy.props.StringProperty(
         name="Lights",
@@ -600,10 +690,11 @@ def register():
         name="Visible Layers Only",
         default=False,
         description="Only show lamps that are on visible layers (disableds ability to re-order list)")
+
+    bpy.types.NODE_PT_active_node_generic.append(gaffer_node_menu_func)
         
     bpy.utils.register_module(__name__) 
-    
-    
+       
 def unregister():    
     del bpy.types.Scene.GafferLights
     del bpy.types.Scene.GafferLightNodes
@@ -613,6 +704,8 @@ def unregister():
     del bpy.types.Scene.GafferLightsHiddenRecord
     del bpy.types.Scene.GafferSoloActive
     del bpy.types.Scene.GafferVisibleLayersOnly
+
+    bpy.types.NODE_PT_active_node_generic.remove(gaffer_node_menu_func)
     
     bpy.utils.unregister_module(__name__)
         
