@@ -2,9 +2,9 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from a single panel",
     "author": "Greg Zaal",
-    "version": (0, 1),
+    "version": (0, 1, 0),
     "blender": (2, 69, 1),
-    "location": "3D View > Properties",
+    "location": "3D View > Tools",
     "warning": "",
     "wiki_url": "",
     "tracker_url": "",
@@ -532,11 +532,16 @@ class GafferPanel(bpy.types.Panel):
             
             #color
             row.separator()
-            if node_strength:
-                if not node_strength.inputs[socket_strength].is_linked:
-                    row.prop(node_strength.inputs[socket_strength], 'default_value', text='')
+            try:
+                node_color=light.data.node_tree.nodes['Emission']
+                socket_color=0
+            except:
+                row.label("TODO, handle custom color node")
+            else:
+                if not node_color.inputs[socket_color].is_linked:
+                    row.prop(node_color.inputs[socket_color], 'default_value', text='')
                 else:
-                    from_node=node_strength.inputs[socket_strength].links[0].from_node
+                    from_node=node_color.inputs[socket_color].links[0].from_node
                     if from_node.type=='RGB':
                         row.prop(from_node.outputs[0], 'default_value', text='')
                     elif from_node.type=='TEX_IMAGE' or from_node.type=='TEX_ENVIRONMENT':
@@ -555,15 +560,15 @@ class GafferPanel(bpy.types.Panel):
                                 op.light = light.name
                                 if material:
                                     op.material = material.name
-                                if node_strength:
-                                    op.node_strength = node_strength.name
+                                if node_color:
+                                    op.node_color = node_color.name
                             col.separator()
                         else:
                             row.operator('gaffer.col_temp_show', text='', icon='COLOR').l_index=i
                     elif from_node.type=='WAVELENGTH':
                         row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
-            else:
-                row.prop(light.data, 'color', text='')
+            # else:
+            #     row.prop(light.data, 'color', text='')
 
             
             #size and strength
@@ -585,7 +590,10 @@ class GafferPanel(bpy.types.Panel):
                 else:
                     row.prop(light.data, 'shadow_soft_size', text='Size')
                 if light.data.use_nodes: #check if uses nodes
-                    row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
+                    if not node_strength.inputs[socket_strength].is_linked:
+                        row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
+                    else:
+                        row.label("  Node Invalid")  # rather check for next available slot?
                 else:
                     row.operator('gaffer.lamp_use_nodes', icon='NODETREE', text='').light=light.name
             else:  # MESH light
@@ -637,8 +645,8 @@ class GafferPanel(bpy.types.Panel):
                     row.prop(light.cycles_visibility, "glossy", text='Specular')
             i+=1
 
-        maincol.label("Node: "+node_strength.name)
-        maincol.label("Socket: "+str(socket_strength))
+        # maincol.label("Node: "+node_strength.name)
+        # maincol.label("Socket: "+str(socket_strength))
 
         if len(lights_to_show) == 0:
             row = maincol.row()
