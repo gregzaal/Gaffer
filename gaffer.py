@@ -197,20 +197,30 @@ class GafHideMore(bpy.types.Operator):
         context.scene.GafferMoreExpand=context.scene.GafferMoreExpand.replace(self.light, "")
         return {'FINISHED'}
 
+class GafHideShowLight(bpy.types.Operator):
+    'Hide/Show this light (in viewport and in render)'
+    bl_idname='gaffer.hide_light'
+    bl_label='Hide Light'
+    light=bpy.props.StringProperty()
+    hide=bpy.props.BoolProperty()
+    
+    def execute(self,context):
+        light = bpy.data.objects[self.light]
+        light.hide = self.hide
+        light.hide_render = self.hide
+        return {'FINISHED'}
+
 class GafSelectLight(bpy.types.Operator):
-    'Select/Deselect this light'
+    'Select this light'
     bl_idname='gaffer.select_light'
     bl_label='Select'
     light=bpy.props.StringProperty()
     
     def execute(self,context):
         obj=bpy.data.objects[self.light]
-        if obj.select:
-            obj.select=False
-        else:
-            bpy.ops.object.select_all(action='DESELECT')
-            obj.select=True
-            context.scene.objects.active=obj
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select=True
+        context.scene.objects.active=obj
         return {'FINISHED'}
 
 class GafSolo(bpy.types.Operator):
@@ -532,7 +542,12 @@ class GafferPanel(bpy.types.Panel):
                     row.prop(light, 'name', text='')
                 else:
                     row.label(text=light.name)
-                row.prop(light, 'hide', text='', emboss=False)
+                visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'RESTRICT_VIEW_ON' if light.hide else 'RESTRICT_VIEW_OFF', emboss=False)
+                visop.light = light.name
+                if light.hide:
+                    visop.hide = False
+                else:
+                    visop.hide = True
                 select_icon='RESTRICT_SELECT_ON'
                 if light.select:
                     select_icon='RESTRICT_SELECT_OFF'
@@ -547,7 +562,7 @@ class GafferPanel(bpy.types.Panel):
                     solobtn.showhide=False
                     
                 
-                #color
+                #color TODO make colour prop smaller in row (using split)
                 row.separator()
                 try:
                 #if True:
@@ -562,11 +577,17 @@ class GafferPanel(bpy.types.Panel):
                     row.label("TODO, handle custom color node")
                 else:
                     if not node_color.inputs[socket_color].is_linked:
-                        row.prop(node_color.inputs[socket_color], 'default_value', text='')
+                        subcol = row.column(align=True)
+                        subrow = subcol.row(align=True)
+                        subrow.scale_x = 0.3
+                        subrow.prop(node_color.inputs[socket_color], 'default_value', text='')
                     else:
                         from_node=node_color.inputs[socket_color].links[0].from_node
                         if from_node.type=='RGB':
-                            row.prop(from_node.outputs[0], 'default_value', text='')
+                            subcol = row.column(align=True)
+                            subrow = subcol.row(align=True)
+                            subrow.scale_x = 0.3
+                            subrow.prop(from_node.outputs[0], 'default_value', text='')
                         elif from_node.type=='TEX_IMAGE' or from_node.type=='TEX_ENVIRONMENT':
                             row.prop(from_node, 'image', text='')
                         elif from_node.type=='BLACKBODY':                            
@@ -584,7 +605,7 @@ class GafferPanel(bpy.types.Panel):
                                     if material:
                                         op.material = material.name
                                     if node_color:
-                                        op.node_color = node_color.name
+                                        op.node = node_color.name
                                 col.separator()
                             else:
                                 row.operator('gaffer.col_temp_show', text='', icon='COLOR').l_index=i
@@ -595,16 +616,7 @@ class GafferPanel(bpy.types.Panel):
                 #size and strength
                 row=col.row(align=True)
                 if light.type == 'LAMP':
-                    if light.data.type == 'POINT':
-                        row.label(text='', icon='LAMP_POINT')
-                    elif  light.data.type == 'SUN':
-                        row.label(text='', icon='LAMP_SUN')
-                    elif  light.data.type == 'SPOT':
-                        row.label(text='', icon='LAMP_SPOT')
-                    elif  light.data.type == 'HEMI':
-                        row.label(text='', icon='LAMP_HEMI')
-                    elif  light.data.type == 'AREA':
-                        row.label(text='', icon='LAMP_AREA')
+                    row.label(text='', icon='LAMP_%s' % light.data.type)
                     row.separator()
                     if light.data.type=='AREA':
                         row.prop(light.data, 'size')
