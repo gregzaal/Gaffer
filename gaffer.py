@@ -144,7 +144,6 @@ def dictOfLights():
     if lights:
         for light in lights:  # TODO check if node still exists
             if len(light) > 1:
-                print ("light: " + str(light) + " " + str(len(lights)))
                 lights_with_nodes.append(light[0])
                 lights_with_nodes.append(light[2])
         light_dict = dict(lights_with_nodes[i:i+2] for i in range(0, len(lights_with_nodes), 2))
@@ -322,12 +321,22 @@ def setGafferNode(context, nodetype):
         if light[0] == context.object.name:
             light[list_nodeindex] = node.name
             socket_index = 0
-            for inpt in node.inputs:
-                if inpt.type == 'VALUE' and not inpt.is_linked:  # use first Value socket as strength
-                    light[list_socketindex] = socket_index
-                    break
-                socket_index += 1
-            break
+
+            if node.inputs:
+                for socket in node.inputs:
+                    if socket.type == 'VALUE' and not socket.is_linked:  # use first Value socket as strength
+                        light[list_socketindex] = 'i'+str(socket_index)
+                        break
+                    socket_index += 1
+                break
+            elif node.outputs:
+                for socket in node.outputs:
+                    if socket.type == 'VALUE':  # use first Value socket as strength
+                        light[list_socketindex] = 'o'+str(socket_index)
+                        break
+                    socket_index += 1
+                break
+    # TODO catch if there is no available socket to use
     context.scene.GafferLights=str(lights)
 
 class GafNodeSetStrength(bpy.types.Operator):
@@ -359,11 +368,13 @@ class GafRefreshLightList(bpy.types.Operator):
             light_mats = []
             if obj.type == 'LAMP':
                 if obj.data.use_nodes:
-                    no_node_specified = False
+                    invalid_node = False
                     if obj.name in light_dict:
                         if light_dict[obj.name] == "None":  # A light that previously did not use nodes (like default light)
-                            no_node_specified = True
-                    if obj.name not in light_dict or no_node_specified:
+                            invalid_node = True
+                        elif light_dict[obj.name] not in obj.data.node_tree.nodes:
+                            invalid_node = True
+                    if obj.name not in light_dict or invalid_node:
                         for node in obj.data.node_tree.nodes:
                             if node.type == 'EMISSION':
                                 if node.outputs[0].is_linked:
@@ -508,9 +519,20 @@ class GafferPanel(bpy.types.Panel):
                 row.operator('gaffer.lamp_use_nodes', icon='NODETREE', text='').light=light.name
             else:
                 if item[3].startswith("'"):
-                    socket_strength = int(item[3][1:-1])
+                    socket_strength_str = str(item[3][1:-1])
                 else:
-                    socket_strength = int(item[3])
+                    socket_strength_str = str(item[3])
+
+                if socket_strength_str.startswith('o'):
+                    socket_strength_type = 'o'
+                    socket_strength = int(socket_strength_str[1:])
+                elif socket_strength_str.startswith('i'):
+                    socket_strength_type = 'i'
+                    socket_strength = int(socket_strength_str[1:])
+                else:
+                    socket_strength_type = 'i' # TODO - use this i/o stuff!
+                    socket_strength = int(socket_strength_str)
+
 
                 box=maincol.box()
                 rowmain=box.row()
@@ -547,21 +569,38 @@ class GafferPanel(bpy.types.Panel):
                     solobtn.light=light.name
                     solobtn.showhide=False
                     
-                
-                #color TODO make colour prop smaller in row (using split)
-                row.separator()
-                try:
-                #if True:
-                    if light.type == 'LAMP':
-                        if not light.data.use_nodes:
-                            1/0
-                        node_color=light.data.node_tree.nodes['Emission']
+                                
+                #strength
+                row=col.row(align=True)
+                if light.type == 'LAMP':
+                    row.label(text='', icon='LAMP_%s' % light.data.type)
+                    row.separator()
+                    if light.data.use_nodes: #check if uses nodes
+                        if not node_strength.inputs[socket_strength].is_linked:
+                            row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
+                        else:
+                            row.label("  Node Invalid")  # rather check for next available slot?
                     else:
-                        node_color=material.node_tree.nodes['Emission']
-                    socket_color=0
-                except:
-                    row.label("TODO, handle custom color node")
+                        row.operator('gaffer.lamp_use_nodes', icon='NODETREE', text='').light=light.name
+                else:  # MESH light
+                    row.label(text='', icon='MESH_PLANE')
+                    row.separator()
+                    row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
+
+
+                #color
+                if light.type == 'LAMP':
+                    nodes = light.data.node_tree.nodes
                 else:
+                    nodes = material.node_tree.nodes
+                socket_color=0
+                node_color = None
+                for node in nodes:
+                    if node.type == 'OUTPUT_MATERIAL' or node.type == 'OUTPUT_LAMP':
+                        if node.is_active_output:
+                            if node.inputs[0].is_linked: # only surface material supported for now
+                                node_color = node.inputs[0].links[0].from_node
+                if node_color:
                     if not node_color.inputs[socket_color].is_linked:
                         subcol = row.column(align=True)
                         subrow = subcol.row(align=True)
@@ -598,28 +637,6 @@ class GafferPanel(bpy.types.Panel):
                         elif from_node.type=='WAVELENGTH':
                             row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
 
-                
-                #size and strength
-                row=col.row(align=True)
-                if light.type == 'LAMP':
-                    row.label(text='', icon='LAMP_%s' % light.data.type)
-                    row.separator()
-                    if light.data.type=='AREA':
-                        row.prop(light.data, 'size')
-                    else:
-                        row.prop(light.data, 'shadow_soft_size', text='Size')
-                    if light.data.use_nodes: #check if uses nodes
-                        if not node_strength.inputs[socket_strength].is_linked:
-                            row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
-                        else:
-                            row.label("  Node Invalid")  # rather check for next available slot?
-                    else:
-                        row.operator('gaffer.lamp_use_nodes', icon='NODETREE', text='').light=light.name
-                else:  # MESH light
-                    row.label(text='', icon='MESH_PLANE')
-                    row.separator()
-                    row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
-
 
                 # More Options
                 if "_Light:_("+light.name+")_" in scene.GafferMoreExpand or scene.GafferMoreExpandAll:
@@ -629,20 +646,28 @@ class GafferPanel(bpy.types.Panel):
                         row.prop(light.data.cycles, "use_multiple_importance_sampling", text='MIS', toggle=True)
                         row.prop(light.data.cycles, "cast_shadow", text='Shadows', toggle=True)
                         row.separator()
-                        row.prop(light.cycles_visibility, "diffuse", text='Diffuse')
-                        row.prop(light.cycles_visibility, "glossy", text='Specular')
+                        row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
+                        row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
+
                         if light.data.type == 'SPOT':
                             row = col.row(align=True)
                             row.prop(light.data, "spot_size", text='Spot Size')
                             row.prop(light.data, "spot_blend", text='Blend')
+
+                        row = col.row(align=True)
+                        if light.data.type=='AREA':
+                            row.prop(light.data, 'size')
+                        else:
+                            row.prop(light.data, 'shadow_soft_size', text='Size')
+
                         if scene.cycles.progressive == 'BRANCHED_PATH':
-                            col.prop(light.data.cycles, "samples")
+                            row.prop(light.data.cycles, "samples")
                     else:  # MESH light
                         row.prop(material.cycles, "sample_as_light", text='MIS', toggle=True)
                         row.separator()
-                        row.prop(light.cycles_visibility, "camera", text='Camera')
-                        row.prop(light.cycles_visibility, "diffuse", text='Diffuse')
-                        row.prop(light.cycles_visibility, "glossy", text='Specular')
+                        row.prop(light.cycles_visibility, "camera", text='Cam', toggle=True)
+                        row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
+                        row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
                 i+=1
 
         # maincol.label("Node: "+node_strength.name)
