@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ##### END GPL LICENSE BLOCK #####
+
 bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from a single panel",
@@ -273,38 +291,6 @@ class GafSolo(bpy.types.Operator):
                 obj.hide = castBool(l[1])
                 obj.hide_render = castBool(l[2])
         
-        return {'FINISHED'}
-
-class GafReOrderUp(bpy.types.Operator):
-    'Move this light up the list'
-    bl_idname='gaffer.order_list_up'
-    bl_label='Move Up'
-    current_index=bpy.props.IntProperty()
-    do_nothing=bpy.props.BoolProperty()
-    
-    def execute(self,context):
-        if not self.do_nothing:
-            lights=stringToNestedList(context.scene.GafferLights, stripquotes=True)
-            i=self.current_index
-            lights.insert(i-1, lights.pop(i))
-            context.scene.GafferLights=str(lights)
-            context.scene.GafferLightUIIndex -= 1
-        return {'FINISHED'}
-
-class GafReOrderDown(bpy.types.Operator):
-    'Move this light down the list'
-    bl_idname='gaffer.order_list_down'
-    bl_label='Move Down'
-    current_index=bpy.props.IntProperty()
-    do_nothing=bpy.props.BoolProperty()
-    
-    def execute(self,context):
-        if not self.do_nothing:
-            lights=stringToNestedList(context.scene.GafferLights, stripquotes=True)
-            i=self.current_index
-            lights.insert(i+1, lights.pop(i))
-            context.scene.GafferLights=str(lights)
-            context.scene.GafferLightUIIndex += 1
         return {'FINISHED'}
 
 class GafLampUseNodes(bpy.types.Operator):
@@ -635,25 +621,6 @@ class GafferPanel(bpy.types.Panel):
                     row.prop(node_strength.inputs[socket_strength], 'default_value', text='Strength')
 
 
-                    
-                # move light up/down
-                if not scene.GafferVisibleLayersOnly:
-                    split=rowmain.split()
-                    col=split.column(align=True)
-                    if i!=0:
-                        a=col.operator('gaffer.order_list_up', icon='TRIA_UP', text='')
-                        a.current_index=i
-                        a.do_nothing=False
-                    else:
-                        col.operator('gaffer.order_list_up', icon='MOVE_UP_VEC', text='').do_nothing=True
-                    if i!=len(lights_to_show)-1:
-                        a=col.operator('gaffer.order_list_down', icon='TRIA_DOWN', text='')
-                        a.current_index=i
-                        a.do_nothing=False
-                    else:
-                        col.operator('gaffer.order_list_down', icon='MOVE_DOWN_VEC', text='').do_nothing=True
-
-
                 # More Options
                 if "_Light:_("+light.name+")_" in scene.GafferMoreExpand or scene.GafferMoreExpandAll:
                     col=box.column(align=True)
@@ -730,7 +697,7 @@ def register():
     bpy.types.Scene.GafferVisibleLayersOnly = bpy.props.BoolProperty(
         name="Visible Layers Only",
         default=False,
-        description="Only show lamps that are on visible layers (disableds ability to re-order list)")
+        description="Only show lamps that are on visible layers")
 
     bpy.types.NODE_PT_active_node_generic.append(gaffer_node_menu_func)
         
