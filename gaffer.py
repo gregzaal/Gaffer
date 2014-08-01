@@ -21,7 +21,7 @@ bl_info = {
     "description": "Manage all your lights together quickly and efficiently from a single panel",
     "author": "Greg Zaal",
     "version": (0, 1, 0),
-    "blender": (2, 70, 0),
+    "blender": (2, 71, 0),
     "location": "3D View > Tools",
     "warning": "",
     "wiki_url": "",
