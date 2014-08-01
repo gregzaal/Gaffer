@@ -11,7 +11,6 @@ So if you'd like to support me and help improve Blender, just head on over to th
 
 ---
 
----
 Gaffer
 =========
 #### A light-manager add-on for Blender
