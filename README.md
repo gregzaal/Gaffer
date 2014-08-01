@@ -1,12 +1,15 @@
 ###Hey you!
 
 Yes, you.
+
 This is the Git repository for Gaffer, where you can always find the latest version available for download.
+
 And yes, that means **you may download it completely free of charge** :) It's licensed as [GPL], meaning it's free and you can modify and redistribute it to your hearts content (as long as you keep the original license)
 
 ###But!
 
 $14.99 isn't much, every single sale motivates me to keep developing it. Seriously, whenever I get a "New Sale!" email, it instantly puts a smile on my face and makes my day.
+
 So if you'd like to support me and help improve Blender, just head on over to the Blender Market and [buy it there] :)
 
 ---
