@@ -18,6 +18,9 @@ Gaffer
 =========
 #### A light-manager add-on for Blender
 
+![Screenshot](http://gregzaal.com/ss/montage_720.jpg)
+[(High-res)](http://gregzaal.com/ss/montage.png)
+
 As a professional lighting artist and hobbyist coder, I created this add-on to help me with my every day work. Not only did it speed up my lighting workflow, but it meant I had more time to create better lighting.
 
 Gaffer is a Blender add-on that helps you light your scenes by presenting you with all the lamp settings you need to tweak in one simple panel.
