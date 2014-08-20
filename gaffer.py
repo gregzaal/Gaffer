@@ -40,6 +40,8 @@ TODO:
 
     Single sided mesh light
 
+    Show "Exit Solo Mode" button always
+
 '''
 
 col_temp = {"01_Flame (1700)": 1700,
