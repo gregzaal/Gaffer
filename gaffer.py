@@ -20,8 +20,8 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from a single panel",
     "author": "Greg Zaal",
-    "version": (1, 0, 1),
-    "blender": (2, 71, 0),
+    "version": (1, 1),
+    "blender": (2, 71, 6),
     "location": "3D View > Tools",
     "warning": "",
     "wiki_url": "",
@@ -31,18 +31,7 @@ bl_info = {
 import bpy
 from collections import OrderedDict
 
-'''
-TODO:
-    poll funcs
-    aim lamp at cursor
-
-    Connect Wavelength/Blackbody to colour
-
-    Single sided mesh light
-
-    Show "Exit Solo Mode" button always
-
-'''
+supported_renderers = ['BLENDER_RENDER', 'CYCLES']
 
 col_temp = {"01_Flame (1700)": 1700,
             "02_Tungsten (3200)": 3200,
@@ -587,6 +576,38 @@ class GafRefreshLightList(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GafCreateEnviroWidget(bpy.types.Operator):
+
+    'Create an Empty which drives the rotation of the background texture'
+    bl_idname = 'gaffer.envwidget'
+    bl_label = 'Create Enviro Rotation Widget'
+    size = bpy.props.FloatProperty(default = 16.0,
+                                   description = "How big the created empty should be")
+
+    # TODO poll for supported vector input, uses nodes, widget doesn't already exist
+
+    def execute(self, context):
+        scene = context.scene
+        nodes = scene.world.node_tree.nodes
+
+        # Get mapping nodes
+        mapping_nodes = []
+        for node in nodes:
+            if node.type == 'MAPPING':
+                mapping_nodes.append(node)
+        if not mapping_nodes:
+            pass  # TODO handle when no mapping nodes
+
+        map_rotation = [mapping_nodes[0].rotation[0],  # use rotation of first mapping node
+                        mapping_nodes[0].rotation[1],
+                        mapping_nodes[0].rotation[2]]
+
+        bpy.ops.object.empty_add(type='SPHERE', view_align=False, location=scene.cursor_location, rotation=map_rotation, radius=self.size/2, layers=scene.layers)
+
+        return {'FINISHED'}
+
+
+
 '''
     INTERFACE
 '''
@@ -1112,20 +1133,16 @@ def draw_cycles_UI(context, layout, lights):
                 row.prop(world.light_settings, "distance")
 
 
-class GafferPanel(bpy.types.Panel):
+class GafferPanelLights(bpy.types.Panel):
 
-    bl_label = "Gaffer"
+    bl_label = "Lights"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     bl_category = "Gaffer"
 
     @classmethod
     def poll(cls, context):
-        if context.scene.render.engine == 'BLENDER_RENDER' \
-        or context.scene.render.engine == 'CYCLES':
-            return True
-        else:
-            return False
+        return True if context.scene.render.engine in supported_renderers else False
 
     def draw(self, context):
         scene = context.scene
@@ -1135,6 +1152,11 @@ class GafferPanel(bpy.types.Panel):
 
         col = layout.column(align=True)
         row = col.row(align=True)
+        if scene.GafferSoloActive != "":  # if in solo mode
+            solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='')
+            solobtn.light = "None"
+            solobtn.showhide = False
+            solobtn.worldsolo = False
         row.operator('gaffer.refresh_lights', text="Refresh", icon='FILE_REFRESH')  # may not be needed if drawing errors are cought correctly (eg newly added lights)
         row.prop(scene, "GafferVisibleLayersOnly", text='', icon='LAYER_ACTIVE')
         row.prop(scene, "GafferVisibleLightsOnly", text='', icon='VISIBLE_IPO_ON')
@@ -1159,6 +1181,25 @@ class GafferPanel(bpy.types.Panel):
             draw_cycles_UI(context, layout, lights)
         else:
             layout.label ("Render Engine not supported!")
+
+
+class GafferPanelTools(bpy.types.Panel):
+
+    bl_label = "Tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "TOOLS"
+    bl_category = "Gaffer"
+
+    @classmethod
+    def poll(cls, context):
+        return True if context.scene.render.engine in supported_renderers else False
+
+    def draw(self, context):
+        scene = context.scene
+        layout = self.layout
+
+        col = layout.column(align=True)
+        col.operator('gaffer.envwidget')
 
 
 def gaffer_node_menu_func(self, context):
