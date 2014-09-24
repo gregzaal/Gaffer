@@ -30,6 +30,9 @@ bl_info = {
 
 import bpy
 from collections import OrderedDict
+import bgl
+from math import pi, cos, sin
+from mathutils import Vector, Matrix
 
 supported_renderers = ['BLENDER_RENDER', 'CYCLES']
 
@@ -668,6 +671,98 @@ class GafCreateEnviroWidget(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GafShowLightRadius(bpy.types.Operator):
+
+    'Display a circle around each light showing their radius'
+    bl_idname = 'gaffer.show_radius'
+    bl_label = 'Show Radius'
+
+    # CoDEmanX wrote pretty most of this - thanks sir!
+
+    # TODO poll for... ?
+
+    # Properties: x-ray, use color, alpha, only selected
+
+    def draw_callback_radius(self, context):
+        scene = context.scene
+        region = context.region
+        rv3d = context.region_data
+        
+        view = rv3d.view_matrix
+        persp = rv3d.perspective_matrix
+
+        bgl.glEnable(bgl.GL_BLEND)
+
+        for obj in self.objects:
+            radius = obj.data.shadow_soft_size
+
+            obj_matrix_world = obj.matrix_world
+
+            origin = obj.matrix_world.translation
+
+            view_mat = context.space_data.region_3d.view_matrix
+            view_dir = view_mat.to_3x3()[2]
+            up = Vector((0,0,1))
+
+            angle = up.angle(view_dir)
+            axis = up.cross(view_dir)
+
+            mat = Matrix.Translation(origin) * Matrix.Rotation(angle, 4, axis)
+            
+            bgl.glColor4f(1.0, 0.8, 0.5, 0.3)
+            bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
+            bgl.glBegin(bgl.GL_TRIANGLE_FAN)
+            sides = 32
+            for i in range(sides + 1):
+                cosine = radius * cos(i * 2 * pi / sides)
+                sine = radius * sin(i * 2 * pi / sides)
+                vec = Vector((cosine, sine, 0))
+                bgl.glVertex3f(*(mat*vec))
+            bgl.glEnd()
+
+        # restore opengl defaults
+        bgl.glPointSize(1)
+        bgl.glLineWidth(1)
+        bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
+        bgl.glDisable(bgl.GL_BLEND)
+
+    
+    def modal(self, context, event):
+        context.area.tag_redraw()
+
+        # allow navigation
+        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'NUMPAD_1',
+                          'NUMPAD_3', 'NUMPAD_7', 'NUMPAD_5', 'NUMPAD_PERIOD', 'RIGHTMOUSE', 'LEFTMOUSE'}:
+            return {'PASS_THROUGH'}
+
+        elif event.type == 'ESC':
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            return {'FINISHED'}
+
+        return {'PASS_THROUGH'}
+
+    def invoke(self, context, event):
+        if context.area.type == 'VIEW_3D':
+            context.window_manager.modal_handler_add(self)
+
+            self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_radius, (context,), 'WINDOW', 'POST_VIEW')
+
+            # TODO BI lamps
+            self.objects = []
+            for obj in context.scene.objects:
+                if obj.type == 'LAMP':
+                    if obj.data.type in ['POINT', 'SUN', 'SPOT']:
+                        if not obj.hide:
+                            if isOnVisibleLayer(obj, context.scene):
+                                self.objects.append(obj)
+
+            return {'RUNNING_MODAL'}
+
+        else:
+            self.report({'WARNING'}, "View3D not found, cannot run operator")
+            return {'CANCELLED'}
+
+
 
 '''
     INTERFACE
@@ -1260,6 +1355,8 @@ class GafferPanelTools(bpy.types.Panel):
         layout = self.layout
 
         col = layout.column(align=True)
+
+        col.operator('gaffer.show_radius')
         
 
 
