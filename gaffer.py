@@ -580,11 +580,22 @@ class GafCreateEnviroWidget(bpy.types.Operator):
 
     'Create an Empty which drives the rotation of the background texture'
     bl_idname = 'gaffer.envwidget'
-    bl_label = 'Create Enviro Rotation Widget'
-    size = bpy.props.FloatProperty(default = 16.0,
-                                   description = "How big the created empty should be")
+    bl_label = 'Create Enviro Rotation Widget (EXPERIMENTAL)'
+    radius = bpy.props.FloatProperty(default = 16.0,
+                                     description = "How big the created empty should be (distance from center to edge)")
 
+    # TODO add op to delete widget and drivers
+    # TODO add op to select widget (poll if it exists)
     # TODO poll for supported vector input, uses nodes, widget doesn't already exist
+    
+    '''
+        This is an experimental function
+        It's barely usable at present, but blender lacks a few important things to make it really useful:
+            Cannot draw bgl over viewport render (can't see what you're doing or interact with a custom widget)
+            Can't draw a texture on a sphere when the rest of the viewport is solid-shaded
+            World rotation is pretty weird, doesn't match up to rotation of a 3d sphere
+        For those reasons, this won't be included in the UI, but the code might as well stay here for future use.
+    '''
 
     def execute(self, context):
         scene = context.scene
@@ -598,11 +609,61 @@ class GafCreateEnviroWidget(bpy.types.Operator):
         if not mapping_nodes:
             pass  # TODO handle when no mapping nodes
 
-        map_rotation = [mapping_nodes[0].rotation[0],  # use rotation of first mapping node
-                        mapping_nodes[0].rotation[1],
-                        mapping_nodes[0].rotation[2]]
+        n = mapping_nodes[0]  # use rotation of first mapping node
+        map_rotation = [n.rotation[0],
+                        n.rotation[1],
+                        n.rotation[2]]
 
-        bpy.ops.object.empty_add(type='SPHERE', view_align=False, location=scene.cursor_location, rotation=map_rotation, radius=self.size/2, layers=scene.layers)
+        '''
+            POINT is the default vector type, but rotates inversely to the widget.
+            Setting the vector type to TEXTURE behaves as expected,
+            but we must invert the rotation values to keep the same visual rotation.
+        '''
+        if n.vector_type == 'POINT':
+            map_rotation = [i*-1 for i in map_rotation]
+
+        widget_data = bpy.data.objects.new("Environment Rotation Widget", None)
+        scene.objects.link(widget_data)
+        widget = scene.objects["Environment Rotation Widget"]
+        widget.location = scene.cursor_location
+        widget.rotation_euler = map_rotation
+        widget.empty_draw_type = 'SPHERE'
+        widget.empty_draw_size = self.radius
+        widget.layers = scene.layers
+
+        # TODO handle if mapping node has drivers or is animated (ask to override or ignore)
+
+        for node in mapping_nodes:
+            node.vector_type = 'TEXTURE'
+            # TODO check it works when node name includes math (e.g. "mapping*2")
+            dr = node.driver_add("rotation")
+
+            # X axis:
+            dr[0].driver.type = 'AVERAGE'
+            var = dr[0].driver.variables.new()
+            var.name = "x-rotation"
+            var.type = 'TRANSFORMS'
+            target = var.targets[0]
+            target.id = widget
+            target.transform_type = 'ROT_X'
+
+            # Y axis:
+            dr[1].driver.type = 'AVERAGE'
+            var = dr[1].driver.variables.new()
+            var.name = "y-rotation"
+            var.type = 'TRANSFORMS'
+            target = var.targets[0]
+            target.id = widget
+            target.transform_type = 'ROT_Y'
+
+            # Z axis:
+            dr[2].driver.type = 'AVERAGE'
+            var = dr[2].driver.variables.new()
+            var.name = "z-rotation"
+            var.type = 'TRANSFORMS'
+            target = var.targets[0]
+            target.id = widget
+            target.transform_type = 'ROT_Z'
 
         return {'FINISHED'}
 
@@ -1199,7 +1260,7 @@ class GafferPanelTools(bpy.types.Panel):
         layout = self.layout
 
         col = layout.column(align=True)
-        col.operator('gaffer.envwidget')
+        
 
 
 def gaffer_node_menu_func(self, context):
