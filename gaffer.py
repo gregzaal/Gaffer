@@ -970,7 +970,7 @@ def draw_BI_UI(context, layout, lights):
 
 
 def draw_cycles_UI(context, layout, lights):
-    maincol = layout.column(align=True)
+    maincol = layout.column(align=False)
     scene = context.scene
 
     lights_to_show = []
@@ -1035,6 +1035,7 @@ def draw_cycles_UI(context, layout, lights):
                 socket_strength = int(socket_strength_str)
 
             box = maincol.box()
+            #box = maincol.column(align=True)
             rowmain = box.row()
             split = rowmain.split()
             col = split.column()
@@ -1358,7 +1359,6 @@ class GafferPanelTools(bpy.types.Panel):
 
         col.operator('gaffer.show_radius')
         
-
 
 def gaffer_node_menu_func(self, context):
     if context.space_data.node_tree.type == 'SHADER' and context.space_data.shader_type == 'OBJECT':
