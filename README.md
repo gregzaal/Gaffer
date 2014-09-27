@@ -1,6 +1,6 @@
 ###Hey you!
 
-Yes, you.
+Yes, you :)
 
 This is the Git repository for Gaffer, where you can always find the latest version available for download.
 
