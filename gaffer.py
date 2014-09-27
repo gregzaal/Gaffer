@@ -31,7 +31,7 @@ bl_info = {
 import bpy
 from collections import OrderedDict
 import bgl
-from math import pi, cos, sin
+from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
 
 supported_renderers = ['BLENDER_RENDER', 'CYCLES']
@@ -41,10 +41,11 @@ col_temp = {"01_Flame (1700)": 1700,
             "03_Sunset (5000)": 5000,
             "04_Daylight (5500)": 5500,
             "05_Overcast (6500)": 6500,
-            "06_Monitor (5500)": 5500,
+            "06_Monitor (7000)": 7000,
             "07_Shade (8000)": 8000,
             "08_LCD (10500)": 10500,
             "09_Sky (12000)": 12000}
+
 
 '''
     FUNCTIONS
@@ -90,6 +91,100 @@ def castBool(str):
 
 def setColTemp(node, temp):
     node.inputs[0].default_value = temp
+
+def convert_temp_to_RGB(colour_temperature):
+    """
+    Converts from K to RGB, algorithm courtesy of 
+    http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
+    Python implementation by petrklus: https://gist.github.com/petrklus/b1f427accdf7438606a6
+    """
+
+    # limits: 0 -> 12000
+    if colour_temperature < 1: 
+        colour_temperature = 1
+    elif colour_temperature > 12000:
+        colour_temperature = 12000
+    
+    tmp_internal = colour_temperature / 100.0
+    
+    # red 
+    if tmp_internal <= 66:
+        red = 255
+    else:
+        tmp_red = 329.698727446 * pow(tmp_internal - 60, -0.1332047592)
+        if tmp_red < 0:
+            red = 0
+        elif tmp_red > 255:
+            red = 255
+        else:
+            red = tmp_red
+    
+    # green
+    if tmp_internal <=66:
+        tmp_green = 99.4708025861 * log(tmp_internal) - 161.1195681661
+        if tmp_green < 0:
+            green = 0
+        elif tmp_green > 255:
+            green = 255
+        else:
+            green = tmp_green
+    else:
+        tmp_green = 288.1221695283 * pow(tmp_internal - 60, -0.0755148492)
+        if tmp_green < 0:
+            green = 0
+        elif tmp_green > 255:
+            green = 255
+        else:
+            green = tmp_green
+    
+    # blue
+    if tmp_internal >=66:
+        blue = 255
+    elif tmp_internal <= 19:
+        blue = 0
+    else:
+        tmp_blue = 138.5177312231 * log(tmp_internal - 10) - 305.0447927307
+        if tmp_blue < 0:
+            blue = 0
+        elif tmp_blue > 255:
+            blue = 255
+        else:
+            blue = tmp_blue
+    
+    return [red/255, green/255, blue/255]  # return RGB in a 0-1 range
+
+def convert_wavelength_to_RGB(wavelength):
+    # List of RGB values that matches Cycles's internal conversion
+    wavelength_list = ((0.0014,0.0000,0.0065), (0.0022,0.0001,0.0105), (0.0042,0.0001,0.0201),
+                       (0.0076,0.0002,0.0362), (0.0143,0.0004,0.0679), (0.0232,0.0006,0.1102),
+                       (0.0435,0.0012,0.2074), (0.0776,0.0022,0.3713), (0.1344,0.0040,0.6456),
+                       (0.2148,0.0073,1.0391), (0.2839,0.0116,1.3856), (0.3285,0.0168,1.6230),
+                       (0.3483,0.0230,1.7471), (0.3481,0.0298,1.7826), (0.3362,0.0380,1.7721),
+                       (0.3187,0.0480,1.7441), (0.2908,0.0600,1.6692), (0.2511,0.0739,1.5281),
+                       (0.1954,0.0910,1.2876), (0.1421,0.1126,1.0419), (0.0956,0.1390,0.8130),
+                       (0.0580,0.1693,0.6162), (0.0320,0.2080,0.4652), (0.0147,0.2586,0.3533),
+                       (0.0049,0.3230,0.2720), (0.0024,0.4073,0.2123), (0.0093,0.5030,0.1582),
+                       (0.0291,0.6082,0.1117), (0.0633,0.7100,0.0782), (0.1096,0.7932,0.0573),
+                       (0.1655,0.8620,0.0422), (0.2257,0.9149,0.0298), (0.2904,0.9540,0.0203),
+                       (0.3597,0.9803,0.0134), (0.4334,0.9950,0.0087), (0.5121,1.0000,0.0057),
+                       (0.5945,0.9950,0.0039), (0.6784,0.9786,0.0027), (0.7621,0.9520,0.0021),
+                       (0.8425,0.9154,0.0018), (0.9163,0.8700,0.0017), (0.9786,0.8163,0.0014),
+                       (1.0263,0.7570,0.0011), (1.0567,0.6949,0.0010), (1.0622,0.6310,0.0008),
+                       (1.0456,0.5668,0.0006), (1.0026,0.5030,0.0003), (0.9384,0.4412,0.0002),
+                       (0.8544,0.3810,0.0002), (0.7514,0.3210,0.0001), (0.6424,0.2650,0.0000),
+                       (0.5419,0.2170,0.0000), (0.4479,0.1750,0.0000), (0.3608,0.1382,0.0000),
+                       (0.2835,0.1070,0.0000), (0.2187,0.0816,0.0000), (0.1649,0.0610,0.0000),
+                       (0.1212,0.0446,0.0000), (0.0874,0.0320,0.0000), (0.0636,0.0232,0.0000),
+                       (0.0468,0.0170,0.0000), (0.0329,0.0119,0.0000), (0.0227,0.0082,0.0000),
+                       (0.0158,0.0057,0.0000), (0.0114,0.0041,0.0000), (0.0081,0.0029,0.0000),
+                       (0.0058,0.0021,0.0000), (0.0041,0.0015,0.0000), (0.0029,0.0010,0.0000),
+                       (0.0020,0.0007,0.0000), (0.0014,0.0005,0.0000), (0.0010,0.0004,0.0000),
+                       (0.0007,0.0002,0.0000), (0.0005,0.0002,0.0000), (0.0003,0.0001,0.0000),
+                       (0.0002,0.0001,0.0000), (0.0002,0.0001,0.0000), (0.0001,0.0000,0.0000),
+                       (0.0001,0.0000,0.0000), (0.0001,0.0000,0.0000), (0.0000,0.0000,0.0000))
+    
+    # normalize wavelength into a number between 0 and 80 and use it as the index for the list
+    return wavelength_list[min(80, max(0, int((wavelength - 380) * 0.2)))]
 
 def getHiddenStatus(scene, lights):
     statelist = []
@@ -222,6 +317,11 @@ def do_update_falloff(self):
 
 def _update_falloff(self, context):
     do_update_falloff(self)
+
+def refresh_light_radius_display():
+    print ("refreshed light radius display")
+    bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
+    bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
 
 
 '''
@@ -677,11 +777,21 @@ class GafShowLightRadius(bpy.types.Operator):
     bl_idname = 'gaffer.show_radius'
     bl_label = 'Show Radius'
 
-    # CoDEmanX wrote pretty most of this - thanks sir!
+    # CoDEmanX wrote most of this - thanks sir!
 
     # TODO poll for... ?
 
-    # Properties: x-ray, use color, alpha, only selected
+    _handle = None
+
+    @staticmethod
+    def handle_add(self, context):
+        GafShowLightRadius._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_radius, (context,), 'WINDOW', 'POST_VIEW')
+
+    @staticmethod
+    def handle_remove(context):
+        if GafShowLightRadius._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
+        GafShowLightRadius._handle = None
 
     def draw_callback_radius(self, context):
         scene = context.scene
@@ -693,39 +803,62 @@ class GafShowLightRadius(bpy.types.Operator):
 
         bgl.glEnable(bgl.GL_BLEND)
 
-        for obj in self.objects:
-            radius = obj.data.shadow_soft_size
+        for item in self.objects:
+            obj = item[0]
+            if not scene.GafferLightRadiusSelectedOnly or obj.select:
+                if obj in context.visible_objects:
+                    if scene.GafferLightRadiusUseColor:
+                        if item[1][0] == 'BLACKBODY':
+                            color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
+                        elif item[1][0] == 'WAVELENGTH':
+                            color = convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
+                        else:
+                            color = item[1]
+                    else:
+                        color = [1,1,1]
 
-            obj_matrix_world = obj.matrix_world
+                    radius = obj.data.shadow_soft_size
 
-            origin = obj.matrix_world.translation
+                    obj_matrix_world = obj.matrix_world
 
-            view_mat = context.space_data.region_3d.view_matrix
-            view_dir = view_mat.to_3x3()[2]
-            up = Vector((0,0,1))
+                    origin = obj.matrix_world.translation
 
-            angle = up.angle(view_dir)
-            axis = up.cross(view_dir)
+                    view_mat = context.space_data.region_3d.view_matrix
+                    view_dir = view_mat.to_3x3()[2]
+                    up = Vector((0,0,1))
 
-            mat = Matrix.Translation(origin) * Matrix.Rotation(angle, 4, axis)
-            
-            bgl.glColor4f(1.0, 0.8, 0.5, 0.3)
-            bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
-            bgl.glBegin(bgl.GL_TRIANGLE_FAN)
-            sides = 32
-            for i in range(sides + 1):
-                cosine = radius * cos(i * 2 * pi / sides)
-                sine = radius * sin(i * 2 * pi / sides)
-                vec = Vector((cosine, sine, 0))
-                bgl.glVertex3f(*(mat*vec))
-            bgl.glEnd()
+                    angle = up.angle(view_dir)
+                    axis = up.cross(view_dir)
+
+                    mat = Matrix.Translation(origin) * Matrix.Rotation(angle, 4, axis)
+                    
+                    bgl.glColor4f(color[0], color[1], color[2], scene.GafferLightRadiusAlpha)
+                    bgl.glEnable(bgl.GL_LINE_SMOOTH)  # anti-aliasing
+                    if scene.GafferLightRadiusXray:
+                        bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
+                    if scene.GafferLightRadiusDrawType == 'filled':
+                        bgl.glBegin(bgl.GL_TRIANGLE_FAN)
+                    else:
+                        if scene.GafferLightRadiusDrawType == 'dotted':
+                            bgl.glLineStipple(4, 0x3333)
+                            bgl.glEnable(bgl.GL_LINE_STIPPLE)
+                        bgl.glLineWidth(3)
+                        bgl.glBegin(bgl.GL_LINE_STRIP)
+                    sides = 64
+                    for i in range(sides + 1):
+                        cosine = radius * cos(i * 2 * pi / sides)
+                        sine = radius * sin(i * 2 * pi / sides)
+                        vec = Vector((cosine, sine, 0))
+                        bgl.glVertex3f(*(mat*vec))                       
+                    bgl.glEnd()
 
         # restore opengl defaults
         bgl.glPointSize(1)
         bgl.glLineWidth(1)
         bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
         bgl.glDisable(bgl.GL_BLEND)
-
+        bgl.glDisable(bgl.GL_LINE_SMOOTH)
+        bgl.glDisable(bgl.GL_LINE_STIPPLE)
     
     def modal(self, context, event):
         context.area.tag_redraw()
@@ -735,26 +868,58 @@ class GafShowLightRadius(bpy.types.Operator):
                           'NUMPAD_3', 'NUMPAD_7', 'NUMPAD_5', 'NUMPAD_PERIOD', 'RIGHTMOUSE', 'LEFTMOUSE'}:
             return {'PASS_THROUGH'}
 
-        elif event.type == 'ESC':
-            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-            return {'FINISHED'}
+        # elif event.type == 'ESC':
+        #     bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+        #     return {'FINISHED'}
 
         return {'PASS_THROUGH'}
 
     def invoke(self, context, event):
-        if context.area.type == 'VIEW_3D':
+        scene = context.scene
+
+        if scene.GafferIsShowingRadius:
+            scene.GafferIsShowingRadius = False
+            GafShowLightRadius.handle_remove(context)
+            return {'FINISHED'}
+        elif context.area.type == 'VIEW_3D':
+            scene.GafferIsShowingRadius = True
+            
             context.window_manager.modal_handler_add(self)
 
-            self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_radius, (context,), 'WINDOW', 'POST_VIEW')
+            GafShowLightRadius.handle_add(self, context)
 
             # TODO BI lamps
             self.objects = []
-            for obj in context.scene.objects:
+            for obj in scene.objects:
                 if obj.type == 'LAMP':
                     if obj.data.type in ['POINT', 'SUN', 'SPOT']:
-                        if not obj.hide:
-                            if isOnVisibleLayer(obj, context.scene):
-                                self.objects.append(obj)
+                        color = [1,1,1]
+                        if obj.data.use_nodes:
+                            nodes = obj.data.node_tree.nodes
+                            socket_color = 0
+                            node_color = None
+                            emissions = []  # make a list of all linked Emission shaders, use the right-most one
+                            for node in nodes:
+                                if node.type == 'EMISSION':
+                                    if node.outputs[0].is_linked:
+                                        emissions.append(node)
+                            if emissions:
+                                node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
+
+                                if not node_color.inputs[0].is_linked:
+                                    color = node_color.inputs[0].default_value
+                                else:
+                                    from_node = node_color.inputs[0].links[0].from_node
+                                    if from_node.type == 'RGB':
+                                        color = from_node.outputs[0].default_value
+                                    elif from_node.type == 'BLACKBODY':
+                                        color = ['BLACKBODY', from_node]
+                                    elif from_node.type == 'WAVELENGTH':
+                                        color = ['WAVELENGTH', from_node]
+                        else:
+                            color = obj.data.color
+
+                        self.objects.append([obj, color])
 
             return {'RUNNING_MODAL'}
 
@@ -762,6 +927,19 @@ class GafShowLightRadius(bpy.types.Operator):
             self.report({'WARNING'}, "View3D not found, cannot run operator")
             return {'CANCELLED'}
 
+class GafRefreshLightRadius(bpy.types.Operator):
+
+    "Update the radius display to account for undetected changes"
+    bl_idname = 'gaffer.refresh_radius'
+    bl_label = 'Refresh Radius'
+
+    @classmethod
+    def poll(cls, context):        
+        return context.scene.GafferIsShowingRadius
+
+    def execute(self, context):
+        refresh_light_radius_display()
+        return {'FINISHED'}
 
 
 '''
@@ -1357,7 +1535,21 @@ class GafferPanelTools(bpy.types.Panel):
 
         col = layout.column(align=True)
 
-        col.operator('gaffer.show_radius')
+        box = col.box()
+        sub = box.column(align=True)
+        row = sub.row(align=True)
+        row.operator('gaffer.show_radius', text="Show Radius" if not scene.GafferIsShowingRadius else "Hide Radius")
+        if scene.GafferIsShowingRadius:
+            row.operator('gaffer.refresh_radius', text="", icon="FILE_REFRESH")
+            sub.prop(scene, 'GafferLightRadiusAlpha', slider=True)
+            row = sub.row(align=True)
+            row.active = scene.GafferIsShowingRadius
+            row.prop(scene, 'GafferLightRadiusDrawType', text="")
+            row.prop(scene, 'GafferLightRadiusUseColor')
+            row = sub.row(align=True)
+            row.active = scene.GafferIsShowingRadius
+            row.prop(scene, 'GafferLightRadiusXray')
+            row.prop(scene, 'GafferLightRadiusSelectedOnly')
         
 
 def gaffer_node_menu_func(self, context):
@@ -1406,56 +1598,81 @@ def _update_world_vis(self, context):
 
 def register():
     bpy.types.Scene.GafferLights = bpy.props.StringProperty(
-        name="Lights",
-        default="",
-        description="The objects to include in the isolation")
-    bpy.types.Scene.GafferLightNodes = bpy.props.StringProperty(
-        name="Lights",
-        default="",
-        description="The objects to include in the isolation")
+        name = "Lights",
+        default = "",
+        description = "The objects to include in the isolation")
     bpy.types.Scene.GafferColTempExpand = bpy.props.BoolProperty(
-        name="Color Temperature Presets",
-        default=False,
-        description="Preset color temperatures based on real-world light sources")
+        name = "Color Temperature Presets",
+        default = False,
+        description = "Preset color temperatures based on real-world light sources")
     bpy.types.Scene.GafferMoreExpand = bpy.props.StringProperty(
-        name="Show more options",
-        default="",
-        description="Show settings such as MIS, falloff, ray visibility...")
+        name = "Show more options",
+        default = "",
+        description = "Show settings such as MIS, falloff, ray visibility...")
     bpy.types.Scene.GafferMoreExpandAll = bpy.props.BoolProperty(
-        name="Show more options",
-        default=False,
-        description="Show settings such as MIS, falloff, ray visibility...")
+        name = "Show more options",
+        default = False,
+        description = "Show settings such as MIS, falloff, ray visibility...")
     bpy.types.Scene.GafferLightUIIndex = bpy.props.IntProperty(
-        name="light index",
-        default=0,
-        min=0,
-        description="light index")
+        name = "light index",
+        default = 0,
+        min = 0,
+        description = "light index")
     bpy.types.Scene.GafferLightsHiddenRecord = bpy.props.StringProperty(
-        name="hidden record",
-        default="",
-        description="hidden record")
+        name = "hidden record",
+        default = "",
+        description = "hidden record")
     bpy.types.Scene.GafferSoloActive = bpy.props.StringProperty(
-        name="soloactive",
-        default='',
-        description="soloactive")
+        name = "soloactive",
+        default = '',
+        description = "soloactive")
     bpy.types.Scene.GafferVisibleLayersOnly = bpy.props.BoolProperty(
-        name="Visible Layers Only",
-        default=True,
-        description="Only show lamps that are on visible layers")
+        name = "Visible Layers Only",
+        default = True,
+        description = "Only show lamps that are on visible layers")
     bpy.types.Scene.GafferVisibleLightsOnly = bpy.props.BoolProperty(
-        name="Visible Lights Only",
-        default=False,
-        description="Only show lamps that are not hidden")
+        name = "Visible Lights Only",
+        default = False,
+        description = "Only show lamps that are not hidden")
     bpy.types.Scene.GafferWorldVis = bpy.props.BoolProperty(
-        name="Hide World lighting",
-        default=True,
-        description="Don't display (or render) the environment lighting",
-        update=_update_world_vis)
+        name = "Hide World lighting",
+        default = True,
+        description = "Don't display (or render) the environment lighting",
+        update = _update_world_vis)
     bpy.types.Scene.GafferWorldReflOnly = bpy.props.BoolProperty(
-        name="Reflection Only",
-        default=False,
-        description="Only show the World lighting in reflections",
-        update=_update_world_refl_only)
+        name = "Reflection Only",
+        default = False,
+        description = "Only show the World lighting in reflections",
+        update = _update_world_refl_only)
+    bpy.types.Scene.GafferIsShowingRadius = bpy.props.BoolProperty(
+        name = "INTERNAL_VAR",
+        default = False,
+        description = "Is showing light radius")
+    bpy.types.Scene.GafferLightRadiusAlpha = bpy.props.FloatProperty(
+        name = "Alpha",
+        default = 0.6,
+        min = 0,
+        max = 1,
+        description = "The opacity of the overlaid circles")
+    bpy.types.Scene.GafferLightRadiusUseColor = bpy.props.BoolProperty(
+        name = "Use Color",
+        default = True,
+        description = "Draw the radius of each light in the same color as the light")
+    bpy.types.Scene.GafferLightRadiusSelectedOnly = bpy.props.BoolProperty(
+        name = "Selected Only",
+        default = False,
+        description = "Draw the radius for every visible light, or only selected lights")
+    bpy.types.Scene.GafferLightRadiusXray = bpy.props.BoolProperty(
+        name = "X-Ray",
+        default = False,
+        description = "Draw the circle in front of all objects")
+    bpy.types.Scene.GafferLightRadiusDrawType = bpy.props.EnumProperty(
+        name="Draw Type",
+        description="How should the radius display look?",
+        default='solid',
+        items=(("filled","Filled","Draw a circle filled with a solid color"),
+               ("solid","Solid","Draw a solid outline of the circle"),
+               ("dotted","Dotted","Draw a dotted outline of the circle")))
 
     bpy.types.NODE_PT_active_node_generic.append(gaffer_node_menu_func)
 
@@ -1463,8 +1680,11 @@ def register():
 
 
 def unregister():
+    if GafShowLightRadius._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
+        bpy.context.scene.GafferIsShowingRadius = False
+
     del bpy.types.Scene.GafferLights
-    del bpy.types.Scene.GafferLightNodes
     del bpy.types.Scene.GafferColTempExpand
     del bpy.types.Scene.GafferMoreExpand
     del bpy.types.Scene.GafferLightUIIndex
@@ -1474,6 +1694,12 @@ def unregister():
     del bpy.types.Scene.GafferVisibleLightsOnly
     del bpy.types.Scene.GafferWorldVis
     del bpy.types.Scene.GafferWorldReflOnly
+    del bpy.types.Scene.GafferIsShowingRadius
+    del bpy.types.Scene.GafferLightRadiusAlpha
+    del bpy.types.Scene.GafferLightRadiusUseColor
+    del bpy.types.Scene.GafferLightRadiusSelectedOnly
+    del bpy.types.Scene.GafferLightRadiusXray
+    del bpy.types.Scene.GafferLightRadiusDrawType
 
     bpy.types.NODE_PT_active_node_generic.remove(gaffer_node_menu_func)
 
