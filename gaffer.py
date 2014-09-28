@@ -20,8 +20,8 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from a single panel",
     "author": "Greg Zaal",
-    "version": (1, 1),
-    "blender": (2, 71, 6),
+    "version": (1, 2),
+    "blender": (2, 72, 0),
     "location": "3D View > Tools",
     "warning": "",
     "wiki_url": "",
@@ -927,6 +927,7 @@ class GafShowLightRadius(bpy.types.Operator):
             self.report({'WARNING'}, "View3D not found, cannot run operator")
             return {'CANCELLED'}
 
+
 class GafRefreshLightRadius(bpy.types.Operator):
 
     "Update the radius display to account for undetected changes"
@@ -939,6 +940,37 @@ class GafRefreshLightRadius(bpy.types.Operator):
 
     def execute(self, context):
         refresh_light_radius_display()
+        return {'FINISHED'}
+
+
+class GafAddBlacklisted(bpy.types.Operator):
+
+    "Add the selected objects to the blacklist"
+    bl_idname = 'gaffer.blacklist_add'
+    bl_label = 'Add'
+
+    @classmethod
+    def poll(cls, context):        
+        return context.selected_objects
+
+    def execute(self, context):
+        blacklist = context.scene.GafferBlacklist
+        existing = [obj.name for obj in blacklist]
+        for obj in context.selected_objects:
+            if obj.name not in existing:
+                item = blacklist.add()
+                item.name = obj.name
+        return {'FINISHED'}
+
+
+class GafRemoveBlacklisted(bpy.types.Operator):
+
+    "Remove the active list item from the blacklist"
+    bl_idname = 'gaffer.blacklist_remove'
+    bl_label = 'Remove'
+
+    def execute(self, context):
+        context.scene.GafferBlacklist.remove(context.scene.GafferBlacklistIndex)
         return {'FINISHED'}
 
 
@@ -987,7 +1019,8 @@ def draw_BI_UI(context, layout, lights):
                 a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
                 if (scene.GafferVisibleLightsOnly and not a.hide) or (not scene.GafferVisibleLightsOnly):
                     if (scene.GafferVisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not scene.GafferVisibleLayersOnly):
-                        lights_to_show.append(light)
+                        if a.name not in [o.name for o in scene.GafferBlacklist]:
+                            lights_to_show.append(light)
         except:
             box = maincol.box()
             row = box.row(align=True)
@@ -1166,7 +1199,8 @@ def draw_cycles_UI(context, layout, lights):
                         if a.data.use_nodes:
                             c = a.data.node_tree.nodes[light[2][1:-1]]
                     if (scene.GafferVisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not scene.GafferVisibleLayersOnly):
-                        lights_to_show.append(light)
+                        if a.name not in [o.name for o in scene.GafferBlacklist]:
+                            lights_to_show.append(light)
         except:
             box = maincol.box()
             row = box.row(align=True)
@@ -1533,7 +1567,7 @@ class GafferPanelTools(bpy.types.Panel):
         scene = context.scene
         layout = self.layout
 
-        col = layout.column(align=True)
+        col = layout.column()
 
         box = col.box()
         sub = box.column(align=True)
@@ -1550,6 +1584,23 @@ class GafferPanelTools(bpy.types.Panel):
             row.active = scene.GafferIsShowingRadius
             row.prop(scene, 'GafferLightRadiusXray')
             row.prop(scene, 'GafferLightRadiusSelectedOnly')
+
+        col.separator()
+        box = col.box()
+        sub = box.column(align=True)
+        sub.label('Blacklist')
+        if context.scene.GafferBlacklist:
+            sub.template_list("OBJECT_UL_object_list", "", context.scene, "GafferBlacklist", scene, "GafferBlacklistIndex", rows=2)
+        row = sub.row(align=True)
+        row.operator('gaffer.blacklist_add', icon='ZOOMIN')
+        row.operator('gaffer.blacklist_remove', icon='ZOOMOUT')
+
+
+
+class OBJECT_UL_object_list(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        obj = item
+        layout.prop(obj, 'name', text="", emboss=False)
         
 
 def gaffer_node_menu_func(self, context):
@@ -1594,6 +1645,10 @@ def do_set_world_vis(context):
 def _update_world_vis(self, context):
     do_set_world_vis(context)
     hack_force_update(context, context.scene.world.node_tree.nodes)
+
+
+class BlacklistedObject(bpy.types.PropertyGroup):
+    name = bpy.props.StringProperty(default = "")
 
 
 def register():
@@ -1644,10 +1699,6 @@ def register():
         default = False,
         description = "Only show the World lighting in reflections",
         update = _update_world_refl_only)
-    bpy.types.Scene.GafferIsShowingRadius = bpy.props.BoolProperty(
-        name = "INTERNAL_VAR",
-        default = False,
-        description = "Is showing light radius")
     bpy.types.Scene.GafferLightRadiusAlpha = bpy.props.FloatProperty(
         name = "Alpha",
         default = 0.6,
@@ -1674,10 +1725,15 @@ def register():
                ("solid","Solid","Draw a solid outline of the circle"),
                ("dotted","Dotted","Draw a dotted outline of the circle")))
 
+    # Internal vars (not shown in UI)
+    bpy.types.Scene.GafferIsShowingRadius = bpy.props.BoolProperty(default = False)
+    bpy.types.Scene.GafferBlacklistIndex = bpy.props.IntProperty(default = 0)
+
     bpy.types.NODE_PT_active_node_generic.append(gaffer_node_menu_func)
 
     bpy.utils.register_module(__name__)
 
+    bpy.types.Scene.GafferBlacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
 def unregister():
     if GafShowLightRadius._handle is not None:
@@ -1694,12 +1750,15 @@ def unregister():
     del bpy.types.Scene.GafferVisibleLightsOnly
     del bpy.types.Scene.GafferWorldVis
     del bpy.types.Scene.GafferWorldReflOnly
-    del bpy.types.Scene.GafferIsShowingRadius
     del bpy.types.Scene.GafferLightRadiusAlpha
     del bpy.types.Scene.GafferLightRadiusUseColor
     del bpy.types.Scene.GafferLightRadiusSelectedOnly
     del bpy.types.Scene.GafferLightRadiusXray
     del bpy.types.Scene.GafferLightRadiusDrawType
+
+    del bpy.types.Scene.GafferIsShowingRadius
+    del bpy.types.Scene.GafferBlacklistIndex
+    del bpy.types.Scene.GafferBlacklist
 
     bpy.types.NODE_PT_active_node_generic.remove(gaffer_node_menu_func)
 
