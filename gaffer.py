@@ -806,7 +806,7 @@ class GafShowLightRadius(bpy.types.Operator):
         for item in self.objects:
             obj = item[0]
             if not scene.GafferLightRadiusSelectedOnly or obj.select:
-                if obj in context.visible_objects:
+                if obj in context.visible_objects and obj.name not in [o.name for o in scene.GafferBlacklist]:
                     if scene.GafferLightRadiusUseColor:
                         if item[1][0] == 'BLACKBODY':
                             color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
@@ -815,7 +815,7 @@ class GafShowLightRadius(bpy.types.Operator):
                         else:
                             color = item[1]
                     else:
-                        color = [1,1,1]
+                        color = scene.GafferDefaultDrawColor
 
                     radius = obj.data.shadow_soft_size
 
@@ -893,7 +893,7 @@ class GafShowLightRadius(bpy.types.Operator):
             for obj in scene.objects:
                 if obj.type == 'LAMP':
                     if obj.data.type in ['POINT', 'SUN', 'SPOT']:
-                        color = [1,1,1]
+                        color = scene.GafferDefaultDrawColor
                         if obj.data.use_nodes:
                             nodes = obj.data.node_tree.nodes
                             socket_color = 0
@@ -960,6 +960,8 @@ class GafAddBlacklisted(bpy.types.Operator):
             if obj.name not in existing:
                 item = blacklist.add()
                 item.name = obj.name
+
+        context.scene.GafferBlacklistIndex = len(context.scene.GafferBlacklist) - 1
         return {'FINISHED'}
 
 
@@ -969,8 +971,19 @@ class GafRemoveBlacklisted(bpy.types.Operator):
     bl_idname = 'gaffer.blacklist_remove'
     bl_label = 'Remove'
 
+    @classmethod
+    def poll(cls, context):        
+        return context.scene.GafferBlacklist
+
     def execute(self, context):
-        context.scene.GafferBlacklist.remove(context.scene.GafferBlacklistIndex)
+        blist = context.scene.GafferBlacklist
+        index = context.scene.GafferBlacklistIndex
+
+        blist.remove(index)
+
+        if index >= len(blist):
+            context.scene.GafferBlacklistIndex = len(blist) - 1
+
         return {'FINISHED'}
 
 
@@ -1584,11 +1597,13 @@ class GafferPanelTools(bpy.types.Panel):
             row.active = scene.GafferIsShowingRadius
             row.prop(scene, 'GafferLightRadiusXray')
             row.prop(scene, 'GafferLightRadiusSelectedOnly')
+            row = sub.row(align=True)
+            row.prop(scene, 'GafferDefaultDrawColor')
 
         col.separator()
         box = col.box()
         sub = box.column(align=True)
-        sub.label('Blacklist')
+        sub.label('Blacklist:')
         if context.scene.GafferBlacklist:
             sub.template_list("OBJECT_UL_object_list", "", context.scene, "GafferBlacklist", scene, "GafferBlacklistIndex", rows=2)
         row = sub.row(align=True)
@@ -1724,6 +1739,14 @@ def register():
         items=(("filled","Filled","Draw a circle filled with a solid color"),
                ("solid","Solid","Draw a solid outline of the circle"),
                ("dotted","Dotted","Draw a dotted outline of the circle")))
+    bpy.types.Scene.GafferDefaultDrawColor = bpy.props.FloatVectorProperty(
+        name="Default Color",
+        description="When 'Use Color' is disaled, or when the color of a light is unknown (such as when using a texture), this color is used instead",
+        subtype="COLOR",
+        size=3,
+        min=0.0,
+        max=1.0,
+        default=(1.0,1.0,1.0))
 
     # Internal vars (not shown in UI)
     bpy.types.Scene.GafferIsShowingRadius = bpy.props.BoolProperty(default = False)
@@ -1755,6 +1778,7 @@ def unregister():
     del bpy.types.Scene.GafferLightRadiusSelectedOnly
     del bpy.types.Scene.GafferLightRadiusXray
     del bpy.types.Scene.GafferLightRadiusDrawType
+    del bpy.types.Scene.GafferDefaultDrawColor
 
     del bpy.types.Scene.GafferIsShowingRadius
     del bpy.types.Scene.GafferBlacklistIndex
