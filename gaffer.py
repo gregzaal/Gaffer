@@ -30,9 +30,16 @@ bl_info = {
 
 import bpy
 from collections import OrderedDict
-import bgl
+import bgl, blf
 from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
+from bpy_extras.view3d_utils import location_3d_to_region_2d
+
+'''
+TODO:
+    Minimize on duplicate code
+    Make draw callbacks persistent (so they aren't destoryed on save/load)
+'''
 
 supported_renderers = ['BLENDER_RENDER', 'CYCLES']
 
@@ -862,16 +869,6 @@ class GafShowLightRadius(bpy.types.Operator):
     
     def modal(self, context, event):
         context.area.tag_redraw()
-
-        # allow navigation
-        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE', 'NUMPAD_1',
-                          'NUMPAD_3', 'NUMPAD_7', 'NUMPAD_5', 'NUMPAD_PERIOD', 'RIGHTMOUSE', 'LEFTMOUSE'}:
-            return {'PASS_THROUGH'}
-
-        # elif event.type == 'ESC':
-        #     bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-        #     return {'FINISHED'}
-
         return {'PASS_THROUGH'}
 
     def invoke(self, context, event):
@@ -887,6 +884,112 @@ class GafShowLightRadius(bpy.types.Operator):
             context.window_manager.modal_handler_add(self)
 
             GafShowLightRadius.handle_add(self, context)
+
+            # TODO BI lamps
+            self.objects = []
+            for obj in scene.objects:
+                if obj.type == 'LAMP':
+                    if obj.data.type in ['POINT', 'SUN', 'SPOT']:
+                        color = scene.GafferDefaultDrawColor
+                        if obj.data.use_nodes:
+                            nodes = obj.data.node_tree.nodes
+                            socket_color = 0
+                            node_color = None
+                            emissions = []  # make a list of all linked Emission shaders, use the right-most one
+                            for node in nodes:
+                                if node.type == 'EMISSION':
+                                    if node.outputs[0].is_linked:
+                                        emissions.append(node)
+                            if emissions:
+                                node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
+
+                                if not node_color.inputs[0].is_linked:
+                                    color = node_color.inputs[0].default_value
+                                else:
+                                    from_node = node_color.inputs[0].links[0].from_node
+                                    if from_node.type == 'RGB':
+                                        color = from_node.outputs[0].default_value
+                                    elif from_node.type == 'BLACKBODY':
+                                        color = ['BLACKBODY', from_node]
+                                    elif from_node.type == 'WAVELENGTH':
+                                        color = ['WAVELENGTH', from_node]
+                        else:
+                            color = obj.data.color
+
+                        self.objects.append([obj, color])
+
+            return {'RUNNING_MODAL'}
+
+        else:
+            self.report({'WARNING'}, "View3D not found, cannot run operator")
+            return {'CANCELLED'}
+
+
+class GafShowLabel(bpy.types.Operator):
+
+    'Display the name of each light in the viewport'
+    bl_idname = 'gaffer.show_label'
+    bl_label = 'Show Label'
+
+    _handle = None
+
+    @staticmethod
+    def handle_add(self, context):
+        GafShowLabel._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_label, (context,), 'WINDOW', 'POST_PIXEL')
+
+    @staticmethod
+    def handle_remove(context):
+        if GafShowLabel._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(GafShowLabel._handle, 'WINDOW')
+        GafShowLabel._handle = None
+
+    def draw_callback_label(self, context):
+        scene = context.scene
+
+        for item in self.objects:
+            obj = item[0]
+            if obj in context.visible_objects and obj.name not in [o.name for o in scene.GafferBlacklist]:
+                if scene.GafferLightRadiusUseColor:
+                    if item[1][0] == 'BLACKBODY':
+                        color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
+                    elif item[1][0] == 'WAVELENGTH':
+                        color = convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
+                    else:
+                        color = item[1]
+                else:
+                    color = scene.GafferDefaultDrawColor
+
+
+                region = context.region
+                rv3d = context.space_data.region_3d
+                x, y = location_3d_to_region_2d(region, rv3d, obj.location)
+
+                bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
+
+                # Draw label
+                font_id = 1
+                blf.position(font_id, x, y, 0)
+                blf.size(font_id, scene.GafferLightLabelFontSize, bpy.context.user_preferences.system.dpi)
+                blf.draw(font_id, obj.name)
+                
+    
+    def modal(self, context, event):
+        context.area.tag_redraw()
+        return {'PASS_THROUGH'}
+
+    def invoke(self, context, event):
+        scene = context.scene
+
+        if scene.GafferIsShowingLabel:
+            scene.GafferIsShowingLabel = False
+            GafShowLabel.handle_remove(context)
+            return {'FINISHED'}
+        elif context.area.type == 'VIEW_3D':
+            scene.GafferIsShowingLabel = True
+            
+            context.window_manager.modal_handler_add(self)
+
+            GafShowLabel.handle_add(self, context)
 
             # TODO BI lamps
             self.objects = []
@@ -1603,13 +1706,23 @@ class GafferPanelTools(bpy.types.Panel):
         col.separator()
         box = col.box()
         sub = box.column(align=True)
+        sub.operator('gaffer.show_label', text="Show Label" if not scene.GafferIsShowingLabel else "Hide Label")
+        sub.prop(scene, 'GafferDefaultDrawColor')
+        sub.prop(scene, 'GafferLightLabelAlpha')
+        sub.prop(scene, 'GafferLightLabelUseColor')
+        sub.prop(scene, 'GafferLightLabelFontSize')
+        sub.prop(scene, 'GafferLightLabelDrawType')
+        sub.prop(scene, 'GafferLabelTextColor')
+
+        col.separator()
+        box = col.box()
+        sub = box.column(align=True)
         sub.label('Blacklist:')
         if context.scene.GafferBlacklist:
             sub.template_list("OBJECT_UL_object_list", "", context.scene, "GafferBlacklist", scene, "GafferBlacklistIndex", rows=2)
         row = sub.row(align=True)
         row.operator('gaffer.blacklist_add', icon='ZOOMIN')
         row.operator('gaffer.blacklist_remove', icon='ZOOMOUT')
-
 
 
 class OBJECT_UL_object_list(bpy.types.UIList):
@@ -1747,9 +1860,40 @@ def register():
         min=0.0,
         max=1.0,
         default=(1.0,1.0,1.0))
+    bpy.types.Scene.GafferLightLabelAlpha = bpy.props.FloatProperty(
+        name = "Alpha",
+        default = 0.6,
+        min = 0,
+        max = 1,
+        description = "The opacity of the drawn labels")
+    bpy.types.Scene.GafferLightLabelUseColor = bpy.props.BoolProperty(
+        name = "Use Color",
+        default = True,
+        description = "Draw the label of each light in the same color as the light")
+    bpy.types.Scene.GafferLightLabelFontSize = bpy.props.IntProperty(
+        name = "Font Size",
+        default = 14,
+        min = 1,
+        description = "How large the text is drawn")
+    bpy.types.Scene.GafferLightLabelDrawType = bpy.props.EnumProperty(
+        name="Draw Type",
+        description="How should the label look?",
+        default='color_bg',
+        items=(("color_bg","Colored background, plain text","Show the label name on a colored background"),
+               ("plain_bg","Colored text in plain background","Show the label name in color, on a plain background"),
+               ("color_text","Text only, no background","Show the text without any background")))
+    bpy.types.Scene.GafferLabelTextColor = bpy.props.FloatVectorProperty(
+        name="Text Color",
+        description="The color of the label name text",
+        subtype="COLOR",
+        size=3,
+        min=0.0,
+        max=1.0,
+        default=(1.0,1.0,1.0))
 
     # Internal vars (not shown in UI)
     bpy.types.Scene.GafferIsShowingRadius = bpy.props.BoolProperty(default = False)
+    bpy.types.Scene.GafferIsShowingLabel = bpy.props.BoolProperty(default = False)
     bpy.types.Scene.GafferBlacklistIndex = bpy.props.IntProperty(default = 0)
 
     bpy.types.NODE_PT_active_node_generic.append(gaffer_node_menu_func)
@@ -1762,6 +1906,8 @@ def unregister():
     if GafShowLightRadius._handle is not None:
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
         bpy.context.scene.GafferIsShowingRadius = False
+        bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
+        bpy.context.scene.GafferIsShowingLabel = False
 
     del bpy.types.Scene.GafferLights
     del bpy.types.Scene.GafferColTempExpand
@@ -1779,8 +1925,14 @@ def unregister():
     del bpy.types.Scene.GafferLightRadiusXray
     del bpy.types.Scene.GafferLightRadiusDrawType
     del bpy.types.Scene.GafferDefaultDrawColor
+    del bpy.types.Scene.GafferLightLabelAlpha
+    del bpy.types.Scene.GafferLightLabelUseColor
+    del bpy.types.Scene.GafferLightLabelFontSize
+    del bpy.types.Scene.GafferLightLabelDrawType
+    del bpy.types.Scene.GafferLabelTextColor
 
     del bpy.types.Scene.GafferIsShowingRadius
+    del bpy.types.Scene.GafferIsShowingLabel
     del bpy.types.Scene.GafferBlacklistIndex
     del bpy.types.Scene.GafferBlacklist
 
