@@ -103,7 +103,7 @@ def convert_temp_to_RGB(colour_temperature):
     """
     Converts from K to RGB, algorithm courtesy of 
     http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
-    Python implementation by petrklus: https://gist.github.com/petrklus/b1f427accdf7438606a6
+    Python implementation by petrklus: https://gist.github.com/petrklus/1bf427accdf7438606a6
     """
 
     # limits: 0 -> 12000
@@ -161,7 +161,8 @@ def convert_temp_to_RGB(colour_temperature):
     return [red/255, green/255, blue/255]  # return RGB in a 0-1 range
 
 def convert_wavelength_to_RGB(wavelength):
-    # List of RGB values that matches Cycles's internal conversion
+    # List of RGB values that correlate to the 380-780 wavelength range. Even though this
+    # is the exact list from the Cycles code, for some reason it doesn't always match :(
     wavelength_list = ((0.0014,0.0000,0.0065), (0.0022,0.0001,0.0105), (0.0042,0.0001,0.0201),
                        (0.0076,0.0002,0.0362), (0.0143,0.0004,0.0679), (0.0232,0.0006,0.1102),
                        (0.0435,0.0012,0.2074), (0.0776,0.0022,0.3713), (0.1344,0.0040,0.6456),
@@ -330,6 +331,14 @@ def refresh_light_radius_display():
     bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
     bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
 
+def draw_rounded_rect():
+    bgl.glBegin(bgl.GL_QUADS)
+    bgl.glVertex2f(m2x,m2y)  # draw order is important, start with bottom left and go anti-clockwise
+    bgl.glVertex2f(m2x+radius,m2y)
+    bgl.glVertex2f(m1x+radius,m1y)
+    bgl.glVertex2f(m1x,m1y)
+    bgl.glEnd()
+    
 
 '''
     OPERATORS
@@ -925,7 +934,7 @@ class GafShowLightRadius(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class GafShowLabel(bpy.types.Operator):
+class GafShowLightLabel(bpy.types.Operator):
 
     'Display the name of each light in the viewport'
     bl_idname = 'gaffer.show_label'
@@ -935,13 +944,13 @@ class GafShowLabel(bpy.types.Operator):
 
     @staticmethod
     def handle_add(self, context):
-        GafShowLabel._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_label, (context,), 'WINDOW', 'POST_PIXEL')
+        GafShowLightLabel._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_label, (context,), 'WINDOW', 'POST_PIXEL')
 
     @staticmethod
     def handle_remove(context):
-        if GafShowLabel._handle is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(GafShowLabel._handle, 'WINDOW')
-        GafShowLabel._handle = None
+        if GafShowLightLabel._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
+        GafShowLightLabel._handle = None
 
     def draw_callback_label(self, context):
         scene = context.scene
@@ -964,7 +973,7 @@ class GafShowLabel(bpy.types.Operator):
                 rv3d = context.space_data.region_3d
                 x, y = location_3d_to_region_2d(region, rv3d, obj.location)
 
-                bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
+                bgl.glColor4f(color[0], color[1], color[2], scene.GafferLightLabelAlpha)
 
                 # Draw label
                 font_id = 1
@@ -982,14 +991,14 @@ class GafShowLabel(bpy.types.Operator):
 
         if scene.GafferIsShowingLabel:
             scene.GafferIsShowingLabel = False
-            GafShowLabel.handle_remove(context)
+            GafShowLightLabel.handle_remove(context)
             return {'FINISHED'}
         elif context.area.type == 'VIEW_3D':
             scene.GafferIsShowingLabel = True
             
             context.window_manager.modal_handler_add(self)
 
-            GafShowLabel.handle_add(self, context)
+            GafShowLightLabel.handle_add(self, context)
 
             # TODO BI lamps
             self.objects = []
@@ -1707,12 +1716,16 @@ class GafferPanelTools(bpy.types.Panel):
         box = col.box()
         sub = box.column(align=True)
         sub.operator('gaffer.show_label', text="Show Label" if not scene.GafferIsShowingLabel else "Hide Label")
-        sub.prop(scene, 'GafferDefaultDrawColor')
-        sub.prop(scene, 'GafferLightLabelAlpha')
-        sub.prop(scene, 'GafferLightLabelUseColor')
-        sub.prop(scene, 'GafferLightLabelFontSize')
-        sub.prop(scene, 'GafferLightLabelDrawType')
-        sub.prop(scene, 'GafferLabelTextColor')
+        if scene.GafferIsShowingLabel:
+            sub.prop(scene, 'GafferLightLabelAlpha', slider=True)            
+            row = sub.row(align=True)
+            row.prop(scene, 'GafferLightLabelDrawType')
+            row.prop(scene, 'GafferLightLabelUseColor')
+            sub.prop(scene, 'GafferLightLabelFontSize')
+            row = sub.row(align=True)
+            row.prop(scene, 'GafferLabelTextColor')
+            row = sub.row(align=True)
+            row.prop(scene, 'GafferDefaultDrawColor')
 
         col.separator()
         box = col.box()
@@ -1862,7 +1875,7 @@ def register():
         default=(1.0,1.0,1.0))
     bpy.types.Scene.GafferLightLabelAlpha = bpy.props.FloatProperty(
         name = "Alpha",
-        default = 0.6,
+        default = 0.8,
         min = 0,
         max = 1,
         description = "The opacity of the drawn labels")
