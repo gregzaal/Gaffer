@@ -103,7 +103,7 @@ def convert_temp_to_RGB(colour_temperature):
     """
     Converts from K to RGB, algorithm courtesy of 
     http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
-    Python implementation by petrklus: https://gist.github.com/petrklus/1bf427accdf7438606a6
+    Python implementation by petrklus: https://gist.github.com/petrklus/b1f427accdf7438606a6
     """
 
     # limits: 0 -> 12000
@@ -331,13 +331,49 @@ def refresh_light_radius_display():
     bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
     bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
 
-def draw_rounded_rect():
+def draw_rect(x1, y1, x2, y2):
+    # For each quad, the draw order is important. Start with bottom left and go anti-clockwise.
     bgl.glBegin(bgl.GL_QUADS)
-    bgl.glVertex2f(m2x,m2y)  # draw order is important, start with bottom left and go anti-clockwise
-    bgl.glVertex2f(m2x+radius,m2y)
-    bgl.glVertex2f(m1x+radius,m1y)
-    bgl.glVertex2f(m1x,m1y)
+    bgl.glVertex2f(x1,y1)
+    bgl.glVertex2f(x1,y2)
+    bgl.glVertex2f(x2,y2)
+    bgl.glVertex2f(x2,y1)
     bgl.glEnd()
+
+def draw_corner(x, y, r, corner):
+    sides = 16
+    if corner == 'BL':
+        r1 = 8
+        r2 = 12
+    elif corner == 'TL':
+        r1 = 4
+        r2 = 8
+    elif corner == 'BR':
+        r1 = 12
+        r2 = 16
+    elif corner == 'TR':
+        r1 = 0
+        r2 = 4
+
+    bgl.glBegin(bgl.GL_TRIANGLE_FAN)
+    bgl.glVertex2f(x, y)
+    for i in range(r1, r2+1):
+        cosine = r * cos(i * 2 * pi / sides) + x
+        sine = r * sin(i * 2 * pi / sides) + y
+        bgl.glVertex2f(cosine, sine)
+    bgl.glEnd()
+
+def draw_rounded_rect(x1, y1, x2, y2, r):
+    draw_rect(x1, y1, x2, y2)  # Main quad    
+    draw_rect(x1-r, y1, x1, y2)  # Left edge    
+    draw_rect(x2, y1, x2+r, y2)  # Right edge    
+    draw_rect(x1, y2, x2, y2+r)  # Top edge    
+    draw_rect(x1, y1-r, x2, y1)  # Bottom edge
+    
+    draw_corner(x1, y1, r, 'BL')  # Bottom left
+    draw_corner(x1, y2, r, 'TL')  # Top left
+    draw_corner(x2, y2, r, 'TR')  # Top right
+    draw_corner(x2, y1, r, 'BR')  # Bottom right
     
 
 '''
@@ -831,7 +867,7 @@ class GafShowLightRadius(bpy.types.Operator):
                         else:
                             color = item[1]
                     else:
-                        color = scene.GafferDefaultDrawColor
+                        color = scene.GafferDefaultRadiusColor
 
                     radius = obj.data.shadow_soft_size
 
@@ -899,7 +935,7 @@ class GafShowLightRadius(bpy.types.Operator):
             for obj in scene.objects:
                 if obj.type == 'LAMP':
                     if obj.data.type in ['POINT', 'SUN', 'SPOT']:
-                        color = scene.GafferDefaultDrawColor
+                        color = scene.GafferDefaultRadiusColor
                         if obj.data.use_nodes:
                             nodes = obj.data.node_tree.nodes
                             socket_color = 0
@@ -952,34 +988,86 @@ class GafShowLightLabel(bpy.types.Operator):
             bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
         GafShowLightLabel._handle = None
 
+    def alignment(self, x, y, width, height, margin):
+        align = bpy.context.scene.GafferLabelAlign
+
+        # X:
+        if align in ['t', 'c', 'b']:  # middle
+            x = x - (width/2)
+        elif align in ['tl', 'l', 'bl']:  # left
+            x = x - (width + margin)
+        elif align in ['tr', 'r', 'br']:  # right
+            x = x + margin
+
+        # Y:
+        if align in ['l', 'c', 'r']:  # middle
+            y = y - (height/2)
+        elif align in ['tl', 't', 'tr']:  # top
+            y = y + margin
+        elif align in ['bl', 'b', 'br']:  # bottom
+            y = y - (height + margin)
+
+        return x, y+3
+
+
     def draw_callback_label(self, context):
         scene = context.scene
+
+        # font_size_factor is used to scale the rectangles based on the font size and DPI, measured against a font size of 62
+        font_size_factor = (scene.GafferLabelFontSize/62) * (context.user_preferences.system.dpi/72)
+        draw_type = scene.GafferLabelDrawType
+        background_color = scene.GafferDefaultLabelBGColor
+        text_color = scene.GafferLabelTextColor
 
         for item in self.objects:
             obj = item[0]
             if obj in context.visible_objects and obj.name not in [o.name for o in scene.GafferBlacklist]:
-                if scene.GafferLightRadiusUseColor:
-                    if item[1][0] == 'BLACKBODY':
-                        color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
-                    elif item[1][0] == 'WAVELENGTH':
-                        color = convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
-                    else:
-                        color = item[1]
+                if item[1][0] == 'BLACKBODY':
+                    color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
+                elif item[1][0] == 'WAVELENGTH':
+                    color = convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
                 else:
-                    color = scene.GafferDefaultDrawColor
-
+                    color = item[1]
 
                 region = context.region
                 rv3d = context.space_data.region_3d
                 x, y = location_3d_to_region_2d(region, rv3d, obj.location)
 
-                bgl.glColor4f(color[0], color[1], color[2], scene.GafferLightLabelAlpha)
+                char_width = 38 * font_size_factor
+                height = 65 * font_size_factor
+                width = len(obj.name)*char_width
 
-                # Draw label
+                x, y = self.alignment(x, y, width, height, scene.GafferLabelMargin*font_size_factor)
+
+                if draw_type != 'color_text':
+                    # Draw background rectangles
+                    bgl.glEnable(bgl.GL_BLEND)
+                    if draw_type == 'color_bg' and scene.GafferLabelUseColor:
+                        bgl.glColor4f(color[0], color[1], color[2], scene.GafferLabelAlpha)
+                    else:
+                        bgl.glColor4f(background_color[0], background_color[1], background_color[2], scene.GafferLabelAlpha)
+
+                    x1 = x
+                    y1 = y-(8 * font_size_factor)
+                    x2 = x1+width
+                    y2 = y1+height
+
+                    draw_rounded_rect(x1, y1, x2, y2, 20*font_size_factor)
+
+                    bgl.glDisable(bgl.GL_BLEND)
+
+                # Draw text
+                if draw_type != 'color_bg' and scene.GafferLabelUseColor:
+                    bgl.glColor4f(color[0], color[1], color[2], scene.GafferLabelAlpha if draw_type == 'color_text' else 1.0)
+                else:
+                    bgl.glColor4f(text_color[0], text_color[1], text_color[2], 1.0)
                 font_id = 1
                 blf.position(font_id, x, y, 0)
-                blf.size(font_id, scene.GafferLightLabelFontSize, bpy.context.user_preferences.system.dpi)
+                blf.size(font_id, scene.GafferLabelFontSize, context.user_preferences.system.dpi)
                 blf.draw(font_id, obj.name)
+
+                bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
+
                 
     
     def modal(self, context, event):
@@ -1005,7 +1093,7 @@ class GafShowLightLabel(bpy.types.Operator):
             for obj in scene.objects:
                 if obj.type == 'LAMP':
                     if obj.data.type in ['POINT', 'SUN', 'SPOT']:
-                        color = scene.GafferDefaultDrawColor
+                        color = scene.GafferDefaultLabelBGColor
                         if obj.data.use_nodes:
                             nodes = obj.data.node_tree.nodes
                             socket_color = 0
@@ -1710,22 +1798,27 @@ class GafferPanelTools(bpy.types.Panel):
             row.prop(scene, 'GafferLightRadiusXray')
             row.prop(scene, 'GafferLightRadiusSelectedOnly')
             row = sub.row(align=True)
-            row.prop(scene, 'GafferDefaultDrawColor')
+            row.prop(scene, 'GafferDefaultRadiusColor')
 
         col.separator()
         box = col.box()
         sub = box.column(align=True)
         sub.operator('gaffer.show_label', text="Show Label" if not scene.GafferIsShowingLabel else "Hide Label")
         if scene.GafferIsShowingLabel:
-            sub.prop(scene, 'GafferLightLabelAlpha', slider=True)            
+            label_draw_type = scene.GafferLabelDrawType
+            sub.prop(scene, 'GafferLabelAlpha', slider=True)   
+            sub.prop(scene, 'GafferLabelFontSize')
             row = sub.row(align=True)
-            row.prop(scene, 'GafferLightLabelDrawType')
-            row.prop(scene, 'GafferLightLabelUseColor')
-            sub.prop(scene, 'GafferLightLabelFontSize')
-            row = sub.row(align=True)
-            row.prop(scene, 'GafferLabelTextColor')
-            row = sub.row(align=True)
-            row.prop(scene, 'GafferDefaultDrawColor')
+            row.prop(scene, 'GafferLabelDrawType', text='')
+            row.prop(scene, 'GafferLabelUseColor')
+            if label_draw_type == 'color_bg' or not scene.GafferLabelUseColor:
+                row = sub.row(align=True)
+                row.prop(scene, 'GafferLabelTextColor')
+            if label_draw_type == 'plain_bg' or (not scene.GafferLabelUseColor and label_draw_type != 'color_text'):
+                row = sub.row(align=True)
+                row.prop(scene, 'GafferDefaultLabelBGColor')
+            sub.prop(scene, 'GafferLabelAlign')
+            sub.prop(scene, 'GafferLabelMargin')
 
         col.separator()
         box = col.box()
@@ -1850,6 +1943,10 @@ def register():
         name = "Use Color",
         default = True,
         description = "Draw the radius of each light in the same color as the light")
+    bpy.types.Scene.GafferLabelUseColor = bpy.props.BoolProperty(
+        name = "Use Color",
+        default = True,
+        description = "Draw the label of each light in the same color as the light")
     bpy.types.Scene.GafferLightRadiusSelectedOnly = bpy.props.BoolProperty(
         name = "Selected Only",
         default = False,
@@ -1865,7 +1962,7 @@ def register():
         items=(("filled","Filled","Draw a circle filled with a solid color"),
                ("solid","Solid","Draw a solid outline of the circle"),
                ("dotted","Dotted","Draw a dotted outline of the circle")))
-    bpy.types.Scene.GafferDefaultDrawColor = bpy.props.FloatVectorProperty(
+    bpy.types.Scene.GafferDefaultRadiusColor = bpy.props.FloatVectorProperty(
         name="Default Color",
         description="When 'Use Color' is disaled, or when the color of a light is unknown (such as when using a texture), this color is used instead",
         subtype="COLOR",
@@ -1873,22 +1970,26 @@ def register():
         min=0.0,
         max=1.0,
         default=(1.0,1.0,1.0))
-    bpy.types.Scene.GafferLightLabelAlpha = bpy.props.FloatProperty(
+    bpy.types.Scene.GafferDefaultLabelBGColor = bpy.props.FloatVectorProperty(
+        name="Background Color",
+        description="When 'Use Color' is disaled, or when the color of a light is unknown (such as when using a texture), this color is used instead",
+        subtype="COLOR",
+        size=3,
+        min=0.0,
+        max=1.0,
+        default=(0.0,0.0,0.0))
+    bpy.types.Scene.GafferLabelAlpha = bpy.props.FloatProperty(
         name = "Alpha",
-        default = 0.8,
+        default = 0.5,
         min = 0,
         max = 1,
         description = "The opacity of the drawn labels")
-    bpy.types.Scene.GafferLightLabelUseColor = bpy.props.BoolProperty(
-        name = "Use Color",
-        default = True,
-        description = "Draw the label of each light in the same color as the light")
-    bpy.types.Scene.GafferLightLabelFontSize = bpy.props.IntProperty(
+    bpy.types.Scene.GafferLabelFontSize = bpy.props.IntProperty(
         name = "Font Size",
         default = 14,
         min = 1,
         description = "How large the text is drawn")
-    bpy.types.Scene.GafferLightLabelDrawType = bpy.props.EnumProperty(
+    bpy.types.Scene.GafferLabelDrawType = bpy.props.EnumProperty(
         name="Draw Type",
         description="How should the label look?",
         default='color_bg',
@@ -1903,6 +2004,23 @@ def register():
         min=0.0,
         max=1.0,
         default=(1.0,1.0,1.0))
+    bpy.types.Scene.GafferLabelAlign = bpy.props.EnumProperty(
+        name="Alignment",
+        description="The positioning of the label relative to the lamp",
+        default='r',
+        items=(("c","Centered","Positioned exactly on the light"),
+               ("t","Top","Positioned above the light"),
+               ("b","Bottom","Positioned below the light"),
+               ("l","Left","Positioned to the left of the light"),
+               ("r","Right","Positioned to the right of the light"),
+               ("bl","Bottom Left","Positioned below and to the left of the light"),
+               ("tl","Top Left","Positioned above and to the left of the light"),
+               ("tr","Top Right","Positioned below and to the right of the light"),
+               ("br","Bottom Right","Positioned above and to the right of the light")))
+    bpy.types.Scene.GafferLabelMargin = bpy.props.IntProperty(
+        name = "Margin",
+        default = 90,
+        description = "Draw the label this distance away from the light")
 
     # Internal vars (not shown in UI)
     bpy.types.Scene.GafferIsShowingRadius = bpy.props.BoolProperty(default = False)
@@ -1919,6 +2037,7 @@ def unregister():
     if GafShowLightRadius._handle is not None:
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
         bpy.context.scene.GafferIsShowingRadius = False
+    if GafShowLightLabel._handle is not None:
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
         bpy.context.scene.GafferIsShowingLabel = False
 
@@ -1934,15 +2053,18 @@ def unregister():
     del bpy.types.Scene.GafferWorldReflOnly
     del bpy.types.Scene.GafferLightRadiusAlpha
     del bpy.types.Scene.GafferLightRadiusUseColor
+    del bpy.types.Scene.GafferLabelUseColor
     del bpy.types.Scene.GafferLightRadiusSelectedOnly
     del bpy.types.Scene.GafferLightRadiusXray
     del bpy.types.Scene.GafferLightRadiusDrawType
-    del bpy.types.Scene.GafferDefaultDrawColor
-    del bpy.types.Scene.GafferLightLabelAlpha
-    del bpy.types.Scene.GafferLightLabelUseColor
-    del bpy.types.Scene.GafferLightLabelFontSize
-    del bpy.types.Scene.GafferLightLabelDrawType
+    del bpy.types.Scene.GafferDefaultRadiusColor
+    del bpy.types.Scene.GafferDefaultLabelBGColor
+    del bpy.types.Scene.GafferLabelAlpha
+    del bpy.types.Scene.GafferLabelFontSize
+    del bpy.types.Scene.GafferLabelDrawType
     del bpy.types.Scene.GafferLabelTextColor
+    del bpy.types.Scene.GafferLabelAlign
+    del bpy.types.Scene.GafferLabelMargin
 
     del bpy.types.Scene.GafferIsShowingRadius
     del bpy.types.Scene.GafferIsShowingLabel
