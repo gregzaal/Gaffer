@@ -1860,6 +1860,7 @@ def do_set_world_refl_only(context):
         world.cycles_visibility.camera = not scene.GafferWorldReflOnly
         world.cycles_visibility.diffuse = not scene.GafferWorldReflOnly
         world.cycles_visibility.transmission = not scene.GafferWorldReflOnly
+        world.cycles_visibility.scatter = not scene.GafferWorldReflOnly
 
 
 def _update_world_refl_only(self, context):
@@ -1878,6 +1879,7 @@ def do_set_world_vis(context):
     world.cycles_visibility.camera = scene.GafferWorldVis
     world.cycles_visibility.diffuse = scene.GafferWorldVis
     world.cycles_visibility.transmission = scene.GafferWorldVis
+    world.cycles_visibility.scatter = scene.GafferWorldVis
 
 
 def _update_world_vis(self, context):
