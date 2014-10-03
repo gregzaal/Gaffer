@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from a single panel",
     "author": "Greg Zaal",
-    "version": (1, 2),
+    "version": (1, 3),
     "blender": (2, 72, 0),
     "location": "3D View > Tools",
     "warning": "",
@@ -473,6 +473,10 @@ class GafSelectLight(bpy.types.Operator):
     bl_idname = 'gaffer.select_light'
     bl_label = 'Select'
     light = bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):        
+        return context.mode == 'OBJECT'
 
     def execute(self, context):
         obj = bpy.data.objects[self.light]
