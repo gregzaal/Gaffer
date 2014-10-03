@@ -34,6 +34,7 @@ import bgl, blf
 from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
+from bpy.app.handlers import persistent
 
 '''
 TODO:
@@ -57,6 +58,25 @@ col_temp = {"01_Flame (1700)": 1700,
 '''
     FUNCTIONS
 '''
+@persistent
+def load_handler(dummy):
+    '''
+        We need to remove the draw handlers when loading a blend file,
+        otherwise a crapton of errors about the class being removed is printed
+        (If a blend is saved with the draw handler running, then it's loaded
+        with it running, but the class called for drawing no longer exists)
+    
+        Ideally we should recreate the handler when loading the scene if it
+        was enabled when it was saved - however this function is called
+        before the blender UI finishes loading, and thus no 3D view exists yet.
+    '''
+    if GafShowLightRadius._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
+    if GafShowLightLabel._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
+    bpy.context.scene.GafferIsShowingRadius = False
+    bpy.context.scene.GafferIsShowingLabel = False
+
 def hack_force_update(context, nodes):
     node = nodes.new('ShaderNodeMath')
     node.inputs[0].default_value = 0.0
@@ -1829,7 +1849,8 @@ class GafferPanelTools(bpy.types.Panel):
                 row = sub.row(align=True)
                 row.prop(scene, 'GafferDefaultLabelBGColor')
             sub.prop(scene, 'GafferLabelAlign')
-            sub.prop(scene, 'GafferLabelMargin')
+            if scene.GafferLabelAlign != 'c':
+                sub.prop(scene, 'GafferLabelMargin')
 
         col.separator()
         box = col.box()
@@ -2046,7 +2067,11 @@ def register():
 
     bpy.types.Scene.GafferBlacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
+    bpy.app.handlers.load_post.append(load_handler)
+
 def unregister():
+    bpy.app.handlers.load_post.remove(load_handler)
+
     if GafShowLightRadius._handle is not None:
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
         bpy.context.scene.GafferIsShowingRadius = False
