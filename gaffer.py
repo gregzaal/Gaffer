@@ -39,7 +39,6 @@ from bpy.app.handlers import persistent
 '''
 TODO:
     Minimize on duplicate code
-    Make draw callbacks persistent (so they aren't destoryed on save/load)
 '''
 
 supported_renderers = ['BLENDER_RENDER', 'CYCLES']
@@ -1010,6 +1009,7 @@ class GafShowLightLabel(bpy.types.Operator):
     _handle = None
 
     # TODO mesh lights
+    # TODO more labels: name, strength, samples (if not on default)
 
     @staticmethod
     def handle_add(self, context):
