@@ -626,7 +626,7 @@ class GafRefreshLightList(bpy.types.Operator):
         if scene.render.engine == 'BLENDER_RENDER':
             for obj in objects:
                 if obj.type == 'LAMP':
-                    m.append([obj.name])  # only use first element of list to keep usage consistent with cycles mode
+                    m.append([obj.name, None, None])  # only use first element of list to keep usage consistent with cycles mode
         elif scene.render.engine == 'CYCLES':
             for obj in objects:
                 light_mats = []
@@ -732,8 +732,9 @@ class GafRefreshLightList(bpy.types.Operator):
                 if bpy.data.materials[light[1]].use_nodes:
                     nodes = bpy.data.materials[light[1]].node_tree.nodes
             if nodes:
-                if nodes[light[2]].type != 'LIGHT_FALLOFF' and bpy.data.objects[light[0]].GafferFalloff != 'quadratic':
-                    bpy.data.objects[light[0]].GafferFalloff = 'quadratic'
+                if light[2]:
+                    if nodes[light[2]].type != 'LIGHT_FALLOFF' and bpy.data.objects[light[0]].GafferFalloff != 'quadratic':
+                        bpy.data.objects[light[0]].GafferFalloff = 'quadratic'
         scene.GafferLights = str(m)
         self.report({'INFO'}, "Light list refreshed")
         if scene.GafferSoloActive == '':
@@ -841,8 +842,6 @@ class GafShowLightRadius(bpy.types.Operator):
 
     # CoDEmanX wrote most of this - thanks sir!
 
-    # TODO poll for... ?
-
     _handle = None
 
     @staticmethod
@@ -858,69 +857,72 @@ class GafShowLightRadius(bpy.types.Operator):
     def draw_callback_radius(self, context):
         scene = context.scene
         region = context.region
-        rv3d = context.region_data
-        
-        view = rv3d.view_matrix
-        persp = rv3d.perspective_matrix
-
-        bgl.glEnable(bgl.GL_BLEND)
 
         for item in self.objects:
             obj = item[0]
             if not scene.GafferLightRadiusSelectedOnly or obj.select:
-                if obj in context.visible_objects and obj.name not in [o.name for o in scene.GafferBlacklist]:
-                    if scene.GafferLightRadiusUseColor:
-                        if item[1][0] == 'BLACKBODY':
-                            color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
-                        elif item[1][0] == 'WAVELENGTH':
-                            color = convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
-                        else:
-                            color = item[1]
-                    else:
-                        color = scene.GafferDefaultRadiusColor
+                if obj.data.type in ['POINT', 'SUN', 'SPOT']:  # have to check this again, in case user changes the type while showing radius
+                    if not (scene.render.engine == 'BLENDER_RENDER' and obj.data.shadow_method == 'NOSHADOW'):                                
+                        if obj in context.visible_objects and obj.name not in [o.name for o in scene.GafferBlacklist]:
+                            if scene.GafferLightRadiusUseColor:
+                                if item[1][0] == 'BLACKBODY':
+                                    color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
+                                elif item[1][0] == 'WAVELENGTH':
+                                    color = convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
+                                else:
+                                    color = item[1]
+                            else:
+                                color = scene.GafferDefaultRadiusColor
 
-                    radius = obj.data.shadow_soft_size
+                            rv3d = context.region_data
+                            
+                            view = rv3d.view_matrix
+                            persp = rv3d.perspective_matrix
 
-                    obj_matrix_world = obj.matrix_world
+                            bgl.glEnable(bgl.GL_BLEND)
 
-                    origin = obj.matrix_world.translation
+                            radius = obj.data.shadow_soft_size
 
-                    view_mat = context.space_data.region_3d.view_matrix
-                    view_dir = view_mat.to_3x3()[2]
-                    up = Vector((0,0,1))
+                            obj_matrix_world = obj.matrix_world
 
-                    angle = up.angle(view_dir)
-                    axis = up.cross(view_dir)
+                            origin = obj.matrix_world.translation
 
-                    mat = Matrix.Translation(origin) * Matrix.Rotation(angle, 4, axis)
-                    
-                    bgl.glColor4f(color[0], color[1], color[2], scene.GafferLightRadiusAlpha)
-                    bgl.glEnable(bgl.GL_LINE_SMOOTH)  # anti-aliasing
-                    if scene.GafferLightRadiusXray:
-                        bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
-                    if scene.GafferLightRadiusDrawType == 'filled':
-                        bgl.glBegin(bgl.GL_TRIANGLE_FAN)
-                    else:
-                        if scene.GafferLightRadiusDrawType == 'dotted':
-                            bgl.glLineStipple(4, 0x3333)
-                            bgl.glEnable(bgl.GL_LINE_STIPPLE)
-                        bgl.glLineWidth(3)
-                        bgl.glBegin(bgl.GL_LINE_STRIP)
-                    sides = 64
-                    for i in range(sides + 1):
-                        cosine = radius * cos(i * 2 * pi / sides)
-                        sine = radius * sin(i * 2 * pi / sides)
-                        vec = Vector((cosine, sine, 0))
-                        bgl.glVertex3f(*(mat*vec))                       
-                    bgl.glEnd()
+                            view_mat = context.space_data.region_3d.view_matrix
+                            view_dir = view_mat.to_3x3()[2]
+                            up = Vector((0,0,1))
 
-        # restore opengl defaults
-        bgl.glPointSize(1)
-        bgl.glLineWidth(1)
-        bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
-        bgl.glDisable(bgl.GL_BLEND)
-        bgl.glDisable(bgl.GL_LINE_SMOOTH)
-        bgl.glDisable(bgl.GL_LINE_STIPPLE)
+                            angle = up.angle(view_dir)
+                            axis = up.cross(view_dir)
+
+                            mat = Matrix.Translation(origin) * Matrix.Rotation(angle, 4, axis)
+                            
+                            bgl.glColor4f(color[0], color[1], color[2], scene.GafferLightRadiusAlpha)
+                            bgl.glEnable(bgl.GL_LINE_SMOOTH)  # anti-aliasing
+                            if scene.GafferLightRadiusXray:
+                                bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
+                            if scene.GafferLightRadiusDrawType == 'filled':
+                                bgl.glBegin(bgl.GL_TRIANGLE_FAN)
+                            else:
+                                if scene.GafferLightRadiusDrawType == 'dotted':
+                                    bgl.glLineStipple(4, 0x3333)
+                                    bgl.glEnable(bgl.GL_LINE_STIPPLE)
+                                bgl.glLineWidth(3)
+                                bgl.glBegin(bgl.GL_LINE_STRIP)
+                            sides = 64
+                            for i in range(sides + 1):
+                                cosine = radius * cos(i * 2 * pi / sides)
+                                sine = radius * sin(i * 2 * pi / sides)
+                                vec = Vector((cosine, sine, 0))
+                                bgl.glVertex3f(*(mat*vec))                       
+                            bgl.glEnd()
+
+                            # restore opengl defaults
+                            bgl.glPointSize(1)
+                            bgl.glLineWidth(1)
+                            bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
+                            bgl.glDisable(bgl.GL_BLEND)
+                            bgl.glDisable(bgl.GL_LINE_SMOOTH)
+                            bgl.glDisable(bgl.GL_LINE_STIPPLE)
     
     def modal(self, context, event):
         context.area.tag_redraw()
@@ -940,7 +942,6 @@ class GafShowLightRadius(bpy.types.Operator):
 
             GafShowLightRadius.handle_add(self, context)
 
-            # TODO BI lamps
             self.objects = []
             for obj in scene.objects:
                 if obj.type == 'LAMP':
@@ -987,6 +988,8 @@ class GafShowLightLabel(bpy.types.Operator):
     bl_label = 'Show Label'
 
     _handle = None
+
+    # TODO mesh lights
 
     @staticmethod
     def handle_add(self, context):
@@ -1095,7 +1098,6 @@ class GafShowLightLabel(bpy.types.Operator):
 
             GafShowLightLabel.handle_add(self, context)
 
-            # TODO BI lamps
             self.objects = []
             for obj in scene.objects:
                 if obj.type == 'LAMP':
