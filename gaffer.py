@@ -326,10 +326,16 @@ def do_update_falloff(self):
 def _update_falloff(self, context):
     do_update_falloff(self)
 
-def refresh_light_radius_display():
-    print ("refreshed light radius display")
-    bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
-    bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
+def refresh_bgl():
+    print ("refreshed bgl")
+
+    if bpy.context.scene.GafferIsShowingRadius:
+        bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
+        bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
+
+    if bpy.context.scene.GafferIsShowingLabel:
+        bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
+        bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
 
 def draw_rect(x1, y1, x2, y2):
     # For each quad, the draw order is important. Start with bottom left and go anti-clockwise.
@@ -1013,7 +1019,6 @@ class GafShowLightLabel(bpy.types.Operator):
 
         return x, y+3
 
-
     def draw_callback_label(self, context):
         scene = context.scene
 
@@ -1071,8 +1076,6 @@ class GafShowLightLabel(bpy.types.Operator):
                 blf.draw(font_id, obj.name)
 
                 bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
-
-                
     
     def modal(self, context, event):
         context.area.tag_redraw()
@@ -1132,18 +1135,18 @@ class GafShowLightLabel(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class GafRefreshLightRadius(bpy.types.Operator):
+class GafRefreshBGL(bpy.types.Operator):
 
-    "Update the radius display to account for undetected changes"
-    bl_idname = 'gaffer.refresh_radius'
-    bl_label = 'Refresh Radius'
+    "Update the radius and label display to account for undetected changes"
+    bl_idname = 'gaffer.refresh_bgl'
+    bl_label = 'Refresh Radius/Label'
 
     @classmethod
     def poll(cls, context):        
-        return context.scene.GafferIsShowingRadius
+        return context.scene.GafferIsShowingRadius or context.scene.GafferIsShowingLabel
 
     def execute(self, context):
-        refresh_light_radius_display()
+        refresh_bgl()
         return {'FINISHED'}
 
 
@@ -1791,7 +1794,7 @@ class GafferPanelTools(bpy.types.Panel):
         row = sub.row(align=True)
         row.operator('gaffer.show_radius', text="Show Radius" if not scene.GafferIsShowingRadius else "Hide Radius")
         if scene.GafferIsShowingRadius:
-            row.operator('gaffer.refresh_radius', text="", icon="FILE_REFRESH")
+            row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
             sub.prop(scene, 'GafferLightRadiusAlpha', slider=True)
             row = sub.row(align=True)
             row.active = scene.GafferIsShowingRadius
@@ -1807,8 +1810,10 @@ class GafferPanelTools(bpy.types.Panel):
         col.separator()
         box = col.box()
         sub = box.column(align=True)
-        sub.operator('gaffer.show_label', text="Show Label" if not scene.GafferIsShowingLabel else "Hide Label")
+        row = sub.row(align=True)
+        row.operator('gaffer.show_label', text="Show Label" if not scene.GafferIsShowingLabel else "Hide Label")
         if scene.GafferIsShowingLabel:
+            row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
             label_draw_type = scene.GafferLabelDrawType
             sub.prop(scene, 'GafferLabelAlpha', slider=True)   
             sub.prop(scene, 'GafferLabelFontSize')
