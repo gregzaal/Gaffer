@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from a single panel",
     "author": "Greg Zaal",
-    "version": (1, 3),
+    "version": (1, 4),
     "blender": (2, 72, 0),
     "location": "3D View > Tools",
     "warning": "",
@@ -963,10 +963,11 @@ class GafShowLightRadius(bpy.types.Operator):
 
             self.objects = []
             for obj in scene.objects:
+                # It doesn't make sense to try show the radius for mesh, area or hemi lamps.
                 if obj.type == 'LAMP':
                     if obj.data.type in ['POINT', 'SUN', 'SPOT']:
                         color = scene.GafferDefaultRadiusColor
-                        if obj.data.use_nodes:
+                        if scene.render.engine == 'CYCLES' and obj.data.use_nodes:
                             nodes = obj.data.node_tree.nodes
                             socket_color = 0
                             node_color = None
@@ -1008,7 +1009,6 @@ class GafShowLightLabel(bpy.types.Operator):
 
     _handle = None
 
-    # TODO mesh lights
     # TODO more labels: name, strength, samples (if not on default)
 
     @staticmethod
@@ -1120,35 +1120,45 @@ class GafShowLightLabel(bpy.types.Operator):
 
             self.objects = []
             for obj in scene.objects:
+                color = scene.GafferDefaultLabelBGColor
+                nodes = None
                 if obj.type == 'LAMP':
-                    if obj.data.type in ['POINT', 'SUN', 'SPOT']:
-                        color = scene.GafferDefaultLabelBGColor
-                        if obj.data.use_nodes:
-                            nodes = obj.data.node_tree.nodes
-                            socket_color = 0
-                            node_color = None
-                            emissions = []  # make a list of all linked Emission shaders, use the right-most one
-                            for node in nodes:
-                                if node.type == 'EMISSION':
-                                    if node.outputs[0].is_linked:
-                                        emissions.append(node)
-                            if emissions:
-                                node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
+                    if scene.render.engine == 'CYCLES' and obj.data.use_nodes:
+                        nodes = obj.data.node_tree.nodes
+                elif scene.render.engine == 'CYCLES' and obj.type == 'MESH' and len(obj.material_slots) > 0:
+                    for slot in obj.material_slots:
+                        if slot.material:
+                            if slot.material.use_nodes:
+                                if [node for node in slot.material.node_tree.nodes if node.type == 'EMISSION']:
+                                    nodes = slot.material.node_tree.nodes
+                                    break  # only use first emission material in slots
 
-                                if not node_color.inputs[0].is_linked:
-                                    color = node_color.inputs[0].default_value
-                                else:
-                                    from_node = node_color.inputs[0].links[0].from_node
-                                    if from_node.type == 'RGB':
-                                        color = from_node.outputs[0].default_value
-                                    elif from_node.type == 'BLACKBODY':
-                                        color = ['BLACKBODY', from_node]
-                                    elif from_node.type == 'WAVELENGTH':
-                                        color = ['WAVELENGTH', from_node]
+                if nodes:
+                    node_color = None
+                    emissions = []  # make a list of all linked Emission shaders, use the right-most one
+                    for node in nodes:
+                        if node.type == 'EMISSION':
+                            if node.outputs[0].is_linked:
+                                emissions.append(node)
+                    if emissions:
+                        node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
+
+                        if not node_color.inputs[0].is_linked:
+                            color = node_color.inputs[0].default_value
                         else:
-                            color = obj.data.color
+                            from_node = node_color.inputs[0].links[0].from_node
+                            if from_node.type == 'RGB':
+                                color = from_node.outputs[0].default_value
+                            elif from_node.type == 'BLACKBODY':
+                                color = ['BLACKBODY', from_node]
+                            elif from_node.type == 'WAVELENGTH':
+                                color = ['WAVELENGTH', from_node]
 
-                        self.objects.append([obj, color])
+                    self.objects.append([obj, color])
+
+                if obj.type == 'LAMP' and not nodes:  # is a lamp but doesnt use_nodes
+                    color = obj.data.color
+                    self.objects.append([obj, color])
 
             return {'RUNNING_MODAL'}
 
@@ -1848,9 +1858,10 @@ class GafferPanelTools(bpy.types.Panel):
             if label_draw_type == 'plain_bg' or (not scene.GafferLabelUseColor and label_draw_type != 'color_text'):
                 row = sub.row(align=True)
                 row.prop(scene, 'GafferDefaultLabelBGColor')
-            sub.prop(scene, 'GafferLabelAlign')
+            row = sub.row(align=True)
+            row.prop(scene, 'GafferLabelAlign', text="")
             if scene.GafferLabelAlign != 'c':
-                sub.prop(scene, 'GafferLabelMargin')
+                row.prop(scene, 'GafferLabelMargin')
 
         col.separator()
         box = col.box()
