@@ -1226,6 +1226,107 @@ class GafRemoveBlacklisted(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GafAimLight(bpy.types.Operator):
+
+    "Point the selected lights at a target"
+    bl_idname = 'gaffer.aim'
+    bl_label = 'Aim'
+    target_type = bpy.props.StringProperty()
+
+    def aim (self, context, obj, target=[0,0,0]):
+        print ("Aiming " + obj.name + " at " + str(target))
+
+        # Make a dummy Empty to aim at
+        n = "DummyEmptyForGafferAim"
+        if n in bpy.data.objects:  # Delete dummy if it exists, otherwise we can't use it's name relyably
+            bpy.data.objects.remove(bpy.data.objects[n])
+        edata = bpy.data.objects.new(n, None)
+        context.scene.objects.link(edata)
+        empty = context.scene.objects[n]
+        empty.location = target
+
+        constraint = obj.constraints.new(type='TRACK_TO')
+        constraint.target = empty
+        constraint.track_axis = 'TRACK_Z' if obj.type != 'LAMP' else 'TRACK_NEGATIVE_Z'
+        constraint.up_axis = 'UP_X'
+
+        orig_selection = context.selected_objects  # store selection
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select = True
+        bpy.ops.object.visual_transform_apply()
+
+        obj.constraints.remove(constraint)
+        context.scene.objects.unlink(empty)
+        bpy.data.objects.remove(empty)
+
+        bpy.ops.object.select_all(action='DESELECT')
+        for o in orig_selection:
+            o.select = True  # restore selection
+
+    def execute(self, context):
+        if self.target_type == 'CURSOR':
+            # Aim all selected objects at cursor
+            objects = context.selected_editable_objects
+            if not objects:
+                self.report({'ERROR'}, "No selected objects!")
+                return {'CANCELLED'}
+            for obj in context.selected_editable_objects:
+                self.aim(context, obj, context.scene.cursor_location)
+
+            return {'FINISHED'}
+
+        elif self.target_type == 'SELECTED':
+            # Aim the active object at the average location of all other selected objects
+            active = context.scene.objects.active
+            objects = [obj for obj in context.selected_objects if obj != active]
+            num_objects = len(objects)
+
+            if not active:
+                self.report({'ERROR'}, "You need an active object!")
+                return {'CANCELLED'}
+            elif num_objects == 0:
+                if active.select:
+                    self.report({'ERROR'}, "Select more than one object!")
+                else:
+                    self.report({'ERROR'}, "No selected objects!")
+                return {'CANCELLED'}
+
+            total_x = 0
+            total_y = 0
+            total_z = 0
+
+            for obj in objects:
+                total_x += obj.location.x
+                total_y += obj.location.y
+                total_z += obj.location.z
+
+            avg_x = total_x / num_objects
+            avg_y = total_y / num_objects
+            avg_z = total_z / num_objects
+
+            self.aim(context, active, [avg_x, avg_y, avg_z])
+
+            return {'FINISHED'}
+
+        elif self.target_type == 'ACTIVE':
+            # Aim the selected objects at the active object
+            active = context.scene.objects.active
+            objects = [obj for obj in context.selected_objects if obj != active]
+            if not active:
+                self.report({'ERROR'}, "No active object!")
+                return {'CANCELLED'}
+            elif not objects:
+                self.report({'ERROR'}, "No selected objects!")
+                return {'CANCELLED'}
+
+            for obj in objects:
+                self.aim(context, obj, active.location)
+
+            return {'FINISHED'}
+
+        return {'CANCELLED'}
+
+
 '''
     INTERFACE
 '''
@@ -1819,12 +1920,22 @@ class GafferPanelTools(bpy.types.Panel):
         scene = context.scene
         layout = self.layout
 
-        col = layout.column()
+        maincol = layout.column()
 
-        box = col.box()
+        # Aiming
+        col = maincol.column(align = True)
+        col.label("Aim:", icon='MAN_TRANS')
+        col.operator('gaffer.aim', text="Selection at 3D cursor").target_type = 'CURSOR'
+        col.operator('gaffer.aim', text="Selected at active").target_type = 'ACTIVE'
+        col.operator('gaffer.aim', text="Active at selected").target_type = 'SELECTED'
+
+        maincol.separator()
+
+        # Draw Radius
+        box = maincol.box() if scene.GafferIsShowingRadius else maincol.column()
         sub = box.column(align=True)
         row = sub.row(align=True)
-        row.operator('gaffer.show_radius', text="Show Radius" if not scene.GafferIsShowingRadius else "Hide Radius")
+        row.operator('gaffer.show_radius', text="Show Radius" if not scene.GafferIsShowingRadius else "Hide Radius", icon='META_EMPTY')
         if scene.GafferIsShowingRadius:
             row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
             sub.prop(scene, 'GafferLightRadiusAlpha', slider=True)
@@ -1839,11 +1950,13 @@ class GafferPanelTools(bpy.types.Panel):
             row = sub.row(align=True)
             row.prop(scene, 'GafferDefaultRadiusColor')
 
-        col.separator()
-        box = col.box()
+        maincol.separator()
+
+        # Draw Label
+        box = maincol.box() if scene.GafferIsShowingLabel else maincol.column()
         sub = box.column(align=True)
         row = sub.row(align=True)
-        row.operator('gaffer.show_label', text="Show Label" if not scene.GafferIsShowingLabel else "Hide Label")
+        row.operator('gaffer.show_label', text="Show Label" if not scene.GafferIsShowingLabel else "Hide Label", icon='LONGDISPLAY')
         if scene.GafferIsShowingLabel:
             row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
             label_draw_type = scene.GafferLabelDrawType
@@ -1863,8 +1976,10 @@ class GafferPanelTools(bpy.types.Panel):
             if scene.GafferLabelAlign != 'c':
                 row.prop(scene, 'GafferLabelMargin')
 
-        col.separator()
-        box = col.box()
+        maincol.separator()
+
+        # Blacklist
+        box = maincol.box()
         sub = box.column(align=True)
         sub.label('Blacklist:')
         if context.scene.GafferBlacklist:
