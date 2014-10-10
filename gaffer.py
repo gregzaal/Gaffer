@@ -120,20 +120,20 @@ def setColTemp(node, temp):
 
 def convert_temp_to_RGB(colour_temperature):
     """
-    Converts from K to RGB, algorithm courtesy of 
+    Converts from K to RGB, algorithm courtesy of
     http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
     Python implementation by petrklus: https://gist.github.com/petrklus/b1f427accdf7438606a6
     """
 
     # limits: 0 -> 12000
-    if colour_temperature < 1: 
+    if colour_temperature < 1:
         colour_temperature = 1
     elif colour_temperature > 12000:
         colour_temperature = 12000
     
     tmp_internal = colour_temperature / 100.0
     
-    # red 
+    # red
     if tmp_internal <= 66:
         red = 255
     else:
@@ -389,10 +389,10 @@ def draw_corner(x, y, r, corner):
     bgl.glEnd()
 
 def draw_rounded_rect(x1, y1, x2, y2, r):
-    draw_rect(x1, y1, x2, y2)  # Main quad    
-    draw_rect(x1-r, y1, x1, y2)  # Left edge    
-    draw_rect(x2, y1, x2+r, y2)  # Right edge    
-    draw_rect(x1, y2, x2, y2+r)  # Top edge    
+    draw_rect(x1, y1, x2, y2)  # Main quad
+    draw_rect(x1-r, y1, x1, y2)  # Left edge
+    draw_rect(x2, y1, x2+r, y2)  # Right edge
+    draw_rect(x1, y2, x2, y2+r)  # Top edge
     draw_rect(x1, y1-r, x2, y1)  # Bottom edge
     
     draw_corner(x1, y1, r, 'BL')  # Bottom left
@@ -500,7 +500,7 @@ class GafSelectLight(bpy.types.Operator):
     light = bpy.props.StringProperty()
 
     @classmethod
-    def poll(cls, context):        
+    def poll(cls, context):
         return context.mode == 'OBJECT'
 
     def execute(self, context):
@@ -606,10 +606,10 @@ class GafNodeSetStrength(bpy.types.Operator):
     bl_label = 'Set as Gaffer Strength'
 
     @classmethod
-    def poll(cls, context):        
+    def poll(cls, context):
         if context.space_data.type == 'NODE_EDITOR':
             return not context.space_data.pin
-        else: 
+        else:
             return False
 
     def execute(self, context):
@@ -881,7 +881,7 @@ class GafShowLightRadius(bpy.types.Operator):
             obj = item[0]
             if not scene.GafferLightRadiusSelectedOnly or obj.select:
                 if obj.data.type in ['POINT', 'SUN', 'SPOT']:  # have to check this again, in case user changes the type while showing radius
-                    if not (scene.render.engine == 'BLENDER_RENDER' and obj.data.shadow_method == 'NOSHADOW'):                                
+                    if not (scene.render.engine == 'BLENDER_RENDER' and obj.data.shadow_method == 'NOSHADOW'):
                         if obj in context.visible_objects and obj.name not in [o.name for o in scene.GafferBlacklist]:
                             if scene.GafferLightRadiusUseColor:
                                 if item[1][0] == 'BLACKBODY':
@@ -932,7 +932,7 @@ class GafShowLightRadius(bpy.types.Operator):
                                 cosine = radius * cos(i * 2 * pi / sides)
                                 sine = radius * sin(i * 2 * pi / sides)
                                 vec = Vector((cosine, sine, 0))
-                                bgl.glVertex3f(*(mat*vec))                       
+                                bgl.glVertex3f(*(mat*vec))
                             bgl.glEnd()
 
                             # restore opengl defaults
@@ -1174,7 +1174,7 @@ class GafRefreshBGL(bpy.types.Operator):
     bl_label = 'Refresh Radius/Label'
 
     @classmethod
-    def poll(cls, context):        
+    def poll(cls, context):
         return context.scene.GafferIsShowingRadius or context.scene.GafferIsShowingLabel
 
     def execute(self, context):
@@ -1189,7 +1189,7 @@ class GafAddBlacklisted(bpy.types.Operator):
     bl_label = 'Add'
 
     @classmethod
-    def poll(cls, context):        
+    def poll(cls, context):
         return context.selected_objects
 
     def execute(self, context):
@@ -1211,7 +1211,7 @@ class GafRemoveBlacklisted(bpy.types.Operator):
     bl_label = 'Remove'
 
     @classmethod
-    def poll(cls, context):        
+    def poll(cls, context):
         return context.scene.GafferBlacklist
 
     def execute(self, context):
@@ -1324,7 +1324,7 @@ def draw_BI_UI(context, layout, lights):
                     col = box.column(align=True)
                     row = col.row(align=True)
                     row.prop(light.data, "spot_size", text='Spot Size')
-                    row.prop(light.data, "spot_blend", text='Blend')                    
+                    row.prop(light.data, "spot_blend", text='Blend')
                     if light.data.shadow_method == 'RAY_SHADOW':
                         row = col.row(align=True)
                         row.prop(light.data, "shadow_soft_size", text="Size")
@@ -1356,7 +1356,7 @@ def draw_BI_UI(context, layout, lights):
 
     # World
     if context.scene.world:
-        world = context.scene.world        
+        world = context.scene.world
         box = layout.box()
         worldcol = box.column(align=True)
         col = worldcol.column(align=True)
@@ -1631,7 +1631,7 @@ def draw_cycles_UI(context, layout, lights):
 
     # World
     if context.scene.world:
-        world = context.scene.world        
+        world = context.scene.world
         box = layout.box()
         worldcol = box.column(align=True)
         col = worldcol.column(align=True)
@@ -1847,7 +1847,7 @@ class GafferPanelTools(bpy.types.Panel):
         if scene.GafferIsShowingLabel:
             row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
             label_draw_type = scene.GafferLabelDrawType
-            sub.prop(scene, 'GafferLabelAlpha', slider=True)   
+            sub.prop(scene, 'GafferLabelAlpha', slider=True)
             sub.prop(scene, 'GafferLabelFontSize')
             row = sub.row(align=True)
             row.prop(scene, 'GafferLabelDrawType', text='')
