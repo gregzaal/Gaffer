@@ -1101,7 +1101,12 @@ class GafShowLightLabel(bpy.types.Operator):
                 bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
     
     def modal(self, context, event):
-        context.area.tag_redraw()
+        try:
+            context.area.tag_redraw()
+        except:
+            # When the user goes full-screen, then hovers the mouse over the info header,
+            # tag_redraw fails for some reason (AttributeError, but catch all in case)
+            print ("failed to redraw")
         return {'PASS_THROUGH'}
 
     def invoke(self, context, event):
