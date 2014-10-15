@@ -1009,8 +1009,6 @@ class GafShowLightLabel(bpy.types.Operator):
 
     _handle = None
 
-    # TODO more labels: name, strength, samples (if not on default)
-
     @staticmethod
     def handle_add(self, context):
         GafShowLightLabel._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_label, (context,), 'WINDOW', 'POST_PIXEL')
