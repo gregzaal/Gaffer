@@ -1333,7 +1333,7 @@ class GafAimLight(bpy.types.Operator):
 '''
     INTERFACE
 '''
-def draw_renderer_independant(scene, row, light):  # UI stuff that doesn't care which renderer is used
+def draw_renderer_independant(scene, row, light, users=1):  # UI stuff that doesn't care which renderer is used
     if "_Light:_(" + light.name + ")_" in scene.GafferMoreExpand and not scene.GafferMoreExpandAll:
         row.operator("gaffer.more_options_hide", icon='TRIA_DOWN', text='', emboss=False).light = light.name
     elif not scene.GafferMoreExpandAll:
@@ -1344,6 +1344,10 @@ def draw_renderer_independant(scene, row, light):  # UI stuff that doesn't care 
         row.prop(light, 'name', text='')
     else:
         row.label(text=light.name)
+
+    if users > 1:
+        row.label(str(users) + " Users")
+
     visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'RESTRICT_VIEW_ON' if light.hide else 'RESTRICT_VIEW_OFF', emboss=False)
     visop.light = light.name
     if light.hide:
@@ -1383,6 +1387,23 @@ def draw_BI_UI(context, layout, lights):
             row.label("Light list out of date")
             row.operator('gaffer.refresh_lights', icon='FILE_REFRESH', text='')
 
+    # Don't show lights that share the same data
+    duplicates = {}
+    '''
+    duplicates:
+        A dict with the key: object type + data name (cannot use only the name in case of conflicts).
+        The values are the number of duplicates for that key.
+    '''
+    templist = []
+    for item in lights_to_show:
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophies
+        if ('LAMP' + light.data.name) in duplicates:
+            duplicates['LAMP' + light.data.name] += 1
+        else:
+            templist.append(item)
+            duplicates['LAMP' + light.data.name] = 1
+    lights_to_show = templist
+
     i = 0
     for item in lights_to_show:
         light = scene.objects[item[0][1:-1]]  # drop the apostrophies
@@ -1393,7 +1414,8 @@ def draw_BI_UI(context, layout, lights):
         col = split.column()
         row = col.row(align=True)
 
-        draw_renderer_independant(scene, row, light)
+        users = duplicates['LAMP' + light.data.name]
+        draw_renderer_independant(scene, row, light, users)
 
         # strength
         row = col.row(align=True)
@@ -1563,6 +1585,31 @@ def draw_cycles_UI(context, layout, lights):
             row.label("Light list out of date")
             row.operator('gaffer.refresh_lights', icon='FILE_REFRESH', text='')
 
+    # Don't show lights that share the same data
+    duplicates = {}
+    '''
+    duplicates:
+        A dict with the key: object type + data name (cannot use only the name in case of conflicts).
+        The values are the number of duplicates for that key.
+    '''
+    templist = []
+    for item in lights_to_show:
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophies
+        if light.type == 'LAMP':
+            if ('LAMP' + light.data.name) in duplicates:
+                duplicates['LAMP' + light.data.name] += 1
+            else:
+                templist.append(item)
+                duplicates['LAMP' + light.data.name] = 1
+        else:
+            mat = bpy.data.materials[item[1][1:-1]]
+            if ('MAT' + mat.name) in duplicates:
+                duplicates['MAT' + mat.name] += 1
+            else:
+                templist.append(item)
+                duplicates['MAT' + mat.name] = 1
+    lights_to_show = templist
+
     i = 0
     for item in lights_to_show:
         light = scene.objects[item[0][1:-1]]  # drop the apostrophies
@@ -1609,7 +1656,11 @@ def draw_cycles_UI(context, layout, lights):
             col = split.column()
             row = col.row(align=True)
 
-            draw_renderer_independant(scene, row, light)
+            if light.type == 'LAMP':
+                users = duplicates['LAMP' + light.data.name]
+            else:
+                users = duplicates['MAT' + material.name]
+            draw_renderer_independant(scene, row, light, users)
 
             # strength
             row = col.row(align=True)
@@ -1889,7 +1940,7 @@ class GafferPanelLights(bpy.types.Panel):
 
         if scene.GafferSoloActive != '':
             try:
-                o = bpy.data.objects[scene.GafferSoloActive]
+                o = bpy.data.objects[scene.GafferSoloActive]  # Will cause exception if object by that name doesn't exist
             except:
                 if scene.GafferSoloActive != "WorldEnviroLight":
                     # In case solo'd light changes name, theres no other way to exit solo mode
