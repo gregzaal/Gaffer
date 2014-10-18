@@ -1157,7 +1157,7 @@ class GafShowLightLabel(bpy.types.Operator):
                             elif from_node.type == 'WAVELENGTH':
                                 color = ['WAVELENGTH', from_node]
 
-                    self.objects.append([obj, color])
+                        self.objects.append([obj, color])
 
                 if obj.type == 'LAMP' and not nodes:  # is a lamp but doesnt use_nodes
                     color = obj.data.color
