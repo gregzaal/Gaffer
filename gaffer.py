@@ -853,6 +853,66 @@ class GafCreateEnviroWidget(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class GafLinkSkyToSun(bpy.types.Operator):
+    bl_idname = "gaffer.link_sky_to_sun"
+    bl_label = "Link Sky Texture:"
+    bl_options = {'REGISTER', 'UNDO'}
+    node_name = bpy.props.StringProperty(default = "")
+
+    # Thanks to oscurart for the original script off which this is based!
+    # http://bit.ly/blsunsky
+
+    def execute(self, context):
+
+        tree = context.scene.world.node_tree
+        node = tree.nodes[self.node_name]
+        lampob = bpy.data.objects[context.scene.GafferSunObject]
+
+        if tree.animation_data:
+            if tree.animation_data.action:
+                for fc in tree.animation_data.action.fcurves:
+                    if fc.data_path == ("nodes[\""+node.name+"\"].sun_direction"):
+                        self.report({'ERROR'}, "Sun Direction is animated")
+                        return {'CANCELLED'}
+            elif tree.animation_data.drivers:
+                for dr in tree.animation_data.drivers:
+                    if dr.data_path == ("nodes[\""+node.name+"\"].sun_direction"):
+                        self.report({'ERROR'}, "Sun Direction has drivers")
+                        return {'CANCELLED'}
+
+        dr = node.driver_add("sun_direction")
+
+        nodename = ""
+        for ch in node.name:
+            if ch.isalpha():  # make sure node name can be used in expression
+                nodename += ch
+        varname = nodename + "_" + str(context.scene.GafferVarNameCounter)  # create unique variable name for each node
+        context.scene.GafferVarNameCounter += 1
+
+        dr[0].driver.expression = varname
+        var = dr[0].driver.variables.new()
+        var.name = varname
+        var.type = 'SINGLE_PROP'
+        var.targets[0].id = lampob
+        var.targets[0].data_path = 'matrix_world[2][0]'
+        # Y
+        dr[1].driver.expression = varname
+        var = dr[1].driver.variables.new()
+        var.name = varname
+        var.type = 'SINGLE_PROP'
+        var.targets[0].id = lampob
+        var.targets[0].data_path = 'matrix_world[2][1]'
+        # Y
+        dr[2].driver.expression = varname
+        var = dr[2].driver.variables.new()
+        var.name = varname
+        var.type = 'SINGLE_PROP'
+        var.targets[0].id = lampob
+        var.targets[0].data_path = 'matrix_world[2][2]'
+
+        return {'FINISHED'}
+
+
 class GafShowLightRadius(bpy.types.Operator):
 
     'Display a circle around each light showing their radius'
@@ -1818,6 +1878,7 @@ def draw_cycles_UI(context, layout, lights):
         row.label(text="", icon='WORLD')
         row.separator()
 
+        color_node = None
         if world.use_nodes:
             backgrounds = []  # make a list of all linked Background shaders, use the right-most one
             background = None
@@ -1856,7 +1917,6 @@ def draw_cycles_UI(context, layout, lights):
 
                 # Color
                 if background.inputs[0].is_linked:
-                    color_node = None
                     current_node = background.inputs[0].links[0].from_node
                     i = 0  # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
                     while color_node == None and i < 100:  # limitted to 100 chained nodes
@@ -1907,6 +1967,17 @@ def draw_cycles_UI(context, layout, lights):
                 row = col.row(align=True)
                 row.prop(world.light_settings, "ao_factor")
                 row.prop(world.light_settings, "distance")
+
+            if color_node:
+                if color_node.type == 'TEX_SKY':
+                    if world.node_tree and world.use_nodes:
+                        col = worldcol.column(align = True)
+                        row = col.row(align = True)
+                        if context.scene.GafferSunObject:
+                            row.operator('gaffer.link_sky_to_sun', icon="LAMP_SUN").node_name = color_node.name
+                        else:
+                            row.label("Link Sky Texture:")
+                        row.prop_search(context.scene, "GafferSunObject", bpy.data, "objects", text="")
 
 
 class GafferPanelLights(bpy.types.Panel):
@@ -2235,11 +2306,16 @@ def register():
         name = "Margin",
         default = 90,
         description = "Draw the label this distance away from the light")
+    bpy.types.Scene.GafferSunObject = bpy.props.StringProperty(
+        name="Sun Obj",
+        default="",
+        description="The lamp object to use to drive the Sky rotation")
 
     # Internal vars (not shown in UI)
     bpy.types.Scene.GafferIsShowingRadius = bpy.props.BoolProperty(default = False)
     bpy.types.Scene.GafferIsShowingLabel = bpy.props.BoolProperty(default = False)
     bpy.types.Scene.GafferBlacklistIndex = bpy.props.IntProperty(default = 0)
+    bpy.types.Scene.GafferVarNameCounter = bpy.props.IntProperty(default = 0)
 
     bpy.types.NODE_PT_active_node_generic.append(gaffer_node_menu_func)
 
@@ -2283,10 +2359,12 @@ def unregister():
     del bpy.types.Scene.GafferLabelTextColor
     del bpy.types.Scene.GafferLabelAlign
     del bpy.types.Scene.GafferLabelMargin
+    del bpy.types.Scene.GafferSunObject
 
     del bpy.types.Scene.GafferIsShowingRadius
     del bpy.types.Scene.GafferIsShowingLabel
     del bpy.types.Scene.GafferBlacklistIndex
+    del bpy.types.Scene.GafferVarNameCounter
     del bpy.types.Scene.GafferBlacklist
 
     bpy.types.NODE_PT_active_node_generic.remove(gaffer_node_menu_func)
