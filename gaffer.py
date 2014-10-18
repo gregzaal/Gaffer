@@ -1140,7 +1140,7 @@ class GafShowLightLabel(bpy.types.Operator):
                     node_color = None
                     emissions = []  # make a list of all linked Emission shaders, use the right-most one
                     for node in nodes:
-                        if node.type == 'EMISSION':
+                        if node.type == 'EMISSION' and node.name != "Emission Viewer":
                             if node.outputs[0].is_linked:
                                 emissions.append(node)
                     if emissions:
