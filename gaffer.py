@@ -1115,42 +1115,44 @@ class GafShowLightLabel(bpy.types.Operator):
 
                 region = context.region
                 rv3d = context.space_data.region_3d
-                x, y = location_3d_to_region_2d(region, rv3d, obj.location)
+                loc = location_3d_to_region_2d(region, rv3d, obj.location)
+                if loc:  # sometimes this is None if lights are out of view
+                    x, y = loc
 
-                char_width = 38 * font_size_factor
-                height = 65 * font_size_factor
-                width = len(obj.name)*char_width
+                    char_width = 38 * font_size_factor
+                    height = 65 * font_size_factor
+                    width = len(obj.name)*char_width
 
-                x, y = self.alignment(x, y, width, height, scene.GafferLabelMargin*font_size_factor)
+                    x, y = self.alignment(x, y, width, height, scene.GafferLabelMargin*font_size_factor)
 
-                if draw_type != 'color_text':
-                    # Draw background rectangles
-                    bgl.glEnable(bgl.GL_BLEND)
-                    if draw_type == 'color_bg' and scene.GafferLabelUseColor:
-                        bgl.glColor4f(color[0], color[1], color[2], scene.GafferLabelAlpha)
+                    if draw_type != 'color_text':
+                        # Draw background rectangles
+                        bgl.glEnable(bgl.GL_BLEND)
+                        if draw_type == 'color_bg' and scene.GafferLabelUseColor:
+                            bgl.glColor4f(color[0], color[1], color[2], scene.GafferLabelAlpha)
+                        else:
+                            bgl.glColor4f(background_color[0], background_color[1], background_color[2], scene.GafferLabelAlpha)
+
+                        x1 = x
+                        y1 = y-(8 * font_size_factor)
+                        x2 = x1+width
+                        y2 = y1+height
+
+                        draw_rounded_rect(x1, y1, x2, y2, 20*font_size_factor)
+
+                        bgl.glDisable(bgl.GL_BLEND)
+
+                    # Draw text
+                    if draw_type != 'color_bg' and scene.GafferLabelUseColor:
+                        bgl.glColor4f(color[0], color[1], color[2], scene.GafferLabelAlpha if draw_type == 'color_text' else 1.0)
                     else:
-                        bgl.glColor4f(background_color[0], background_color[1], background_color[2], scene.GafferLabelAlpha)
+                        bgl.glColor4f(text_color[0], text_color[1], text_color[2], 1.0)
+                    font_id = 1
+                    blf.position(font_id, x, y, 0)
+                    blf.size(font_id, scene.GafferLabelFontSize, context.user_preferences.system.dpi)
+                    blf.draw(font_id, obj.name)
 
-                    x1 = x
-                    y1 = y-(8 * font_size_factor)
-                    x2 = x1+width
-                    y2 = y1+height
-
-                    draw_rounded_rect(x1, y1, x2, y2, 20*font_size_factor)
-
-                    bgl.glDisable(bgl.GL_BLEND)
-
-                # Draw text
-                if draw_type != 'color_bg' and scene.GafferLabelUseColor:
-                    bgl.glColor4f(color[0], color[1], color[2], scene.GafferLabelAlpha if draw_type == 'color_text' else 1.0)
-                else:
-                    bgl.glColor4f(text_color[0], text_color[1], text_color[2], 1.0)
-                font_id = 1
-                blf.position(font_id, x, y, 0)
-                blf.size(font_id, scene.GafferLabelFontSize, context.user_preferences.system.dpi)
-                blf.draw(font_id, obj.name)
-
-                bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
+                    bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
     
     def modal(self, context, event):
         try:
