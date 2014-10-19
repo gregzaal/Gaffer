@@ -18,9 +18,9 @@
 
 bl_info = {
     "name": "Gaffer",
-    "description": "Manage all your lights together quickly and efficiently from a single panel",
+    "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
     "author": "Greg Zaal",
-    "version": (1, 4),
+    "version": (2, 0),
     "blender": (2, 72, 0),
     "location": "3D View > Tools",
     "warning": "",
@@ -36,10 +36,6 @@ from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
 
-'''
-TODO:
-    Minimize on duplicate code
-'''
 
 supported_renderers = ['BLENDER_RENDER', 'CYCLES']
 
@@ -415,7 +411,6 @@ class GafSetTemp(bpy.types.Operator):
     node = bpy.props.StringProperty()
 
     def execute(self, context):
-        #global col_temp
         light = context.scene.objects[self.light]
         if light.type == 'LAMP':
             node = light.data.node_tree.nodes[self.node]
@@ -658,7 +653,6 @@ class GafRefreshLightList(bpy.types.Operator):
                             elif light_dict[obj.name] not in obj.data.node_tree.nodes:
                                 invalid_node = True
                         if obj.name not in light_dict or invalid_node:
-                            print("blah   "+obj.name)
                             for node in obj.data.node_tree.nodes:
                                 if node.name != "Emission Viewer":
                                     if node.type == 'EMISSION':
@@ -774,7 +768,7 @@ class GafCreateEnviroWidget(bpy.types.Operator):
     # TODO poll for supported vector input, uses nodes, widget doesn't already exist
     
     '''
-        This is an experimental function
+        This is an experimental function.
         It's barely usable at present, but blender lacks a few important things to make it really useful:
             Cannot draw bgl over viewport render (can't see what you're doing or interact with a custom widget)
             Can't draw a texture on a sphere when the rest of the viewport is solid-shaded
@@ -919,7 +913,7 @@ class GafShowLightRadius(bpy.types.Operator):
     bl_idname = 'gaffer.show_radius'
     bl_label = 'Show Radius'
 
-    # CoDEmanX wrote most of this - thanks sir!
+    # CoDEmanX wrote a lot of this - thanks sir!
 
     _handle = None
 
@@ -1393,7 +1387,7 @@ class GafAimLight(bpy.types.Operator):
 '''
     INTERFACE
 '''
-def draw_renderer_independant(scene, row, light, users=1):  # UI stuff that doesn't care which renderer is used
+def draw_renderer_independant(scene, row, light, users=1):  # UI stuff that's shown for all renderers
     if "_Light:_(" + light.name + ")_" in scene.GafferMoreExpand and not scene.GafferMoreExpandAll:
         row.operator("gaffer.more_options_hide", icon='TRIA_DOWN', text='', emboss=False).light = light.name
     elif not scene.GafferMoreExpandAll:
@@ -1710,7 +1704,6 @@ def draw_cycles_UI(context, layout, lights):
                 socket_strength = int(socket_strength_str)
 
             box = maincol.box()
-            #box = maincol.column(align=True)
             rowmain = box.row()
             split = rowmain.split()
             col = split.column()
