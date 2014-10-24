@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
     "author": "Greg Zaal",
-    "version": (2, 0),
+    "version": (2, 1),
     "blender": (2, 72, 0),
     "location": "3D View > Tools",
     "warning": "",
@@ -752,6 +752,7 @@ class GafRefreshLightList(bpy.types.Operator):
         self.report({'INFO'}, "Light list refreshed")
         if scene.GafferSoloActive == '':
             getHiddenStatus(scene, stringToNestedList(scene.GafferLights, True))
+        refresh_bgl()  # update the radius/label as well
         return {'FINISHED'}
 
 
