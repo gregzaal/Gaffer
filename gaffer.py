@@ -479,11 +479,29 @@ class GafHideShowLight(bpy.types.Operator):
     bl_label = 'Hide Light'
     light = bpy.props.StringProperty()
     hide = bpy.props.BoolProperty()
+    dataname = bpy.props.StringProperty()
 
     def execute(self, context):
-        light = bpy.data.objects[self.light]
-        light.hide = self.hide
-        light.hide_render = self.hide
+        dataname = self.dataname
+        if dataname == "__SINGLE_USER__":
+            light = bpy.data.objects[self.light]
+            light.hide = self.hide
+            light.hide_render = self.hide
+        else:
+            if dataname.startswith('LAMP'):
+                data = bpy.data.lamps[(dataname[4:])]  # actual data name (minus the prepended 'LAMP')
+                for obj in bpy.data.objects:
+                    if obj.data == data:
+                        obj.hide = self.hide
+                        obj.hide_render = self.hide
+            else:
+                mat = bpy.data.materials[(dataname[3:])]  # actual data name (minus the prepended 'MAT')
+                for obj in bpy.data.objects:
+                    if obj.type == 'MESH':
+                        for slot in obj.material_slots:
+                            if slot.material == mat:
+                                obj.hide = self.hide
+                                obj.hide_render = self.hide
         return {'FINISHED'}
 
 
@@ -500,18 +518,14 @@ class GafSelectLight(bpy.types.Operator):
         return context.mode == 'OBJECT'
 
     def execute(self, context):
+        for item in bpy.data.objects:
+            item.select = False
         dataname = self.dataname
         if dataname == "__SINGLE_USER__":
             obj = bpy.data.objects[self.light]
-
-            for item in bpy.data.objects:
-                item.select = False
-
             obj.select = True
             context.scene.objects.active = obj
         else:
-            for item in bpy.data.objects:
-                item.select = False
             if dataname.startswith('LAMP'):
                 data = bpy.data.lamps[(dataname[4:])]  # actual data name (minus the prepended 'LAMP')
                 for obj in bpy.data.objects:
@@ -537,12 +551,30 @@ class GafSolo(bpy.types.Operator):
     light = bpy.props.StringProperty()
     showhide = bpy.props.BoolProperty()
     worldsolo = bpy.props.BoolProperty(default=False)
+    dataname = bpy.props.StringProperty(default="__EXIT_SOLO__")
 
     def execute(self, context):
         light = self.light
         showhide = self.showhide
         worldsolo = self.worldsolo
         scene = context.scene
+
+        # Get object names that share data with the solo'd object:
+        dataname = self.dataname
+        linked_lights = []
+        if dataname not in ["__SINGLE_USER__", "__EXIT_SOLO__"] and showhide:  # only make list if going into Solo and obj has multiple users
+            if dataname.startswith('LAMP'):
+                data = bpy.data.lamps[(dataname[4:])]  # actual data name (minus the prepended 'LAMP')
+                for obj in bpy.data.objects:
+                    if obj.data == data:
+                        linked_lights.append(obj.name)
+            else:
+                mat = bpy.data.materials[(dataname[3:])]  # actual data name (minus the prepended 'MAT')
+                for obj in bpy.data.objects:
+                    if obj.type == 'MESH':
+                        for slot in obj.material_slots:
+                            if slot.material == mat:
+                                linked_lights.append(obj.name)
 
         statelist = stringToNestedList(scene.GafferLightsHiddenRecord, True)
 
@@ -555,6 +587,7 @@ class GafSolo(bpy.types.Operator):
                     try:
                         obj = bpy.data.objects[l[0]]
                     except:
+                        # TODO not sure if this ever happens, if it does, doesn't it break?
                         getHiddenStatus(scene, stringToNestedList(scene.GafferLights, True))
                         bpy.ops.gaffer.solo()
                         return {'FINISHED'}  # if one of the lights has been deleted/changed, update the list and dont restore visibility
@@ -562,12 +595,12 @@ class GafSolo(bpy.types.Operator):
             for l in statelist:  # then restore visibility
                 if l[0] != "WorldEnviroLight":
                     obj = bpy.data.objects[l[0]]
-                    if obj.name != light:
-                        obj.hide = True
-                        obj.hide_render = True
-                    else:
+                    if obj.name == light or obj.name in linked_lights:
                         obj.hide = False
                         obj.hide_render = False
+                    else:
+                        obj.hide = True
+                        obj.hide_render = True
 
             if context.scene.render.engine == 'CYCLES':
                 if worldsolo:
@@ -585,6 +618,7 @@ class GafSolo(bpy.types.Operator):
                     try:
                         obj = bpy.data.objects[l[0]]
                     except:
+                        # TODO not sure if this ever happens, if it does, doesn't it break?
                         bpy.ops.gaffer.refresh_lights()
                         getHiddenStatus(scene, stringToNestedList(scene.GafferLights, True))
                         scene.GafferSoloActive = oldlight
@@ -1432,10 +1466,9 @@ def draw_renderer_independant(scene, row, light, users=[None, 1]):  # UI stuff t
 
     visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'RESTRICT_VIEW_ON' if light.hide else 'RESTRICT_VIEW_OFF', emboss=False)
     visop.light = light.name
-    if light.hide:
-        visop.hide = False
-    else:
-        visop.hide = True
+    visop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
+    visop.hide = not light.hide
+
     selop = row.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select else 'SMALL_TRI_RIGHT_VEC', text="", emboss=False)
     selop.light = light.name
     selop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
@@ -1444,6 +1477,7 @@ def draw_renderer_independant(scene, row, light, users=[None, 1]):  # UI stuff t
         solobtn.light = light.name
         solobtn.showhide = True
         solobtn.worldsolo = False
+        solobtn.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
     elif scene.GafferSoloActive == light.name:
         solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='', emboss=False)
         solobtn.light = light.name
