@@ -8,7 +8,7 @@ And yes, that means **you may download it completely free of charge** :) It's li
 
 ###But!
 
-$14.99 isn't much, every single sale motivates me to keep developing it. Seriously, whenever I get a "New Sale!" email, it instantly puts a smile on my face and makes my day.
+$17.95 isn't much, every single sale motivates me to keep developing it. Seriously, whenever I get a "New Sale!" email, it instantly puts a smile on my face and makes my day.
 
 So if you'd like to support me, just head on over to the Blender Market and [buy it there] :)
 
