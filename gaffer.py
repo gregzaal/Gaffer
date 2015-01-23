@@ -20,8 +20,8 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
     "author": "Greg Zaal",
-    "version": (2, 2),
-    "blender": (2, 72, 0),
+    "version": (2, 3),
+    "blender": (2, 73, 0),
     "location": "3D View > Tools",
     "warning": "",
     "wiki_url": "",
@@ -558,6 +558,7 @@ class GafSolo(bpy.types.Operator):
         showhide = self.showhide
         worldsolo = self.worldsolo
         scene = context.scene
+        blacklist = context.scene.GafferBlacklist
 
         # Get object names that share data with the solo'd object:
         dataname = self.dataname
@@ -595,12 +596,13 @@ class GafSolo(bpy.types.Operator):
             for l in statelist:  # then restore visibility
                 if l[0] != "WorldEnviroLight":
                     obj = bpy.data.objects[l[0]]
-                    if obj.name == light or obj.name in linked_lights:
-                        obj.hide = False
-                        obj.hide_render = False
-                    else:
-                        obj.hide = True
-                        obj.hide_render = True
+                    if obj.name not in blacklist:
+                        if obj.name == light or obj.name in linked_lights:
+                            obj.hide = False
+                            obj.hide_render = False
+                        else:
+                            obj.hide = True
+                            obj.hide_render = True
 
             if context.scene.render.engine == 'CYCLES':
                 if worldsolo:
@@ -624,8 +626,9 @@ class GafSolo(bpy.types.Operator):
                         scene.GafferSoloActive = oldlight
                         bpy.ops.gaffer.solo()
                         return {'FINISHED'}
-                    obj.hide = castBool(l[1])
-                    obj.hide_render = castBool(l[2])
+                    if obj.name not in blacklist:
+                        obj.hide = castBool(l[1])
+                        obj.hide_render = castBool(l[2])
                 elif context.scene.render.engine == 'CYCLES':
                     scene.GafferWorldVis = castBool(l[1])
                     scene.GafferWorldReflOnly = castBool(l[2])
@@ -2203,7 +2206,8 @@ def do_set_world_refl_only(context):
 
 def _update_world_refl_only(self, context):
     do_set_world_refl_only(context)
-    hack_force_update(context, context.scene.world.node_tree.nodes)
+    if context.scene.world.use_nodes:
+        hack_force_update(context, context.scene.world.node_tree.nodes)
 
 
 def do_set_world_vis(context):
@@ -2222,7 +2226,8 @@ def do_set_world_vis(context):
 
 def _update_world_vis(self, context):
     do_set_world_vis(context)
-    hack_force_update(context, context.scene.world.node_tree.nodes)
+    if context.scene.world.use_nodes:
+        hack_force_update(context, context.scene.world.node_tree.nodes)
 
 
 class BlacklistedObject(bpy.types.PropertyGroup):
