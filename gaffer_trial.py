@@ -17,11 +17,11 @@
 # END GPL LICENSE BLOCK #####
 
 bl_info = {
-    "name": "Gaffer",
+    "name": "Gaffer (30 Day Trial)",
     "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
     "author": "Greg Zaal",
     "version": (2, 3),
-    "blender": (2, 73, 0),
+    "blender": (2, 74, 0),
     "location": "3D View > Tools",
     "warning": "",
     "wiki_url": "",
@@ -35,6 +35,8 @@ from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
+import os
+from datetime import datetime, timedelta
 
 
 supported_renderers = ['BLENDER_RENDER', 'CYCLES']
@@ -2042,6 +2044,17 @@ def draw_cycles_UI(context, layout, lights):
                         row.prop_search(context.scene, "GafferSunObject", bpy.data, "objects", text="")
 
 
+def time_left():
+    tf = bpy.utils.script_path_user() + os.sep + "Gaffer_trial"
+    if not os.path.exists(tf):
+        f = open(tf, 'w')
+        f.write(str(datetime.now()))
+        f.close()
+    starttime = datetime.strptime(open(tf).read(), "%Y-%m-%d %H:%M:%S.%f")
+    curtime = datetime.now()
+    enddate = starttime + timedelta(days=2)
+    return enddate - curtime
+
 class GafferPanelLights(bpy.types.Panel):
 
     bl_label = "Lights"
@@ -2051,7 +2064,7 @@ class GafferPanelLights(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return True if context.scene.render.engine in supported_renderers else False
+        return (True if context.scene.render.engine in supported_renderers else False) and (time_left().days > 0)
 
     def draw(self, context):
         scene = context.scene
@@ -2101,7 +2114,7 @@ class GafferPanelTools(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return True if context.scene.render.engine in supported_renderers else False
+        return (True if context.scene.render.engine in supported_renderers else False) and (time_left().days > 0)
 
     def draw(self, context):
         scene = context.scene
@@ -2174,6 +2187,36 @@ class GafferPanelTools(bpy.types.Panel):
         row = sub.row(align=True)
         row.operator('gaffer.blacklist_add', icon='ZOOMIN')
         row.operator('gaffer.blacklist_remove', icon='ZOOMOUT')
+
+
+class GafferPanelTrial(bpy.types.Panel):
+
+    bl_label = "Trial Info"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "TOOLS"
+    bl_category = "Gaffer"
+    
+    def draw(self, context):
+        layout = self.layout
+
+
+        timeleft = time_left()
+
+        col = layout.column(align=True)
+        col.alignment = "CENTER"
+        if timeleft.days > 0:
+            col.label("Trial expires in:")
+            s = str(timeleft)
+            s = s.split('.')[0]
+            col.label(s)
+        else:
+            col.label("Sorry!")
+            col.label("Your free trial has expired :(")
+            col.separator()
+            col.label("If you liked it,")
+            col.label("why not buy it?")
+            col.separator()
+            col.operator("wm.url_open", "Check it out", icon='URL').url = "http://bit.ly/gaf-trial"
 
 
 class OBJECT_UL_object_list(bpy.types.UIList):
