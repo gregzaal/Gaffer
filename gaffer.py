@@ -1760,12 +1760,16 @@ def draw_cycles_UI(context, layout, lights):
     for item in lights_to_show:
         light = scene.objects[item[0][1:-1]]  # drop the apostrophies
         doesnt_use_nodes = False
+        is_portal = False
         if light.type == 'LAMP':
             material = None
             if light.data.use_nodes:
                 node_strength = light.data.node_tree.nodes[item[2][1:-1]]
             else:
                 doesnt_use_nodes = True
+
+            if light.data.type == 'AREA' and light.data.cycles.is_portal:
+                is_portal = True
         else:
             material = bpy.data.materials[item[1][1:-1]]
             if material.use_nodes:
@@ -1808,75 +1812,77 @@ def draw_cycles_UI(context, layout, lights):
             draw_renderer_independant(scene, row, light, users)
 
             # strength
-            row = col.row(align=True)
-            strength_sockets = node_strength.inputs
-            if socket_strength_type == 'o':
-                strength_sockets = node_strength.outputs
-            if light.type == 'LAMP':
-                row.prop(light.data, "type", text='', icon='LAMP_%s' % light.data.type, icon_only=True, emboss=False)
-            else:
-                row.label(text='', icon='MESH_GRID')
-            row.separator()
-            try:
-                if ((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) \
-                or (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) \
-                and hasattr(strength_sockets[socket_strength], "default_value"):
-                    row.prop(strength_sockets[socket_strength], 'default_value', text='Strength')
+            if not is_portal:
+                row = col.row(align=True)
+                strength_sockets = node_strength.inputs
+                if socket_strength_type == 'o':
+                    strength_sockets = node_strength.outputs
+                if light.type == 'LAMP':
+                    row.prop(light.data, "type", text='', icon='LAMP_%s' % light.data.type, icon_only=True, emboss=False)
                 else:
+                    row.label(text='', icon='MESH_GRID')
+
+                row.separator()
+                try:
+                    if ((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) \
+                    or (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) \
+                    and hasattr(strength_sockets[socket_strength], "default_value"):
+                        row.prop(strength_sockets[socket_strength], 'default_value', text='Strength')
+                    else:
+                        row.label("  Node Invalid")
+                except:
                     row.label("  Node Invalid")
-            except:
-                row.label("  Node Invalid")
 
-            # color
-            if light.type == 'LAMP':
-                nodes = light.data.node_tree.nodes
-            else:
-                nodes = material.node_tree.nodes
-            socket_color = 0
-            node_color = None
-            emissions = []  # make a list of all linked Emission shaders, use the right-most one
-            for node in nodes:
-                if node.type == 'EMISSION':
-                    if node.outputs[0].is_linked:
-                        emissions.append(node)
-            if emissions:
-                node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
-
-                if not node_color.inputs[socket_color].is_linked:
-                    subcol = row.column(align=True)
-                    subrow = subcol.row(align=True)
-                    subrow.scale_x = 0.3
-                    subrow.prop(node_color.inputs[socket_color], 'default_value', text='')
+                # color
+                if light.type == 'LAMP':
+                    nodes = light.data.node_tree.nodes
                 else:
-                    from_node = node_color.inputs[socket_color].links[0].from_node
-                    if from_node.type == 'RGB':
+                    nodes = material.node_tree.nodes
+                socket_color = 0
+                node_color = None
+                emissions = []  # make a list of all linked Emission shaders, use the right-most one
+                for node in nodes:
+                    if node.type == 'EMISSION':
+                        if node.outputs[0].is_linked:
+                            emissions.append(node)
+                if emissions:
+                    node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
+
+                    if not node_color.inputs[socket_color].is_linked:
                         subcol = row.column(align=True)
                         subrow = subcol.row(align=True)
                         subrow.scale_x = 0.3
-                        subrow.prop(from_node.outputs[0], 'default_value', text='')
-                    elif from_node.type == 'TEX_IMAGE' or from_node.type == 'TEX_ENVIRONMENT':
-                        row.prop(from_node, 'image', text='')
-                    elif from_node.type == 'BLACKBODY':
-                        row.prop(from_node.inputs[0], 'default_value', text='Temperature')
-                        if scene.GafferColTempExpand and scene.GafferLightUIIndex == i:
-                            row.operator('gaffer.col_temp_hide', text='', icon='MOVE_UP_VEC')
-                            col = col.column(align=True)
-                            col.separator()
-                            col.label("Color Temperature Presets:")
-                            ordered_col_temps = OrderedDict(sorted(col_temp.items()))
-                            for temp in ordered_col_temps:
-                                op = col.operator('gaffer.col_temp_preset', text=temp[3:], icon='COLOR')  # temp[3:] removes number used for ordering
-                                op.temperature = temp
-                                op.light = light.name
-                                if material:
-                                    op.material = material.name
-                                if node_color:
-                                    op.node = node_color.name
-                            col.separator()
-                        else:
-                            row.operator('gaffer.col_temp_show', text='', icon='COLOR').l_index = i
-                    elif from_node.type == 'WAVELENGTH':
-                        row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
+                        subrow.prop(node_color.inputs[socket_color], 'default_value', text='')
+                    else:
+                        from_node = node_color.inputs[socket_color].links[0].from_node
+                        if from_node.type == 'RGB':
+                            subcol = row.column(align=True)
+                            subrow = subcol.row(align=True)
+                            subrow.scale_x = 0.3
+                            subrow.prop(from_node.outputs[0], 'default_value', text='')
+                        elif from_node.type == 'TEX_IMAGE' or from_node.type == 'TEX_ENVIRONMENT':
+                            row.prop(from_node, 'image', text='')
+                        elif from_node.type == 'BLACKBODY':
+                            row.prop(from_node.inputs[0], 'default_value', text='Temperature')
+                            if scene.GafferColTempExpand and scene.GafferLightUIIndex == i:
+                                row.operator('gaffer.col_temp_hide', text='', icon='MOVE_UP_VEC')
+                                col = col.column(align=True)
+                                col.separator()
+                                col.label("Color Temperature Presets:")
+                                ordered_col_temps = OrderedDict(sorted(col_temp.items()))
+                                for temp in ordered_col_temps:
+                                    op = col.operator('gaffer.col_temp_preset', text=temp[3:], icon='COLOR')  # temp[3:] removes number used for ordering
+                                    op.temperature = temp
+                                    op.light = light.name
+                                    if material:
+                                        op.material = material.name
+                                    if node_color:
+                                        op.node = node_color.name
+                                col.separator()
+                            else:
+                                row.operator('gaffer.col_temp_show', text='', icon='COLOR').l_index = i
+                        elif from_node.type == 'WAVELENGTH':
+                            row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
 
             # More Options
             if "_Light:_(" + light.name + ")_" in scene.GafferMoreExpand or scene.GafferMoreExpandAll:
@@ -1896,17 +1902,19 @@ def draw_cycles_UI(context, layout, lights):
                     if scene.cycles.progressive == 'BRANCHED_PATH':
                         row.prop(light.data.cycles, "samples")
 
-                    row = col.row(align=True)
-                    row.prop(light.data.cycles, "use_multiple_importance_sampling", text='MIS', toggle=True)
-                    row.prop(light.data.cycles, "cast_shadow", text='Shadows', toggle=True)
-                    row.separator()
-                    row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
-                    row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
+                    if not is_portal:
+                        row = col.row(align=True)
+                        row.prop(light.data.cycles, "use_multiple_importance_sampling", text='MIS', toggle=True)
+                        row.prop(light.data.cycles, "cast_shadow", text='Shadows', toggle=True)
+                        row.separator()
+                        row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
+                        row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
 
                     if light.data.type == 'SPOT':
                         row = col.row(align=True)
                         row.prop(light.data, "spot_size", text='Spot Size')
                         row.prop(light.data, "spot_blend", text='Blend')
+
                 else:  # MESH light
                     row.prop(material.cycles, "sample_as_light", text='MIS', toggle=True)
                     row.separator()
@@ -1916,12 +1924,15 @@ def draw_cycles_UI(context, layout, lights):
                 if hasattr(light, "GafferFalloff"):
                     drawfalloff = True
                     if light.type == 'LAMP':
-                        if light.data.type == 'SUN' or light.data.type == 'HEMI':
+                        if light.data.type == 'SUN' or light.data.type == 'HEMI' or (light.data.type == 'AREA' and light.data.cycles.is_portal):
                             drawfalloff = False
                     if drawfalloff:
                         col.prop(light, "GafferFalloff", text="Falloff")
                         if node_strength.type != 'LIGHT_FALLOFF' and light.GafferFalloff != 'quadratic':
                             col.label("Light Falloff node is missing", icon="ERROR")
+                if light.type == 'LAMP':
+                    if light.data.type == 'AREA':
+                        col.prop(light.data.cycles, 'is_portal', "Portal")
             i += 1
 
     if len(lights_to_show) == 0:
