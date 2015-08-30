@@ -2052,7 +2052,7 @@ def time_left():
         f.close()
     starttime = datetime.strptime(open(tf).read(), "%Y-%m-%d %H:%M:%S.%f")
     curtime = datetime.now()
-    enddate = starttime + timedelta(days=2)
+    enddate = starttime + timedelta(days=30)
     return enddate - curtime
 
 class GafferPanelLights(bpy.types.Panel):
