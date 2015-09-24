@@ -1378,9 +1378,7 @@ class GafAimLight(bpy.types.Operator):
     def aim (self, context, obj, target=[0,0,0]):
         print ("Aiming " + obj.name + " at " + str(target))
 
-        #origin = Vector((0.0, 0.0, 0.0))
         obj_loc = obj.matrix_world.to_translation()
-        #loc_sun = Vector((locx, locy, locz))
         direction = target - obj_loc
         # point obj'-Z' and use its 'Y' as up
         rot_quat = direction.to_track_quat('-Z', 'Y')
