@@ -1378,32 +1378,13 @@ class GafAimLight(bpy.types.Operator):
     def aim (self, context, obj, target=[0,0,0]):
         print ("Aiming " + obj.name + " at " + str(target))
 
-        # Make a dummy Empty to aim at
-        n = "DummyEmptyForGafferAim"
-        if n in bpy.data.objects:  # Delete dummy if it exists, otherwise we can't use it's name relyably
-            bpy.data.objects.remove(bpy.data.objects[n])
-        edata = bpy.data.objects.new(n, None)
-        context.scene.objects.link(edata)
-        empty = context.scene.objects[n]
-        empty.location = target
-
-        constraint = obj.constraints.new(type='TRACK_TO')
-        constraint.target = empty
-        constraint.track_axis = 'TRACK_Z' if obj.type != 'LAMP' else 'TRACK_NEGATIVE_Z'
-        constraint.up_axis = 'UP_X'
-
-        orig_selection = context.selected_objects  # store selection
-        bpy.ops.object.select_all(action='DESELECT')
-        obj.select = True
-        bpy.ops.object.visual_transform_apply()
-
-        obj.constraints.remove(constraint)
-        context.scene.objects.unlink(empty)
-        bpy.data.objects.remove(empty)
-
-        bpy.ops.object.select_all(action='DESELECT')
-        for o in orig_selection:
-            o.select = True  # restore selection
+        #origin = Vector((0.0, 0.0, 0.0))
+        obj_loc = obj.matrix_world.to_translation()
+        #loc_sun = Vector((locx, locy, locz))
+        direction = target - obj_loc
+        # point obj'-Z' and use its 'Y' as up
+        rot_quat = direction.to_track_quat('-Z', 'Y')
+        obj.rotation_euler = rot_quat.to_euler()
 
     def execute(self, context):
         if self.target_type == 'CURSOR':
@@ -1446,7 +1427,7 @@ class GafAimLight(bpy.types.Operator):
             avg_y = total_y / num_objects
             avg_z = total_z / num_objects
 
-            self.aim(context, active, [avg_x, avg_y, avg_z])
+            self.aim(context, active, Vector((avg_x, avg_y, avg_z)))
 
             return {'FINISHED'}
 
