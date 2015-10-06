@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
     "author": "Greg Zaal",
-    "version": (2, 3),
+    "version": (2, 4),
     "blender": (2, 73, 0),
     "location": "3D View > Tools",
     "warning": "",
@@ -1376,11 +1376,10 @@ class GafAimLight(bpy.types.Operator):
     target_type = bpy.props.StringProperty()
 
     def aim (self, context, obj, target=[0,0,0]):
-        print ("Aiming " + obj.name + " at " + str(target))
-
+        # Thanks to @kilbee for cleaning my crap up here :) See: https://github.com/gregzaal/Gaffer/commit/b920092
         obj_loc = obj.matrix_world.to_translation()
         direction = target - obj_loc
-        # point obj'-Z' and use its 'Y' as up
+        # point obj '-Z' and use its 'Y' as up
         rot_quat = direction.to_track_quat('-Z', 'Y')
         obj.rotation_euler = rot_quat.to_euler()
 
