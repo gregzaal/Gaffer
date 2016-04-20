@@ -20,8 +20,8 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
     "author": "Greg Zaal",
-    "version": (2, 4),
-    "blender": (2, 73, 0),
+    "version": (2, 5),
+    "blender": (2, 77, 0),
     "location": "3D View > Tools",
     "warning": "",
     "wiki_url": "",
@@ -202,11 +202,11 @@ def refresh_light_list(scene):
                     bpy.data.objects[light[0]].GafferFalloff = 'quadratic'
     scene.GafferLights = str(m)
 
-def hack_force_update(context, nodes):
-    node = nodes.new('ShaderNodeMath')
-    node.inputs[0].default_value = 0.0
-    nodes.remove(node)
-    return False
+def force_update(context, obj=None):
+    if not obj:
+        context.space_data.node_tree.update_tag()
+    else:
+        obj.data.node_tree.update_tag()
 
 def stringToList(str="", stripquotes=False):
     raw = str.split(", ")
@@ -464,7 +464,7 @@ def do_update_falloff(self):
                 tree.links.new(fnode.outputs[socket_no], node.inputs[int(str(lightitems[3])[-1])])
                 tree.nodes.active = fnode
                 setGafferNode(bpy.context, 'STRENGTH', tree, light)
-        hack_force_update(bpy.context, tree.nodes)
+        force_update(bpy.context, light)
     except:
         print ("Warning: do_update_falloff failed, node may not exist anymore")
 
@@ -2214,12 +2214,11 @@ def do_set_world_refl_only(context):
         world.cycles_visibility.diffuse = not scene.GafferWorldReflOnly
         world.cycles_visibility.transmission = not scene.GafferWorldReflOnly
         world.cycles_visibility.scatter = not scene.GafferWorldReflOnly
+        world.update_tag()
 
 
 def _update_world_refl_only(self, context):
     do_set_world_refl_only(context)
-    if context.scene.world.use_nodes:
-        hack_force_update(context, context.scene.world.node_tree.nodes)
 
 
 def do_set_world_vis(context):
@@ -2234,12 +2233,11 @@ def do_set_world_vis(context):
     world.cycles_visibility.diffuse = scene.GafferWorldVis
     world.cycles_visibility.transmission = scene.GafferWorldVis
     world.cycles_visibility.scatter = scene.GafferWorldVis
+    world.update_tag()
 
 
 def _update_world_vis(self, context):
     do_set_world_vis(context)
-    if context.scene.world.use_nodes:
-        hack_force_update(context, context.scene.world.node_tree.nodes)
 
 
 class BlacklistedObject(bpy.types.PropertyGroup):
