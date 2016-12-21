@@ -44,8 +44,8 @@ def load_handler(dummy):
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
     if GafShowLightLabel._handle is not None:
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
-    bpy.context.scene.GafferIsShowingRadius = False
-    bpy.context.scene.GafferIsShowingLabel = False
+    bpy.context.scene.gaf_props.IsShowingRadius = False
+    bpy.context.scene.gaf_props.IsShowingLabel = False
     
 
 '''
@@ -98,8 +98,8 @@ class GafTempShowList(bpy.types.Operator):
     l_index = bpy.props.IntProperty()
 
     def execute(self, context):
-        context.scene.GafferColTempExpand = True
-        context.scene.GafferLightUIIndex = self.l_index
+        context.scene.gaf_props.ColTempExpand = True
+        context.scene.gaf_props.LightUIIndex = self.l_index
         return {'FINISHED'}
 
 
@@ -110,7 +110,7 @@ class GafTempHideList(bpy.types.Operator):
     bl_label = 'Hide Presets'
 
     def execute(self, context):
-        context.scene.GafferColTempExpand = False
+        context.scene.gaf_props.ColTempExpand = False
         return {'FINISHED'}
 
 
@@ -122,11 +122,11 @@ class GafShowMore(bpy.types.Operator):
     light = bpy.props.StringProperty()
 
     def execute(self, context):
-        exp_list = context.scene.GafferMoreExpand
+        exp_list = context.scene.gaf_props.MoreExpand
         # prepend+append funny stuff so that the light name is
         # unique (otherwise Fill_03 would also expand Fill_03.001)
         exp_list += ("_Light:_(" + self.light + ")_")
-        context.scene.GafferMoreExpand = exp_list
+        context.scene.gaf_props.MoreExpand = exp_list
         return {'FINISHED'}
 
 
@@ -138,7 +138,7 @@ class GafHideMore(bpy.types.Operator):
     light = bpy.props.StringProperty()
 
     def execute(self, context):
-        context.scene.GafferMoreExpand = context.scene.GafferMoreExpand.replace("_Light:_(" + self.light + ")_", "")
+        context.scene.gaf_props.MoreExpand = context.scene.gaf_props.MoreExpand.replace("_Light:_(" + self.light + ")_", "")
         return {'FINISHED'}
 
 
@@ -228,7 +228,7 @@ class GafSolo(bpy.types.Operator):
         showhide = self.showhide
         worldsolo = self.worldsolo
         scene = context.scene
-        blacklist = context.scene.GafferBlacklist
+        blacklist = context.scene.gaf_props.Blacklist
 
         # Get object names that share data with the solo'd object:
         dataname = self.dataname
@@ -247,19 +247,19 @@ class GafSolo(bpy.types.Operator):
                             if slot.material == mat:
                                 linked_lights.append(obj.name)
 
-        statelist = stringToNestedList(scene.GafferLightsHiddenRecord, True)
+        statelist = stringToNestedList(scene.gaf_props.LightsHiddenRecord, True)
 
         if showhide:  # Enter Solo mode
             bpy.ops.gaffer.refresh_lights()
-            scene.GafferSoloActive = light
-            getHiddenStatus(scene, stringToNestedList(scene.GafferLights, True))
+            scene.gaf_props.SoloActive = light
+            getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
             for l in statelist:  # first check if lights still exist
                 if l[0] != "WorldEnviroLight":
                     try:
                         obj = bpy.data.objects[l[0]]
                     except:
                         # TODO not sure if this ever happens, if it does, doesn't it break?
-                        getHiddenStatus(scene, stringToNestedList(scene.GafferLights, True))
+                        getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
                         bpy.ops.gaffer.solo()
                         return {'FINISHED'}  # if one of the lights has been deleted/changed, update the list and dont restore visibility
 
@@ -276,15 +276,15 @@ class GafSolo(bpy.types.Operator):
 
             if context.scene.render.engine == 'CYCLES':
                 if worldsolo:
-                    if not scene.GafferWorldVis:
-                        scene.GafferWorldVis = True
+                    if not scene.gaf_props.WorldVis:
+                        scene.gaf_props.WorldVis = True
                 else:
-                    if scene.GafferWorldVis:
-                        scene.GafferWorldVis = False
+                    if scene.gaf_props.WorldVis:
+                        scene.gaf_props.WorldVis = False
 
         else:  # Exit solo
-            oldlight = scene.GafferSoloActive
-            scene.GafferSoloActive = ''
+            oldlight = scene.gaf_props.SoloActive
+            scene.gaf_props.SoloActive = ''
             for l in statelist:
                 if l[0] != "WorldEnviroLight":
                     try:
@@ -292,16 +292,16 @@ class GafSolo(bpy.types.Operator):
                     except:
                         # TODO not sure if this ever happens, if it does, doesn't it break?
                         bpy.ops.gaffer.refresh_lights()
-                        getHiddenStatus(scene, stringToNestedList(scene.GafferLights, True))
-                        scene.GafferSoloActive = oldlight
+                        getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
+                        scene.gaf_props.SoloActive = oldlight
                         bpy.ops.gaffer.solo()
                         return {'FINISHED'}
                     if obj.name not in blacklist:
                         obj.hide = castBool(l[1])
                         obj.hide_render = castBool(l[2])
                 elif context.scene.render.engine == 'CYCLES':
-                    scene.GafferWorldVis = castBool(l[1])
-                    scene.GafferWorldReflOnly = castBool(l[2])
+                    scene.gaf_props.WorldVis = castBool(l[1])
+                    scene.gaf_props.WorldReflOnly = castBool(l[2])
 
         return {'FINISHED'}
 
@@ -351,8 +351,8 @@ class GafRefreshLightList(bpy.types.Operator):
         refresh_light_list(scene)
         
         self.report({'INFO'}, "Light list refreshed")
-        if scene.GafferSoloActive == '':
-            getHiddenStatus(scene, stringToNestedList(scene.GafferLights, True))
+        if scene.gaf_props.SoloActive == '':
+            getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
         refresh_bgl()  # update the radius/label as well
         return {'FINISHED'}
 
@@ -462,7 +462,7 @@ class GafLinkSkyToSun(bpy.types.Operator):
 
         tree = context.scene.world.node_tree
         node = tree.nodes[self.node_name]
-        lampob = bpy.data.objects[context.scene.GafferSunObject]
+        lampob = bpy.data.objects[context.scene.gaf_props.SunObject]
 
         if tree.animation_data:
             if tree.animation_data.action:
@@ -482,8 +482,8 @@ class GafLinkSkyToSun(bpy.types.Operator):
         for ch in node.name:
             if ch.isalpha():  # make sure node name can be used in expression
                 nodename += ch
-        varname = nodename + "_" + str(context.scene.GafferVarNameCounter)  # create unique variable name for each node
-        context.scene.GafferVarNameCounter += 1
+        varname = nodename + "_" + str(context.scene.gaf_props.VarNameCounter)  # create unique variable name for each node
+        context.scene.gaf_props.VarNameCounter += 1
 
         dr[0].driver.expression = varname
         var = dr[0].driver.variables.new()
@@ -535,13 +535,13 @@ class GafShowLightRadius(bpy.types.Operator):
 
         for item in self.objects:
             obj = item[0]
-            if not scene.GafferLightRadiusSelectedOnly or obj.select:
+            if not scene.gaf_props.LightRadiusSelectedOnly or obj.select:
                 if obj:
                     if obj.data:
                         if obj.data.type in ['POINT', 'SUN', 'SPOT']:  # have to check this again, in case user changes the type while showing radius
                             if not (scene.render.engine == 'BLENDER_RENDER' and obj.data.shadow_method == 'NOSHADOW'):
-                                if obj in context.visible_objects and obj.name not in [o.name for o in scene.GafferBlacklist]:
-                                    if scene.GafferLightRadiusUseColor:
+                                if obj in context.visible_objects and obj.name not in [o.name for o in scene.gaf_props.Blacklist]:
+                                    if scene.gaf_props.LightRadiusUseColor:
                                         if item[1][0] == 'BLACKBODY':
                                             color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
                                         elif item[1][0] == 'WAVELENGTH':
@@ -549,7 +549,7 @@ class GafShowLightRadius(bpy.types.Operator):
                                         else:
                                             color = item[1]
                                     else:
-                                        color = scene.GafferDefaultRadiusColor
+                                        color = scene.gaf_props.DefaultRadiusColor
 
                                     rv3d = context.region_data
                                     
@@ -573,14 +573,14 @@ class GafShowLightRadius(bpy.types.Operator):
 
                                     mat = Matrix.Translation(origin) * Matrix.Rotation(angle, 4, axis)
                                     
-                                    bgl.glColor4f(color[0], color[1], color[2], scene.GafferLightRadiusAlpha)
+                                    bgl.glColor4f(color[0], color[1], color[2], scene.gaf_props.LightRadiusAlpha)
                                     bgl.glEnable(bgl.GL_LINE_SMOOTH)  # anti-aliasing
-                                    if scene.GafferLightRadiusXray:
+                                    if scene.gaf_props.LightRadiusXray:
                                         bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
-                                    if scene.GafferLightRadiusDrawType == 'filled':
+                                    if scene.gaf_props.LightRadiusDrawType == 'filled':
                                         bgl.glBegin(bgl.GL_TRIANGLE_FAN)
                                     else:
-                                        if scene.GafferLightRadiusDrawType == 'dotted':
+                                        if scene.gaf_props.LightRadiusDrawType == 'dotted':
                                             bgl.glLineStipple(4, 0x3333)
                                             bgl.glEnable(bgl.GL_LINE_STIPPLE)
                                         bgl.glLineWidth(3)
@@ -608,12 +608,12 @@ class GafShowLightRadius(bpy.types.Operator):
     def invoke(self, context, event):
         scene = context.scene
 
-        if scene.GafferIsShowingRadius:
-            scene.GafferIsShowingRadius = False
+        if scene.gaf_props.IsShowingRadius:
+            scene.gaf_props.IsShowingRadius = False
             GafShowLightRadius.handle_remove(context)
             return {'FINISHED'}
         elif context.area.type == 'VIEW_3D':
-            scene.GafferIsShowingRadius = True
+            scene.gaf_props.IsShowingRadius = True
             
             context.window_manager.modal_handler_add(self)
 
@@ -624,7 +624,7 @@ class GafShowLightRadius(bpy.types.Operator):
                 # It doesn't make sense to try show the radius for mesh, area or hemi lamps.
                 if obj.type == 'LAMP':
                     if obj.data.type in ['POINT', 'SUN', 'SPOT']:
-                        color = scene.GafferDefaultRadiusColor
+                        color = scene.gaf_props.DefaultRadiusColor
                         if scene.render.engine == 'CYCLES' and obj.data.use_nodes:
                             nodes = obj.data.node_tree.nodes
                             socket_color = 0
@@ -678,7 +678,7 @@ class GafShowLightLabel(bpy.types.Operator):
         GafShowLightLabel._handle = None
 
     def alignment(self, x, y, width, height, margin):
-        align = bpy.context.scene.GafferLabelAlign
+        align = bpy.context.scene.gaf_props.LabelAlign
 
         # X:
         if align in ['t', 'c', 'b']:  # middle
@@ -702,14 +702,14 @@ class GafShowLightLabel(bpy.types.Operator):
         scene = context.scene
 
         # font_size_factor is used to scale the rectangles based on the font size and DPI, measured against a font size of 62
-        font_size_factor = (scene.GafferLabelFontSize/62) * (context.user_preferences.system.dpi/72)
-        draw_type = scene.GafferLabelDrawType
-        background_color = scene.GafferDefaultLabelBGColor
-        text_color = scene.GafferLabelTextColor
+        font_size_factor = (scene.gaf_props.LabelFontSize/62) * (context.user_preferences.system.dpi/72)
+        draw_type = scene.gaf_props.LabelDrawType
+        background_color = scene.gaf_props.DefaultLabelBGColor
+        text_color = scene.gaf_props.LabelTextColor
 
         for item in self.objects:
             obj = item[0]
-            if obj in context.visible_objects and obj.name not in [o.name for o in scene.GafferBlacklist]:
+            if obj in context.visible_objects and obj.name not in [o.name for o in scene.gaf_props.Blacklist]:
                 if item[1][0] == 'BLACKBODY':
                     color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
                 elif item[1][0] == 'WAVELENGTH':
@@ -727,15 +727,15 @@ class GafShowLightLabel(bpy.types.Operator):
                     height = 65 * font_size_factor
                     width = len(obj.name)*char_width
 
-                    x, y = self.alignment(x, y, width, height, scene.GafferLabelMargin*font_size_factor)
+                    x, y = self.alignment(x, y, width, height, scene.gaf_props.LabelMargin*font_size_factor)
 
                     if draw_type != 'color_text':
                         # Draw background rectangles
                         bgl.glEnable(bgl.GL_BLEND)
-                        if draw_type == 'color_bg' and scene.GafferLabelUseColor:
-                            bgl.glColor4f(color[0], color[1], color[2], scene.GafferLabelAlpha)
+                        if draw_type == 'color_bg' and scene.gaf_props.LabelUseColor:
+                            bgl.glColor4f(color[0], color[1], color[2], scene.gaf_props.LabelAlpha)
                         else:
-                            bgl.glColor4f(background_color[0], background_color[1], background_color[2], scene.GafferLabelAlpha)
+                            bgl.glColor4f(background_color[0], background_color[1], background_color[2], scene.gaf_props.LabelAlpha)
 
                         x1 = x
                         y1 = y-(8 * font_size_factor)
@@ -747,13 +747,13 @@ class GafShowLightLabel(bpy.types.Operator):
                         bgl.glDisable(bgl.GL_BLEND)
 
                     # Draw text
-                    if draw_type != 'color_bg' and scene.GafferLabelUseColor:
-                        bgl.glColor4f(color[0], color[1], color[2], scene.GafferLabelAlpha if draw_type == 'color_text' else 1.0)
+                    if draw_type != 'color_bg' and scene.gaf_props.LabelUseColor:
+                        bgl.glColor4f(color[0], color[1], color[2], scene.gaf_props.LabelAlpha if draw_type == 'color_text' else 1.0)
                     else:
                         bgl.glColor4f(text_color[0], text_color[1], text_color[2], 1.0)
                     font_id = 1
                     blf.position(font_id, x, y, 0)
-                    blf.size(font_id, scene.GafferLabelFontSize, context.user_preferences.system.dpi)
+                    blf.size(font_id, scene.gaf_props.LabelFontSize, context.user_preferences.system.dpi)
                     blf.draw(font_id, obj.name)
 
                     bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
@@ -770,12 +770,12 @@ class GafShowLightLabel(bpy.types.Operator):
     def invoke(self, context, event):
         scene = context.scene
 
-        if scene.GafferIsShowingLabel:
-            scene.GafferIsShowingLabel = False
+        if scene.gaf_props.IsShowingLabel:
+            scene.gaf_props.IsShowingLabel = False
             GafShowLightLabel.handle_remove(context)
             return {'FINISHED'}
         elif context.area.type == 'VIEW_3D':
-            scene.GafferIsShowingLabel = True
+            scene.gaf_props.IsShowingLabel = True
             
             context.window_manager.modal_handler_add(self)
 
@@ -783,7 +783,7 @@ class GafShowLightLabel(bpy.types.Operator):
 
             self.objects = []
             for obj in scene.objects:
-                color = scene.GafferDefaultLabelBGColor
+                color = scene.gaf_props.DefaultLabelBGColor
                 nodes = None
                 if obj.type == 'LAMP':
                     if scene.render.engine == 'CYCLES' and obj.data.use_nodes:
@@ -838,7 +838,7 @@ class GafRefreshBGL(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.GafferIsShowingRadius or context.scene.GafferIsShowingLabel
+        return context.scene.gaf_props.IsShowingRadius or context.scene.gaf_props.IsShowingLabel
 
     def execute(self, context):
         refresh_bgl()
@@ -856,14 +856,14 @@ class GafAddBlacklisted(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
-        blacklist = context.scene.GafferBlacklist
+        blacklist = context.scene.gaf_props.Blacklist
         existing = [obj.name for obj in blacklist]
         for obj in context.selected_objects:
             if obj.name not in existing:
                 item = blacklist.add()
                 item.name = obj.name
 
-        context.scene.GafferBlacklistIndex = len(context.scene.GafferBlacklist) - 1
+        context.scene.gaf_props.BlacklistIndex = len(context.scene.gaf_props.Blacklist) - 1
         return {'FINISHED'}
 
 
@@ -875,16 +875,16 @@ class GafRemoveBlacklisted(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.GafferBlacklist
+        return context.scene.gaf_props.Blacklist
 
     def execute(self, context):
-        blist = context.scene.GafferBlacklist
-        index = context.scene.GafferBlacklistIndex
+        blist = context.scene.gaf_props.Blacklist
+        index = context.scene.gaf_props.BlacklistIndex
 
         blist.remove(index)
 
         if index >= len(blist):
-            context.scene.GafferBlacklistIndex = len(blist) - 1
+            context.scene.gaf_props.BlacklistIndex = len(blist) - 1
 
         return {'FINISHED'}
 

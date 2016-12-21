@@ -48,16 +48,16 @@ from bpy.app.handlers import persistent
 
 def do_set_world_refl_only(context):
     scene = context.scene
-    if scene.GafferWorldReflOnly and not scene.GafferWorldVis:
-        scene.GafferWorldVis = True
-        scene.GafferWorldReflOnly = True
-    if scene.GafferWorldVis:
+    if scene.gaf_props.WorldReflOnly and not scene.gaf_props.WorldVis:
+        scene.gaf_props.WorldVis = True
+        scene.gaf_props.WorldReflOnly = True
+    if scene.gaf_props.WorldVis:
         world = scene.world
         world.cycles_visibility.glossy = True
-        world.cycles_visibility.camera = not scene.GafferWorldReflOnly
-        world.cycles_visibility.diffuse = not scene.GafferWorldReflOnly
-        world.cycles_visibility.transmission = not scene.GafferWorldReflOnly
-        world.cycles_visibility.scatter = not scene.GafferWorldReflOnly
+        world.cycles_visibility.camera = not scene.gaf_props.WorldReflOnly
+        world.cycles_visibility.diffuse = not scene.gaf_props.WorldReflOnly
+        world.cycles_visibility.transmission = not scene.gaf_props.WorldReflOnly
+        world.cycles_visibility.scatter = not scene.gaf_props.WorldReflOnly
         world.update_tag()
 
 
@@ -67,16 +67,16 @@ def _update_world_refl_only(self, context):
 
 def do_set_world_vis(context):
     scene = context.scene
-    if scene.GafferWorldVis:
-        scene.GafferWorldReflOnly = False
-    elif scene.GafferWorldReflOnly:
-        scene.GafferWorldReflOnly = False
+    if scene.gaf_props.WorldVis:
+        scene.gaf_props.WorldReflOnly = False
+    elif scene.gaf_props.WorldReflOnly:
+        scene.gaf_props.WorldReflOnly = False
     world = scene.world
-    world.cycles_visibility.glossy = scene.GafferWorldVis
-    world.cycles_visibility.camera = scene.GafferWorldVis
-    world.cycles_visibility.diffuse = scene.GafferWorldVis
-    world.cycles_visibility.transmission = scene.GafferWorldVis
-    world.cycles_visibility.scatter = scene.GafferWorldVis
+    world.cycles_visibility.glossy = scene.gaf_props.WorldVis
+    world.cycles_visibility.camera = scene.gaf_props.WorldVis
+    world.cycles_visibility.diffuse = scene.gaf_props.WorldVis
+    world.cycles_visibility.transmission = scene.gaf_props.WorldVis
+    world.cycles_visibility.scatter = scene.gaf_props.WorldVis
     world.update_tag()
 
 
@@ -88,84 +88,84 @@ class BlacklistedObject(bpy.types.PropertyGroup):
     name = bpy.props.StringProperty(default = "")
 
 
-def register():
-    bpy.types.Scene.GafferLights = bpy.props.StringProperty(
+class GafferProperties(bpy.types.PropertyGroup):
+    Lights = bpy.props.StringProperty(
         name = "Lights",
         default = "",
         description = "The objects to include in the isolation")
-    bpy.types.Scene.GafferColTempExpand = bpy.props.BoolProperty(
+    ColTempExpand = bpy.props.BoolProperty(
         name = "Color Temperature Presets",
         default = False,
         description = "Preset color temperatures based on real-world light sources")
-    bpy.types.Scene.GafferMoreExpand = bpy.props.StringProperty(
+    MoreExpand = bpy.props.StringProperty(
         name = "Show more options",
         default = "",
         description = "Show settings such as MIS, falloff, ray visibility...")
-    bpy.types.Scene.GafferMoreExpandAll = bpy.props.BoolProperty(
+    MoreExpandAll = bpy.props.BoolProperty(
         name = "Show more options",
         default = False,
         description = "Show settings such as MIS, falloff, ray visibility...")
-    bpy.types.Scene.GafferLightUIIndex = bpy.props.IntProperty(
+    LightUIIndex = bpy.props.IntProperty(
         name = "light index",
         default = 0,
         min = 0,
         description = "light index")
-    bpy.types.Scene.GafferLightsHiddenRecord = bpy.props.StringProperty(
+    LightsHiddenRecord = bpy.props.StringProperty(
         name = "hidden record",
         default = "",
         description = "hidden record")
-    bpy.types.Scene.GafferSoloActive = bpy.props.StringProperty(
+    SoloActive = bpy.props.StringProperty(
         name = "soloactive",
         default = '',
         description = "soloactive")
-    bpy.types.Scene.GafferVisibleLayersOnly = bpy.props.BoolProperty(
+    VisibleLayersOnly = bpy.props.BoolProperty(
         name = "Visible Layers Only",
         default = True,
         description = "Only show lamps that are on visible layers")
-    bpy.types.Scene.GafferVisibleLightsOnly = bpy.props.BoolProperty(
+    VisibleLightsOnly = bpy.props.BoolProperty(
         name = "Visible Lights Only",
         default = False,
         description = "Only show lamps that are not hidden")
-    bpy.types.Scene.GafferWorldVis = bpy.props.BoolProperty(
+    WorldVis = bpy.props.BoolProperty(
         name = "Hide World lighting",
         default = True,
         description = "Don't display (or render) the environment lighting",
         update = _update_world_vis)
-    bpy.types.Scene.GafferWorldReflOnly = bpy.props.BoolProperty(
+    WorldReflOnly = bpy.props.BoolProperty(
         name = "Reflection Only",
         default = False,
         description = "Only show the World lighting in reflections",
         update = _update_world_refl_only)
-    bpy.types.Scene.GafferLightRadiusAlpha = bpy.props.FloatProperty(
+    LightRadiusAlpha = bpy.props.FloatProperty(
         name = "Alpha",
         default = 0.6,
         min = 0,
         max = 1,
         description = "The opacity of the overlaid circles")
-    bpy.types.Scene.GafferLightRadiusUseColor = bpy.props.BoolProperty(
+    LightRadiusUseColor = bpy.props.BoolProperty(
         name = "Use Color",
         default = True,
         description = "Draw the radius of each light in the same color as the light")
-    bpy.types.Scene.GafferLabelUseColor = bpy.props.BoolProperty(
+    LabelUseColor = bpy.props.BoolProperty(
         name = "Use Color",
         default = True,
         description = "Draw the label of each light in the same color as the light")
-    bpy.types.Scene.GafferLightRadiusSelectedOnly = bpy.props.BoolProperty(
+    LightRadiusSelectedOnly = bpy.props.BoolProperty(
         name = "Selected Only",
         default = False,
         description = "Draw the radius for every visible light, or only selected lights")
-    bpy.types.Scene.GafferLightRadiusXray = bpy.props.BoolProperty(
+    LightRadiusXray = bpy.props.BoolProperty(
         name = "X-Ray",
         default = False,
         description = "Draw the circle in front of all objects")
-    bpy.types.Scene.GafferLightRadiusDrawType = bpy.props.EnumProperty(
+    LightRadiusDrawType = bpy.props.EnumProperty(
         name="Draw Type",
         description="How should the radius display look?",
         default='solid',
         items=(("filled","Filled","Draw a circle filled with a solid color"),
                ("solid","Solid","Draw a solid outline of the circle"),
                ("dotted","Dotted","Draw a dotted outline of the circle")))
-    bpy.types.Scene.GafferDefaultRadiusColor = bpy.props.FloatVectorProperty(
+    DefaultRadiusColor = bpy.props.FloatVectorProperty(
         name="Default Color",
         description="When 'Use Color' is disaled, or when the color of a light is unknown (such as when using a texture), this color is used instead",
         subtype="COLOR",
@@ -173,7 +173,7 @@ def register():
         min=0.0,
         max=1.0,
         default=(1.0,1.0,1.0))
-    bpy.types.Scene.GafferDefaultLabelBGColor = bpy.props.FloatVectorProperty(
+    DefaultLabelBGColor = bpy.props.FloatVectorProperty(
         name="Background Color",
         description="When 'Use Color' is disaled, or when the color of a light is unknown (such as when using a texture), this color is used instead",
         subtype="COLOR",
@@ -181,25 +181,25 @@ def register():
         min=0.0,
         max=1.0,
         default=(0.0,0.0,0.0))
-    bpy.types.Scene.GafferLabelAlpha = bpy.props.FloatProperty(
+    LabelAlpha = bpy.props.FloatProperty(
         name = "Alpha",
         default = 0.5,
         min = 0,
         max = 1,
         description = "The opacity of the drawn labels")
-    bpy.types.Scene.GafferLabelFontSize = bpy.props.IntProperty(
+    LabelFontSize = bpy.props.IntProperty(
         name = "Font Size",
         default = 14,
         min = 1,
         description = "How large the text is drawn")
-    bpy.types.Scene.GafferLabelDrawType = bpy.props.EnumProperty(
+    LabelDrawType = bpy.props.EnumProperty(
         name="Draw Type",
         description="How should the label look?",
         default='color_bg',
         items=(("color_bg","Colored background, plain text","Show the label name on a colored background"),
                ("plain_bg","Colored text in plain background","Show the label name in color, on a plain background"),
                ("color_text","Text only, no background","Show the text without any background")))
-    bpy.types.Scene.GafferLabelTextColor = bpy.props.FloatVectorProperty(
+    LabelTextColor = bpy.props.FloatVectorProperty(
         name="Text Color",
         description="The color of the label name text",
         subtype="COLOR",
@@ -207,7 +207,7 @@ def register():
         min=0.0,
         max=1.0,
         default=(1.0,1.0,1.0))
-    bpy.types.Scene.GafferLabelAlign = bpy.props.EnumProperty(
+    LabelAlign = bpy.props.EnumProperty(
         name="Alignment",
         description="The positioning of the label relative to the lamp",
         default='r',
@@ -220,27 +220,26 @@ def register():
                ("tl","Top Left","Positioned above and to the left of the light"),
                ("tr","Top Right","Positioned below and to the right of the light"),
                ("br","Bottom Right","Positioned above and to the right of the light")))
-    bpy.types.Scene.GafferLabelMargin = bpy.props.IntProperty(
+    LabelMargin = bpy.props.IntProperty(
         name = "Margin",
         default = 90,
         description = "Draw the label this distance away from the light")
-    bpy.types.Scene.GafferSunObject = bpy.props.StringProperty(
+    SunObject = bpy.props.StringProperty(
         name="Sun Obj",
         default="",
         description="The lamp object to use to drive the Sky rotation")
 
     # Internal vars (not shown in UI)
-    bpy.types.Scene.GafferIsShowingRadius = bpy.props.BoolProperty(default = False)
-    bpy.types.Scene.GafferIsShowingLabel = bpy.props.BoolProperty(default = False)
-    bpy.types.Scene.GafferBlacklistIndex = bpy.props.IntProperty(default = 0)
-    bpy.types.Scene.GafferVarNameCounter = bpy.props.IntProperty(default = 0)
+    IsShowingRadius = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
+    IsShowingLabel = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
+    BlacklistIndex = bpy.props.IntProperty(default = 0, options={'HIDDEN'})
+    VarNameCounter = bpy.props.IntProperty(default = 0, options={'HIDDEN'})
+    Blacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
+def register():
     bpy.types.NODE_PT_active_node_generic.append(ui.gaffer_node_menu_func)
-
     bpy.utils.register_module(__name__)
-
-    bpy.types.Scene.GafferBlacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
-
+    bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
     bpy.app.handlers.load_post.append(operators.load_handler)
 
 def unregister():
@@ -248,42 +247,12 @@ def unregister():
 
     if GafShowLightRadius._handle is not None:
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
-        bpy.context.scene.GafferIsShowingRadius = False
+        bpy.context.scene.gaf_props.IsShowingRadius = False
     if GafShowLightLabel._handle is not None:
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
-        bpy.context.scene.GafferIsShowingLabel = False
+        bpy.context.scene.gaf_props.IsShowingLabel = False
 
-    del bpy.types.Scene.GafferLights
-    del bpy.types.Scene.GafferColTempExpand
-    del bpy.types.Scene.GafferMoreExpand
-    del bpy.types.Scene.GafferLightUIIndex
-    del bpy.types.Scene.GafferLightsHiddenRecord
-    del bpy.types.Scene.GafferSoloActive
-    del bpy.types.Scene.GafferVisibleLayersOnly
-    del bpy.types.Scene.GafferVisibleLightsOnly
-    del bpy.types.Scene.GafferWorldVis
-    del bpy.types.Scene.GafferWorldReflOnly
-    del bpy.types.Scene.GafferLightRadiusAlpha
-    del bpy.types.Scene.GafferLightRadiusUseColor
-    del bpy.types.Scene.GafferLabelUseColor
-    del bpy.types.Scene.GafferLightRadiusSelectedOnly
-    del bpy.types.Scene.GafferLightRadiusXray
-    del bpy.types.Scene.GafferLightRadiusDrawType
-    del bpy.types.Scene.GafferDefaultRadiusColor
-    del bpy.types.Scene.GafferDefaultLabelBGColor
-    del bpy.types.Scene.GafferLabelAlpha
-    del bpy.types.Scene.GafferLabelFontSize
-    del bpy.types.Scene.GafferLabelDrawType
-    del bpy.types.Scene.GafferLabelTextColor
-    del bpy.types.Scene.GafferLabelAlign
-    del bpy.types.Scene.GafferLabelMargin
-    del bpy.types.Scene.GafferSunObject
-
-    del bpy.types.Scene.GafferIsShowingRadius
-    del bpy.types.Scene.GafferIsShowingLabel
-    del bpy.types.Scene.GafferBlacklistIndex
-    del bpy.types.Scene.GafferVarNameCounter
-    del bpy.types.Scene.GafferBlacklist
+    del bpy.types.Scene.gaf_props
 
     bpy.types.NODE_PT_active_node_generic.remove(ui.gaffer_node_menu_func)
 

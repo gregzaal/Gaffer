@@ -158,7 +158,7 @@ def refresh_light_list(scene):
             if light[2]:
                 if nodes[light[2]].type != 'LIGHT_FALLOFF' and bpy.data.objects[light[0]].GafferFalloff != 'quadratic':
                     bpy.data.objects[light[0]].GafferFalloff = 'quadratic'
-    scene.GafferLights = str(m)
+    scene.gaf_props.Lights = str(m)
 
 def force_update(context, obj=None):
     if not obj:
@@ -275,10 +275,10 @@ def getHiddenStatus(scene, lights):
             temparr = [light[0], bpy.data.objects[light[0]].hide, bpy.data.objects[light[0]].hide_render]
             statelist.append(temparr)
 
-    temparr = ["WorldEnviroLight", scene.GafferWorldVis, scene.GafferWorldReflOnly]
+    temparr = ["WorldEnviroLight", scene.gaf_props.WorldVis, scene.gaf_props.WorldReflOnly]
     statelist.append(temparr)
 
-    scene.GafferLightsHiddenRecord = str(statelist)
+    scene.gaf_props.LightsHiddenRecord = str(statelist)
 
 def isOnVisibleLayer(obj, scene):
     obj_layers = []
@@ -300,7 +300,7 @@ def isOnVisibleLayer(obj, scene):
 
 def dictOfLights():
     # Create dict of light name as key with node name as value
-    lights = stringToNestedList(bpy.context.scene.GafferLights, stripquotes=True)
+    lights = stringToNestedList(bpy.context.scene.gaf_props.Lights, stripquotes=True)
     lights_with_nodes = []
     light_dict = {}
     if lights:
@@ -324,7 +324,7 @@ def setGafferNode(context, nodetype, tree=None, obj=None):
     else:
         nodetree = context.space_data.node_tree
     node = nodetree.nodes.active
-    lights = stringToNestedList(context.scene.GafferLights, stripquotes=True)
+    lights = stringToNestedList(context.scene.gaf_props.Lights, stripquotes=True)
 
     if obj == None:
         obj = context.object
@@ -349,12 +349,12 @@ def setGafferNode(context, nodetype, tree=None, obj=None):
                     socket_index += 1
                 break
     # TODO catch if there is no available socket to use
-    context.scene.GafferLights = str(lights)
+    context.scene.gaf_props.Lights = str(lights)
 
 def do_update_falloff(self):
     light = self
     scene = bpy.context.scene
-    lights = stringToNestedList(scene.GafferLights, stripquotes=True)
+    lights = stringToNestedList(scene.gaf_props.Lights, stripquotes=True)
     lightitems = []
     for l in lights:
         if l[0] == light.name:
@@ -402,11 +402,11 @@ def _update_falloff(self, context):
 def refresh_bgl():
     print ("refreshed bgl")
 
-    if bpy.context.scene.GafferIsShowingRadius:
+    if bpy.context.scene.gaf_props.IsShowingRadius:
         bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
         bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
 
-    if bpy.context.scene.GafferIsShowingLabel:
+    if bpy.context.scene.gaf_props.IsShowingLabel:
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
 

@@ -31,18 +31,18 @@ from .operators import *
 '''
     INTERFACE
 '''
-def draw_renderer_independant(scene, row, light, users=[None, 1]):  # UI stuff that's shown for all renderers
+def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stuff that's shown for all renderers
     '''
         Parameters:
         users: a list, 0th position is data name, 1st position is number of users
     '''
 
-    if "_Light:_(" + light.name + ")_" in scene.GafferMoreExpand and not scene.GafferMoreExpandAll:
+    if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
         row.operator("gaffer.more_options_hide", icon='TRIA_DOWN', text='', emboss=False).light = light.name
-    elif not scene.GafferMoreExpandAll:
+    elif not gaf_props.MoreExpandAll:
         row.operator("gaffer.more_options_show", icon='TRIA_RIGHT', text='', emboss=False).light = light.name
 
-    if scene.GafferSoloActive == '':
+    if gaf_props.SoloActive == '':
         # Don't allow names to be edited during solo, will break the record of what was originally hidden
         row.operator('gaffer.rename', text=light.name).light = light.name
     else:
@@ -59,13 +59,13 @@ def draw_renderer_independant(scene, row, light, users=[None, 1]):  # UI stuff t
     selop = row.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select else 'SMALL_TRI_RIGHT_VEC', text="", emboss=False)
     selop.light = light.name
     selop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
-    if scene.GafferSoloActive == '':
+    if gaf_props.SoloActive == '':
         solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
         solobtn.light = light.name
         solobtn.showhide = True
         solobtn.worldsolo = False
         solobtn.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
-    elif scene.GafferSoloActive == light.name:
+    elif gaf_props.SoloActive == light.name:
         solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='', emboss=False)
         solobtn.light = light.name
         solobtn.showhide = False
@@ -75,6 +75,7 @@ def draw_renderer_independant(scene, row, light, users=[None, 1]):  # UI stuff t
 def draw_BI_UI(context, layout, lights):
     maincol = layout.column(align=True)
     scene = context.scene
+    gaf_props = scene.gaf_props
 
     lights_to_show = []
     # Check validity of list and make list of lights to display
@@ -82,9 +83,9 @@ def draw_BI_UI(context, layout, lights):
         try:
             if light[0]:
                 a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
-                if (scene.GafferVisibleLightsOnly and not a.hide) or (not scene.GafferVisibleLightsOnly):
-                    if (scene.GafferVisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not scene.GafferVisibleLayersOnly):
-                        if a.name not in [o.name for o in scene.GafferBlacklist]:
+                if (gaf_props.VisibleLightsOnly and not a.hide) or (not gaf_props.VisibleLightsOnly):
+                    if (gaf_props.VisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not gaf_props.VisibleLayersOnly):
+                        if a.name not in [o.name for o in gaf_props.Blacklist]:
                             lights_to_show.append(light)
         except:
             box = maincol.box()
@@ -120,7 +121,7 @@ def draw_BI_UI(context, layout, lights):
         row = col.row(align=True)
 
         users = ['LAMP' + light.data.name, duplicates['LAMP' + light.data.name]]
-        draw_renderer_independant(scene, row, light, users)
+        draw_renderer_independant(gaf_props, row, light, users)
 
         # strength
         row = col.row(align=True)
@@ -135,7 +136,7 @@ def draw_BI_UI(context, layout, lights):
         subrow.prop(light.data, 'color', text='')
 
         # More Options
-        if "_Light:_(" + light.name + ")_" in scene.GafferMoreExpand or scene.GafferMoreExpandAll:
+        if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
             if light.data.type != 'HEMI':
                 if light.data.type == 'AREA':
                     col = box.column()
@@ -194,18 +195,18 @@ def draw_BI_UI(context, layout, lights):
 
         row = col.row(align=True)
 
-        if "_Light:_(WorldEnviroLight)_" in scene.GafferMoreExpand and not scene.GafferMoreExpandAll:
+        if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
             row.operator("gaffer.more_options_hide", icon='TRIA_DOWN', text='', emboss=False).light = "WorldEnviroLight"
-        elif not scene.GafferMoreExpandAll:
+        elif not gaf_props.MoreExpandAll:
             row.operator("gaffer.more_options_show", icon='TRIA_RIGHT', text='', emboss=False).light = "WorldEnviroLight"
 
         row.label(text="World")
-        if scene.GafferSoloActive == '':
+        if gaf_props.SoloActive == '':
             solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = True
             solobtn.worldsolo = True
-        elif scene.GafferSoloActive == "WorldEnviroLight":
+        elif gaf_props.SoloActive == "WorldEnviroLight":
             solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = False
@@ -221,7 +222,7 @@ def draw_BI_UI(context, layout, lights):
         if world.use_sky_blend:
             row.prop(world, 'zenith_color', text='')
 
-        if "_Light:_(WorldEnviroLight)_" in scene.GafferMoreExpand or scene.GafferMoreExpandAll:
+        if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
             col = worldcol.column()
             row = col.row(align=True)
             row.prop(world, 'use_sky_blend')
@@ -266,6 +267,7 @@ def draw_BI_UI(context, layout, lights):
 def draw_cycles_UI(context, layout, lights):
     maincol = layout.column(align=False)
     scene = context.scene
+    gaf_props = scene.gaf_props
 
     lights_to_show = []
     # Check validity of list and make list of lights to display
@@ -273,7 +275,7 @@ def draw_cycles_UI(context, layout, lights):
         try:
             if light[0]:
                 a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
-                if (scene.GafferVisibleLightsOnly and not a.hide) or (not scene.GafferVisibleLightsOnly):
+                if (gaf_props.VisibleLightsOnly and not a.hide) or (not gaf_props.VisibleLightsOnly):
                     if a.type != 'LAMP':
                         b = bpy.data.materials[light[1][1:-1]]
                         if b.use_nodes:
@@ -281,8 +283,8 @@ def draw_cycles_UI(context, layout, lights):
                     else:
                         if a.data.use_nodes:
                             c = a.data.node_tree.nodes[light[2][1:-1]]
-                    if (scene.GafferVisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not scene.GafferVisibleLayersOnly):
-                        if a.name not in [o.name for o in scene.GafferBlacklist]:
+                    if (gaf_props.VisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not gaf_props.VisibleLayersOnly):
+                        if a.name not in [o.name for o in gaf_props.Blacklist]:
                             lights_to_show.append(light)
         except:
             box = maincol.box()
@@ -368,7 +370,7 @@ def draw_cycles_UI(context, layout, lights):
                 users = ['LAMP' + light.data.name, duplicates['LAMP' + light.data.name]]
             else:
                 users = ['MAT' + material.name, duplicates['MAT' + material.name]]
-            draw_renderer_independant(scene, row, light, users)
+            draw_renderer_independant(gaf_props, row, light, users)
 
             # strength
             if not is_portal:
@@ -423,7 +425,7 @@ def draw_cycles_UI(context, layout, lights):
                             row.prop(from_node, 'image', text='')
                         elif from_node.type == 'BLACKBODY':
                             row.prop(from_node.inputs[0], 'default_value', text='Temperature')
-                            if scene.GafferColTempExpand and scene.GafferLightUIIndex == i:
+                            if gaf_props.ColTempExpand and gaf_props.LightUIIndex == i:
                                 row.operator('gaffer.col_temp_hide', text='', icon='MOVE_UP_VEC')
                                 col = col.column(align=True)
                                 col.separator()
@@ -444,7 +446,7 @@ def draw_cycles_UI(context, layout, lights):
                             row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
 
             # More Options
-            if "_Light:_(" + light.name + ")_" in scene.GafferMoreExpand or scene.GafferMoreExpandAll:
+            if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
                 col = box.column()
                 row = col.row(align=True)
                 if light.type == 'LAMP':
@@ -508,20 +510,20 @@ def draw_cycles_UI(context, layout, lights):
 
         row = col.row(align=True)
 
-        if "_Light:_(WorldEnviroLight)_" in scene.GafferMoreExpand and not scene.GafferMoreExpandAll:
+        if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
             row.operator("gaffer.more_options_hide", icon='TRIA_DOWN', text='', emboss=False).light = "WorldEnviroLight"
-        elif not scene.GafferMoreExpandAll:
+        elif not gaf_props.MoreExpandAll:
             row.operator("gaffer.more_options_show", icon='TRIA_RIGHT', text='', emboss=False).light = "WorldEnviroLight"
 
         row.label(text="World")
-        row.prop(scene, "GafferWorldVis", text="", icon='%s' % 'RESTRICT_VIEW_OFF' if scene.GafferWorldVis else 'RESTRICT_VIEW_ON', emboss=False)
+        row.prop(gaf_props, "WorldVis", text="", icon='%s' % 'RESTRICT_VIEW_OFF' if gaf_props.WorldVis else 'RESTRICT_VIEW_ON', emboss=False)
 
-        if scene.GafferSoloActive == '':
+        if gaf_props.SoloActive == '':
             solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = True
             solobtn.worldsolo = True
-        elif scene.GafferSoloActive == "WorldEnviroLight":
+        elif gaf_props.SoloActive == "WorldEnviroLight":
             solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = False
@@ -603,12 +605,12 @@ def draw_cycles_UI(context, layout, lights):
             row.prop(world, 'horizon_color', text='')
 
         # Extra
-        if "_Light:_(WorldEnviroLight)_" in scene.GafferMoreExpand or scene.GafferMoreExpandAll:
+        if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
             worldcol.separator()
             col = worldcol.column()
             row = col.row()
             row.prop(world.cycles, "sample_as_light", text="MIS", toggle=True)
-            row.prop(scene, "GafferWorldReflOnly", text="Refl Only")
+            row.prop(gaf_props, "WorldReflOnly", text="Refl Only")
             if world.cycles.sample_as_light:
                 col = worldcol.column()
                 row = col.row(align=True)
@@ -628,11 +630,11 @@ def draw_cycles_UI(context, layout, lights):
                     if world.node_tree and world.use_nodes:
                         col = worldcol.column(align = True)
                         row = col.row(align = True)
-                        if context.scene.GafferSunObject:
+                        if gaf_props.SunObject:
                             row.operator('gaffer.link_sky_to_sun', icon="LAMP_SUN").node_name = color_node.name
                         else:
                             row.label("Link Sky Texture:")
-                        row.prop_search(context.scene, "GafferSunObject", bpy.data, "objects", text="")
+                        row.prop_search(gaf_props, "SunObject", bpy.data, "objects", text="")
 
 
 class GafferPanelLights(bpy.types.Panel):
@@ -648,27 +650,28 @@ class GafferPanelLights(bpy.types.Panel):
 
     def draw(self, context):
         scene = context.scene
-        lights_str = scene.GafferLights
+        gaf_props = scene.gaf_props
+        lights_str = gaf_props.Lights
         lights = stringToNestedList(lights_str)
         layout = self.layout
 
         col = layout.column(align=True)
         row = col.row(align=True)
-        if scene.GafferSoloActive != "":  # if in solo mode
+        if gaf_props.SoloActive != "":  # if in solo mode
             solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='')
             solobtn.light = "None"
             solobtn.showhide = False
             solobtn.worldsolo = False
         row.operator('gaffer.refresh_lights', text="Refresh", icon='FILE_REFRESH')  # may not be needed if drawing errors are cought correctly (eg newly added lights)
-        row.prop(scene, "GafferVisibleLayersOnly", text='', icon='LAYER_ACTIVE')
-        row.prop(scene, "GafferVisibleLightsOnly", text='', icon='VISIBLE_IPO_ON')
-        row.prop(scene, "GafferMoreExpandAll", text='', icon='PREFERENCES')
+        row.prop(gaf_props, "VisibleLayersOnly", text='', icon='LAYER_ACTIVE')
+        row.prop(gaf_props, "VisibleLightsOnly", text='', icon='VISIBLE_IPO_ON')
+        row.prop(gaf_props, "MoreExpandAll", text='', icon='PREFERENCES')
 
-        if scene.GafferSoloActive != '':
+        if gaf_props.SoloActive != '':
             try:
-                o = bpy.data.objects[scene.GafferSoloActive]  # Will cause exception if object by that name doesn't exist
+                o = bpy.data.objects[gaf_props.SoloActive]  # Will cause exception if object by that name doesn't exist
             except:
-                if scene.GafferSoloActive != "WorldEnviroLight":
+                if gaf_props.SoloActive != "WorldEnviroLight":
                     # In case solo'd light changes name, theres no other way to exit solo mode
                     col.separator()
                     row = col.row()
@@ -698,6 +701,7 @@ class GafferPanelTools(bpy.types.Panel):
 
     def draw(self, context):
         scene = context.scene
+        gaf_props = scene.gaf_props
         layout = self.layout
 
         maincol = layout.column()
@@ -712,49 +716,49 @@ class GafferPanelTools(bpy.types.Panel):
         maincol.separator()
 
         # Draw Radius
-        box = maincol.box() if scene.GafferIsShowingRadius else maincol.column()
+        box = maincol.box() if gaf_props.IsShowingRadius else maincol.column()
         sub = box.column(align=True)
         row = sub.row(align=True)
-        row.operator('gaffer.show_radius', text="Show Radius" if not scene.GafferIsShowingRadius else "Hide Radius", icon='META_EMPTY')
-        if scene.GafferIsShowingRadius:
+        row.operator('gaffer.show_radius', text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius", icon='META_EMPTY')
+        if gaf_props.IsShowingRadius:
             row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
-            sub.prop(scene, 'GafferLightRadiusAlpha', slider=True)
+            sub.prop(gaf_props, 'LightRadiusAlpha', slider=True)
             row = sub.row(align=True)
-            row.active = scene.GafferIsShowingRadius
-            row.prop(scene, 'GafferLightRadiusDrawType', text="")
-            row.prop(scene, 'GafferLightRadiusUseColor')
+            row.active = gaf_props.IsShowingRadius
+            row.prop(gaf_props, 'LightRadiusDrawType', text="")
+            row.prop(gaf_props, 'LightRadiusUseColor')
             row = sub.row(align=True)
-            row.active = scene.GafferIsShowingRadius
-            row.prop(scene, 'GafferLightRadiusXray')
-            row.prop(scene, 'GafferLightRadiusSelectedOnly')
+            row.active = gaf_props.IsShowingRadius
+            row.prop(gaf_props, 'LightRadiusXray')
+            row.prop(gaf_props, 'LightRadiusSelectedOnly')
             row = sub.row(align=True)
-            row.prop(scene, 'GafferDefaultRadiusColor')
+            row.prop(gaf_props, 'DefaultRadiusColor')
 
         maincol.separator()
 
         # Draw Label
-        box = maincol.box() if scene.GafferIsShowingLabel else maincol.column()
+        box = maincol.box() if gaf_props.IsShowingLabel else maincol.column()
         sub = box.column(align=True)
         row = sub.row(align=True)
-        row.operator('gaffer.show_label', text="Show Label" if not scene.GafferIsShowingLabel else "Hide Label", icon='LONGDISPLAY')
-        if scene.GafferIsShowingLabel:
+        row.operator('gaffer.show_label', text="Show Label" if not gaf_props.IsShowingLabel else "Hide Label", icon='LONGDISPLAY')
+        if gaf_props.IsShowingLabel:
             row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
-            label_draw_type = scene.GafferLabelDrawType
-            sub.prop(scene, 'GafferLabelAlpha', slider=True)
-            sub.prop(scene, 'GafferLabelFontSize')
+            label_draw_type = gaf_props.LabelDrawType
+            sub.prop(gaf_props, 'LabelAlpha', slider=True)
+            sub.prop(gaf_props, 'LabelFontSize')
             row = sub.row(align=True)
-            row.prop(scene, 'GafferLabelDrawType', text='')
-            row.prop(scene, 'GafferLabelUseColor')
-            if label_draw_type == 'color_bg' or not scene.GafferLabelUseColor:
+            row.prop(gaf_props, 'LabelDrawType', text='')
+            row.prop(gaf_props, 'LabelUseColor')
+            if label_draw_type == 'color_bg' or not gaf_props.LabelUseColor:
                 row = sub.row(align=True)
-                row.prop(scene, 'GafferLabelTextColor')
-            if label_draw_type == 'plain_bg' or (not scene.GafferLabelUseColor and label_draw_type != 'color_text'):
+                row.prop(gaf_props, 'LabelTextColor')
+            if label_draw_type == 'plain_bg' or (not gaf_props.LabelUseColor and label_draw_type != 'color_text'):
                 row = sub.row(align=True)
-                row.prop(scene, 'GafferDefaultLabelBGColor')
+                row.prop(gaf_props, 'DefaultLabelBGColor')
             row = sub.row(align=True)
-            row.prop(scene, 'GafferLabelAlign', text="")
-            if scene.GafferLabelAlign != 'c':
-                row.prop(scene, 'GafferLabelMargin')
+            row.prop(gaf_props, 'LabelAlign', text="")
+            if gaf_props.LabelAlign != 'c':
+                row.prop(gaf_props, 'LabelMargin')
 
         maincol.separator()
 
@@ -762,8 +766,8 @@ class GafferPanelTools(bpy.types.Panel):
         box = maincol.box()
         sub = box.column(align=True)
         sub.label('Blacklist:')
-        if context.scene.GafferBlacklist:
-            sub.template_list("OBJECT_UL_object_list", "", context.scene, "GafferBlacklist", scene, "GafferBlacklistIndex", rows=2)
+        if gaf_props.Blacklist:
+            sub.template_list("OBJECT_UL_object_list", "", gaf_props, "Blacklist", gaf_props, "BlacklistIndex", rows=2)
         row = sub.row(align=True)
         row.operator('gaffer.blacklist_add', icon='ZOOMIN')
         row.operator('gaffer.blacklist_remove', icon='ZOOMOUT')
