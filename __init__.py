@@ -245,11 +245,11 @@ def register():
 def unregister():
     bpy.app.handlers.load_post.remove(operators.load_handler)
 
-    if GafShowLightRadius._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
+    if operators.GafShowLightRadius._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(operators.GafShowLightRadius._handle, 'WINDOW')
         bpy.context.scene.gaf_props.IsShowingRadius = False
-    if GafShowLightLabel._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
+    if operators.GafShowLightLabel._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(operators.GafShowLightLabel._handle, 'WINDOW')
         bpy.context.scene.gaf_props.IsShowingLabel = False
 
     del bpy.types.Scene.gaf_props
