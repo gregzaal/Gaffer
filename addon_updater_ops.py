@@ -528,12 +528,12 @@ def update_notice_box_ui(self, context):
 	box = layout.box()
 	col = box.column(align=True)
 	col.label("Update ready!",icon="ERROR")
-	col.operator("wm.url_open", text="Open website").url = updater.website
 	#col.operator("wm.url_open",text="Direct download").url=updater.update_link
-	col.operator(addon_updater_install_manually.bl_idname, "Install manually")
 	if updater.manual_only==False:
 		col.operator(addon_updater_update_now.bl_idname,
 						"Update now", icon="LOOP_FORWARDS")
+	col.operator("wm.url_open", text="Open website").url = updater.website
+	col.operator(addon_updater_install_manually.bl_idname, "Install manually")
 	col.operator(addon_updater_ignore.bl_idname,icon="X")
 
 
