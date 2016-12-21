@@ -732,11 +732,14 @@ class GafShowLightLabel(bpy.types.Operator):
                 if loc:  # sometimes this is None if lights are out of view
                     x, y = loc
 
-                    char_width = 38 * font_size_factor
+                    char_width = 36 * font_size_factor
                     height = 65 * font_size_factor
-                    width = len(obj.name)*char_width
+                    width = len(obj.name) * int(char_width) + 1
+                    if item[2]:
+                        width = max(width, len(item[2]) * int(char_width*0.8) + 1)
 
-                    x, y = self.alignment(x, y, width, height, scene.gaf_props.LabelMargin*font_size_factor)
+                    x, y = self.alignment(x, y, width, height if not item[2] else height - height * 0.8 - 4, scene.gaf_props.LabelMargin*font_size_factor)
+                    y_sub = y - (8 * font_size_factor) - height
 
                     if draw_type != 'color_text':
                         # Draw background rectangles
@@ -747,9 +750,13 @@ class GafShowLightLabel(bpy.types.Operator):
                             bgl.glColor4f(background_color[0], background_color[1], background_color[2], scene.gaf_props.LabelAlpha)
 
                         x1 = x
-                        y1 = y-(8 * font_size_factor)
-                        x2 = x1+width
-                        y2 = y1+height
+                        x2 = x1 + width
+                        if not item[2]:
+                            y1 = y - (8 * font_size_factor)
+                            y2 = y1 + height
+                        else:
+                            y1 = y - (8 * font_size_factor) - height * 0.8 - 4
+                            y2 = y1 + height + height * 0.8 + 4
 
                         draw_rounded_rect(x1, y1, x2, y2, 20*font_size_factor)
 
@@ -764,6 +771,11 @@ class GafShowLightLabel(bpy.types.Operator):
                     blf.position(font_id, x, y, 0)
                     blf.size(font_id, scene.gaf_props.LabelFontSize, context.user_preferences.system.dpi)
                     blf.draw(font_id, obj.name)
+
+                    if item[2]:
+                        blf.position(font_id, x, y_sub, 0)
+                        blf.size(font_id, int(scene.gaf_props.LabelFontSize*0.8), context.user_preferences.system.dpi)
+                        blf.draw(font_id, item[2])
 
                     bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
     
@@ -794,7 +806,10 @@ class GafShowLightLabel(bpy.types.Operator):
             for obj in scene.objects:
                 color = scene.gaf_props.DefaultLabelBGColor
                 nodes = None
+                data = None
                 if obj.type == 'LAMP':
+                    if obj.data.users > 1:
+                        data = obj.data.name
                     if scene.render.engine == 'CYCLES' and obj.data.use_nodes:
                         nodes = obj.data.node_tree.nodes
                 elif scene.render.engine == 'CYCLES' and obj.type == 'MESH' and len(obj.material_slots) > 0:
@@ -803,6 +818,8 @@ class GafShowLightLabel(bpy.types.Operator):
                             if slot.material.use_nodes:
                                 if [node for node in slot.material.node_tree.nodes if node.type == 'EMISSION']:
                                     nodes = slot.material.node_tree.nodes
+                                    if slot.material.users > 1:
+                                        data = slot.material.name
                                     break  # only use first emission material in slots
 
                 if nodes:
@@ -826,11 +843,11 @@ class GafShowLightLabel(bpy.types.Operator):
                             elif from_node.type == 'WAVELENGTH':
                                 color = ['WAVELENGTH', from_node]
 
-                        self.objects.append([obj, color])
+                        self.objects.append([obj, color, data])
 
                 if obj.type == 'LAMP' and not nodes:  # is a lamp but doesnt use_nodes
                     color = obj.data.color
-                    self.objects.append([obj, color])
+                    self.objects.append([obj, color, data])
 
             return {'RUNNING_MODAL'}
 
