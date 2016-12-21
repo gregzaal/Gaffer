@@ -43,13 +43,21 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
         row.operator("gaffer.more_options_show", icon='TRIA_RIGHT', text='', emboss=False).light = light.name
 
     if gaf_props.SoloActive == '':
-        # Don't allow names to be edited during solo, will break the record of what was originally hidden
-        row.operator('gaffer.rename', text=light.name).light = light.name
+        if users[1] == 1:
+            row.operator('gaffer.rename', text=light.name).light = light.name
+        else:
+            data_name = users[0][4:] if users[0].startswith('LAMP') else users[0][3:]
+            op = row.operator('gaffer.rename', text='[' + str(users[1]) + '] ' + data_name)
+            op.multiuser = users[0]
+            op.light = data_name
+            # if light.type == 'LAMP':
+            #     op.multiuser = light.type
+            #     op.light = light.data.name
+            # else:
+            #     op.light = light.name
     else:
+        # Don't allow names to be edited during solo, will break the record of what was originally hidden
         row.label(text=light.name)
-
-    if users[1] > 1:
-        row.label(str(users[1]) + " Users")
 
     visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'RESTRICT_VIEW_ON' if light.hide else 'RESTRICT_VIEW_OFF', emboss=False)
     visop.light = light.name

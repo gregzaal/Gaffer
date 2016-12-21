@@ -57,15 +57,27 @@ class GafRename(bpy.types.Operator):
     bl_idname = 'gaffer.rename'
     bl_label = 'Rename This Light'
     bl_options = {'REGISTER', 'UNDO'}
-    light = bpy.props.StringProperty(name="New name:")
+    light = bpy.props.StringProperty(name="New name")
+    multiuser = bpy.props.StringProperty(default="")
     oldname = ""
+    users = []
+
+    def draw(self, context):
+        self.layout.prop(self, 'light')
+        if self.multiuser:
+            self.layout.label("You are renaming the " + ("lamp data" if self.multiuser.startswith("LAMP") else "material") + ", which has multiple users")
 
     def invoke(self, context, event):
         self.oldname = self.light
         return context.window_manager.invoke_props_popup(self, event)
 
     def execute(self, context):
-        context.scene.objects[self.oldname].name = self.light
+        if self.multiuser.startswith("LAMP"):
+            bpy.data.lamps[self.oldname].name = self.light
+        elif self.multiuser.startswith("MAT"):
+            bpy.data.materials[self.oldname].name = self.light
+        else:
+            context.scene.objects[self.oldname].name = self.light
         refresh_light_list(context.scene)
         return {'FINISHED'}
 
