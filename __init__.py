@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gaffer",
     "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
     "author": "Greg Zaal",
-    "version": (2, 5),
+    "version": (2, 6),
     "blender": (2, 77, 0),
     "location": "3D View > Tools",
     "warning": "",
