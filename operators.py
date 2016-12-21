@@ -48,9 +48,6 @@ def load_handler(dummy):
     bpy.context.scene.gaf_props.IsShowingLabel = False
     
 
-'''
-    OPERATORS
-'''
 class GafRename(bpy.types.Operator):
 
     'Rename this light'

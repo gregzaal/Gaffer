@@ -26,9 +26,6 @@ from bpy.app.handlers import persistent
 
 from .constants import *
 
-'''
-    FUNCTIONS
-'''
 
 def refresh_light_list(scene):
     m = []
@@ -160,11 +157,13 @@ def refresh_light_list(scene):
                     bpy.data.objects[light[0]].GafferFalloff = 'quadratic'
     scene.gaf_props.Lights = str(m)
 
+
 def force_update(context, obj=None):
     if not obj:
         context.space_data.node_tree.update_tag()
     else:
         obj.data.node_tree.update_tag()
+
 
 def stringToList(str="", stripquotes=False):
     raw = str.split(", ")
@@ -180,6 +179,7 @@ def stringToList(str="", stripquotes=False):
         raw = tmplist
     return raw
 
+
 def stringToNestedList(str="", stripquotes=False):
     raw = str.split("], ")
     raw[0] = (raw[0])[1:]
@@ -193,14 +193,17 @@ def stringToNestedList(str="", stripquotes=False):
         newraw.append(stringToList(item, stripquotes))
     return newraw
 
+
 def castBool(str):
     if str == 'True':
         return True
     else:
         return False
 
+
 def setColTemp(node, temp):
     node.inputs[0].default_value = temp
+
 
 def convert_temp_to_RGB(colour_temperature):
     """
@@ -263,9 +266,11 @@ def convert_temp_to_RGB(colour_temperature):
     
     return [red/255, green/255, blue/255]  # return RGB in a 0-1 range
 
+
 def convert_wavelength_to_RGB(wavelength):
     # normalize wavelength into a number between 0 and 80 and use it as the index for the list
     return wavelength_list[min(80, max(0, int((wavelength - 380) * 0.2)))]
+
 
 def getHiddenStatus(scene, lights):
     statelist = []
@@ -279,6 +284,7 @@ def getHiddenStatus(scene, lights):
     statelist.append(temparr)
 
     scene.gaf_props.LightsHiddenRecord = str(statelist)
+
 
 def isOnVisibleLayer(obj, scene):
     obj_layers = []
@@ -298,6 +304,7 @@ def isOnVisibleLayer(obj, scene):
     else:
         return False
 
+
 def dictOfLights():
     # Create dict of light name as key with node name as value
     lights = stringToNestedList(bpy.context.scene.gaf_props.Lights, stripquotes=True)
@@ -310,6 +317,7 @@ def dictOfLights():
                 lights_with_nodes.append(light[2])
         light_dict = dict(lights_with_nodes[i:i + 2] for i in range(0, len(lights_with_nodes), 2))
     return light_dict
+
 
 def setGafferNode(context, nodetype, tree=None, obj=None):
     if nodetype == 'STRENGTH':
@@ -350,6 +358,7 @@ def setGafferNode(context, nodetype, tree=None, obj=None):
                 break
     # TODO catch if there is no available socket to use
     context.scene.gaf_props.Lights = str(lights)
+
 
 def do_update_falloff(self):
     light = self
@@ -396,8 +405,10 @@ def do_update_falloff(self):
     except:
         print ("Warning: do_update_falloff failed, node may not exist anymore")
 
+
 def _update_falloff(self, context):
     do_update_falloff(self)
+
 
 def refresh_bgl():
     print ("refreshed bgl")
@@ -410,6 +421,7 @@ def refresh_bgl():
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
 
+
 def draw_rect(x1, y1, x2, y2):
     # For each quad, the draw order is important. Start with bottom left and go anti-clockwise.
     bgl.glBegin(bgl.GL_QUADS)
@@ -418,6 +430,7 @@ def draw_rect(x1, y1, x2, y2):
     bgl.glVertex2f(x2,y2)
     bgl.glVertex2f(x2,y1)
     bgl.glEnd()
+
 
 def draw_corner(x, y, r, corner):
     sides = 16
@@ -441,6 +454,7 @@ def draw_corner(x, y, r, corner):
         sine = r * sin(i * 2 * pi / sides) + y
         bgl.glVertex2f(cosine, sine)
     bgl.glEnd()
+
 
 def draw_rounded_rect(x1, y1, x2, y2, r):
     draw_rect(x1, y1, x2, y2)  # Main quad

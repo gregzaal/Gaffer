@@ -28,9 +28,7 @@ from .constants import *
 from .functions import *
 from .operators import *
 
-'''
-    INTERFACE
-'''
+
 def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stuff that's shown for all renderers
     '''
         Parameters:
