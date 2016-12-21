@@ -17,6 +17,7 @@
 # END GPL LICENSE BLOCK #####
 
 import bpy
+from . import addon_updater_ops
 from collections import OrderedDict
 import bgl, blf
 from math import pi, cos, sin, log
@@ -655,6 +656,8 @@ class GafferPanelLights(bpy.types.Panel):
         return True if context.scene.render.engine in supported_renderers else False
 
     def draw(self, context):
+        addon_updater_ops.check_for_update_background(context)
+
         scene = context.scene
         gaf_props = scene.gaf_props
         lights_str = gaf_props.Lights
@@ -692,6 +695,8 @@ class GafferPanelLights(bpy.types.Panel):
             draw_cycles_UI(context, layout, lights)
         else:
             layout.label ("Render Engine not supported!")
+
+        addon_updater_ops.update_notice_box_ui(self, context)
 
 
 class GafferPanelTools(bpy.types.Panel):

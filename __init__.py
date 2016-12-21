@@ -38,12 +38,54 @@ else:
     from . import constants, functions, operators, ui
 
 import bpy
+from . import addon_updater_ops
 from collections import OrderedDict
 import bgl, blf
 from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
+
+
+class GafferPreferences(bpy.types.AddonPreferences):
+    bl_idname = __package__
+
+    # addon updater preferences
+    auto_check_update = bpy.props.BoolProperty(
+        name = "Auto-check for Update",
+        description = "If enabled, auto-check for updates using an interval",
+        default = True,
+        )
+    updater_intrval_months = bpy.props.IntProperty(
+        name='Months',
+        description = "Number of months between checking for updates",
+        default=0,
+        min=0
+        )
+    updater_intrval_days = bpy.props.IntProperty(
+        name='Days',
+        description = "Number of days between checking for updates",
+        default=1,
+        min=0,
+        )
+    updater_intrval_hours = bpy.props.IntProperty(
+        name='Hours',
+        description = "Number of hours between checking for updates",
+        default=0,
+        min=0,
+        max=23
+        )
+    updater_intrval_minutes = bpy.props.IntProperty(
+        name='Minutes',
+        description = "Number of minutes between checking for updates",
+        default=0,
+        min=0,
+        max=59
+        )
+
+    def draw(self, context):
+        layout = self.layout
+        addon_updater_ops.update_settings_ui(self,context)
 
 
 def do_set_world_refl_only(context):
@@ -237,6 +279,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     Blacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
 def register():
+    addon_updater_ops.register(bl_info)
     bpy.types.NODE_PT_active_node_generic.append(ui.gaffer_node_menu_func)
     bpy.utils.register_module(__name__)
     bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
