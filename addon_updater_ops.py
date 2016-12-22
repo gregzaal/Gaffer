@@ -532,7 +532,7 @@ def update_notice_box_ui(self, context):
 	if updater.manual_only==False:
 		col.operator(addon_updater_update_now.bl_idname,
 						"Update now", icon="LOOP_FORWARDS")
-	col.operator("wm.url_open", text="Open website").url = updater.website
+	col.operator("wm.url_open", text="See what's new").url = updater.website
 	col.operator(addon_updater_install_manually.bl_idname, "Install manually")
 	col.operator(addon_updater_ignore.bl_idname,icon="X")
 
@@ -726,7 +726,7 @@ def register(bl_info):
 	#updater.addon = # define at top of module, must be done first
 
 	# Website for manual addon download, optional 
-	updater.website = "https://github.com/gregzaal/Gaffer"
+	updater.website = "https://blendermarket.com/products/gaffer-light-manager"
 	
 	# used to check/compare versions
 	updater.current_version = bl_info["version"] 
