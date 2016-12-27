@@ -1,12 +1,14 @@
 This is the Git repository for [Gaffer], the Blender Add-on for speeding up your lighting workflow.
 
-And yes, that means **you may download it completely free of charge** :) It's licensed as [GPL] like all Blender Add-ons, meaning it's free software that you can modify and redistribute it to your hearts content (as long as you keep the original license).
+And yes, that means **you may download it completely free of charge** :) It's licensed as [GPL] like all Blender Add-ons, meaning it's free software that you can modify and redistribute to your hearts content (as long as you keep the original license).
 
 ###But!
 
 $15 isn't much, every single sale motivates me to keep developing it. Seriously, whenever I get a "New Sale!" email, it instantly puts a smile on my face and makes my day.
 
 So if you'd like to support me, just head on over to the Blender Market and [buy it there] :)
+
+A portion of every sale is donated to the [Blender Development Fund] too.
 
 ---
 
@@ -54,6 +56,7 @@ For a detailed list of features, see the [Documentation].
 [Gaffer]:http://cgcookiemarkets.com/blender/all-products/gaffer-light-manager/
 [GPL]:http://www.gnu.org/copyleft/gpl.html
 [buy it there]:http://cgcookiemarkets.com/blender/all-products/gaffer-light-manager/
+[Blender Development Fund]:https://www.blender.org/foundation/development-fund/
 [Reynante Martinez]:http://www.reynantemartinez.com/
 [Matthew Heimlich]:http://cgcookie.com/blender/author/matt-heimlich/
 [Documentation]:http://cgcookiemarkets.com/blender/all-products/gaffer-light-manager/?view=docs
