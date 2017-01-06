@@ -1089,7 +1089,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
     def generate_thumb(self, name, files):
         import numpy
         # TODO run in background? or show some kind of progress bar
-        # threaded if possible
+        # TODO download instead of render if possible
 
         prefs = bpy.context.user_preferences.addons[__package__].preferences
 
@@ -1125,15 +1125,10 @@ class GafHDRIThumbGen(bpy.types.Operator):
         fp = os.path.join(prefs.hdri_path, chosen_file)
         thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
-            print ()
-            print (name)
             img = bpy.data.images.load(fp, check_existing=False)
             out_img = bpy.data.images.new("tmp_"+name+"__thumb", 256, 128, alpha=True)
-            print(out_img.file_format)
             out_img.filepath = thumb_file
-            print(out_img.file_format)
             out_img.file_format = 'JPEG'
-            print(out_img.file_format)
 
             pixels = []
             if downsample:
@@ -1145,10 +1140,12 @@ class GafHDRIThumbGen(bpy.types.Operator):
                 pixels = numpy.power(pixels, 1/2.2)
 
             out_img.pixels = pixels
-            print(out_img.file_format)
 
-            out_img.save()
-            print(out_img.file_format)
+            old_quality = context.scene.render.image_settings.quality
+            context.scene.render.image_settings.quality = 95
+            out_img.save_render(filepath = out_img.filepath, scene=context.scene)
+            context.scene.render.image_settings.quality = old_quality
+
             bpy.data.images.remove(img)
             bpy.data.images.remove(out_img)
 
