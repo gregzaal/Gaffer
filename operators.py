@@ -17,6 +17,7 @@
 # END GPL LICENSE BLOCK #####
 
 import bpy
+import json
 from collections import OrderedDict
 import bgl, blf
 from math import pi, cos, sin, log
@@ -992,3 +993,117 @@ class GafAimLight(bpy.types.Operator):
             return {'FINISHED'}
 
         return {'CANCELLED'}
+
+
+class GafDetectHDRIs(bpy.types.Operator):
+
+    "Look for HDRIs in the chosen folder, matching different resolutions and variants together based on filename"
+    bl_idname = 'gaffer.detect_hdris'
+    bl_label = 'Detect HDRIs'
+
+    hdris = {}
+
+    def check_folder_for_HDRIs(self, path):
+        allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
+        files = []
+        for f in os.listdir(path):
+            if os.path.isfile(os.path.join(path, f)):
+                files.append(f)
+            else:
+                self.check_folder_for_HDRIs(os.path.join(path, f))
+
+        prefs = bpy.context.user_preferences.addons[__package__].preferences
+        sub_path = path.replace(prefs.hdri_path, "")
+        if sub_path.startswith('\\') or sub_path.startswith('/'):
+            sub_path = sub_path[1:]
+
+        hdri_file_pairs = []
+        separators = ['_', '-', '.', ' ']
+        for f in files:
+            fn, ext = os.path.splitext(f)
+
+            if ext.lower() in allowed_file_types:
+                sep = ''
+                for c in fn[::-1]:  # Reversed filename to see which separator is last
+                    if c in separators:
+                        sep = c
+                        break
+                if sep != '':
+                    # Remove all character after the separator - what's left is the hdri name without resolution etc.
+                    hdri_name = sep.join(fn.split(sep)[:-1])
+                else:
+                    hdri_name = fn
+
+                # hdri_file_pairs.append([hdri_name, f])
+                hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
+
+        for h in hdri_file_pairs:
+            if h[0] in self.hdris:
+                self.hdris[h[0]].append(h[1])
+            else:
+                self.hdris[h[0]] = [h[1]]
+
+    def execute(self, context):
+        # TODO handle tags, and prevent losing user-edited tags
+        prefs = bpy.context.user_preferences.addons[__package__].preferences
+
+        self.check_folder_for_HDRIs(prefs.hdri_path)
+
+        with open(hdri_list_path, 'w') as f:
+            f.write(json.dumps(self.hdris, indent=4))
+
+        return {'FINISHED'}
+
+class GafHDRIThumbGen(bpy.types.Operator):
+
+    "Generate the thumbnail images for all HDRIs where they are missing"
+    bl_idname = 'gaffer.generate_hdri_thumbs'
+    bl_label = 'Generate Thumbnails'
+
+    # TODO render diffuse/gloss/plastic spheres instead of just the normal preview
+    # TODO option to try to download sphere renders instead of rendering locally, as well as a separate option to upload local renders to help others skip rendering locally again
+
+    def generate_thumb(self, name, files):
+        prefs = bpy.context.user_preferences.addons[__package__].preferences
+
+        chosen_file = ''
+        downsample = True
+
+        if len(files) == 1:
+            chosen_file = files[0]
+        else:
+            # First check if there are really small versions
+            for f in files:
+                if '256p' in f:
+                    chosen_file = f
+                    downsample = False  # Final thumb size is 256p, so no need to downsample
+                    break
+            if not chosen_file:
+                for f in files:
+                    if '512p' in f:
+                        chosen_file = f
+                        break
+                if not chosen_file:
+                    # Otherwise pick smallest file, but not one that has 'env' at the end,
+                    # since those are usually blurred
+                    file_sizes = {}
+                    for f in files:
+                        if not os.path.splitext(f)[0].lower().endswith('env'):
+                            file_sizes[f] = os.path.getsize(os.path.join(prefs.hdri_path, f))
+                    chosen_file = min(file_sizes, key=file_sizes.get)
+        if not chosen_file:
+            chosen_file = files[0]  # Safety fallback
+
+    '''
+    open image in blender
+    downsample if needed
+    save to jpg file
+    '''
+
+    def execute(self, context):
+        hdris = get_hdri_list()
+
+        for h in hdris:
+            self.generate_thumb(h, hdris[h])
+
+        return {'FINISHED'}

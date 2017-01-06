@@ -34,13 +34,17 @@ if "bpy" in locals():
     imp.reload(functions)
     imp.reload(operators)
     imp.reload(ui)
+    imp.reload(addon_updater)
+    imp.reload(addon_updater_ops)
 else:
-    from . import constants, functions, operators, ui
+    from . import constants, functions, operators, ui, addon_updater, addon_updater_ops
 
 import bpy
+import os
+import json
+import bgl, blf
 from . import addon_updater_ops
 from collections import OrderedDict
-import bgl, blf
 from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -83,8 +87,20 @@ class GafferPreferences(bpy.types.AddonPreferences):
         max=59
         )
 
+    hdri_path = bpy.props.StringProperty(
+        name="HDRI Folder",
+        subtype='DIR_PATH',
+        description='The folder where all your HDRIs are stored',
+        default='X:/tmp/HDRIs'  # TODO reset - maybe allow multiple HDRI folders
+        )
+
+
     def draw(self, context):
         layout = self.layout
+
+        col = layout.column()
+        col.prop(self, 'hdri_path')
+
         addon_updater_ops.update_settings_ui(self,context)
 
 

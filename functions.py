@@ -17,6 +17,7 @@
 # END GPL LICENSE BLOCK #####
 
 import bpy
+import json
 from collections import OrderedDict
 import bgl, blf
 from math import pi, cos, sin, log
@@ -467,3 +468,10 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
     draw_corner(x1, y2, r, 'TL')  # Top left
     draw_corner(x2, y2, r, 'TR')  # Top right
     draw_corner(x2, y1, r, 'BR')  # Bottom right
+
+
+def get_hdri_list():
+    with open(hdri_list_path) as f:
+        data = json.load(f)
+
+    return data

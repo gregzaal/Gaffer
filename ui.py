@@ -784,6 +784,19 @@ class GafferPanelTools(bpy.types.Panel):
         row.operator('gaffer.blacklist_remove', icon='ZOOMOUT')
 
 
+class GafferPanelHDRIs (bpy.types.Panel):
+
+    bl_label = "HDRIs"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = 'world'
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.label("blah")
+
+
 class OBJECT_UL_object_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         obj = item
