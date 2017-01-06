@@ -792,9 +792,14 @@ class GafferPanelHDRIs (bpy.types.Panel):
     bl_context = 'world'
 
     def draw(self, context):
+        gaf_props = context.scene.gaf_props
         layout = self.layout
 
-        layout.label("blah")
+        col = layout.column()
+        col.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
+
+        if context.scene.gaf_props.RequestThumbGen:
+            col.operator('gaffer.generate_hdri_thumbs')
 
 
 class OBJECT_UL_object_list(bpy.types.UIList):

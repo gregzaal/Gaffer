@@ -91,7 +91,8 @@ class GafferPreferences(bpy.types.AddonPreferences):
         name="HDRI Folder",
         subtype='DIR_PATH',
         description='The folder where all your HDRIs are stored',
-        default='X:/tmp/HDRIs'  # TODO reset - maybe allow multiple HDRI folders
+        default='X:/tmp/HDRIs',  # TODO reset - maybe allow multiple HDRI folders
+        update=functions.detect_hdris
         )
 
 
@@ -287,15 +288,32 @@ class GafferProperties(bpy.types.PropertyGroup):
         default="",
         description="The lamp object to use to drive the Sky rotation")
 
+    hdri = bpy.props.EnumProperty(
+        name="HDRIs",
+        items=functions.enum_previews,
+        update=functions.switch_hdri
+        )
+    # variation = bpy.props.EnumProperty(
+    #     name="Variation",
+    #     items=enum_variations,
+    #     update=update_variation
+    #     )
+
     # Internal vars (not shown in UI)
     IsShowingRadius = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     IsShowingLabel = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     BlacklistIndex = bpy.props.IntProperty(default = 0, options={'HIDDEN'})
     VarNameCounter = bpy.props.IntProperty(default = 0, options={'HIDDEN'})
+    HDRIList = bpy.props.StringProperty(default = "", options={'HIDDEN'})
+    RequestThumbGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     Blacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
+
 
 def register():
     addon_updater_ops.register(bl_info)
+
+    functions.previews_register()
+
     bpy.types.NODE_PT_active_node_generic.append(ui.gaffer_node_menu_func)
     bpy.utils.register_module(__name__)
     bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
@@ -303,6 +321,8 @@ def register():
 
 def unregister():
     bpy.app.handlers.load_post.remove(operators.load_handler)
+
+    functions.previews_unregister()
 
     if operators.GafShowLightRadius._handle is not None:
         bpy.types.SpaceView3D.draw_handler_remove(operators.GafShowLightRadius._handle, 'WINDOW')

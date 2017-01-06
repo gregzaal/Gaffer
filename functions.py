@@ -28,6 +28,12 @@ from bpy.app.handlers import persistent
 from .constants import *
 
 
+def _force_redraw_hack():  # Taken from Campbell's Cell Fracture addon
+    _force_redraw_hack.opr(**_force_redraw_hack.arg)
+_force_redraw_hack.opr = bpy.ops.wm.redraw_timer
+_force_redraw_hack.arg = dict(type='DRAW_WIN_SWAP', iterations=1)
+
+
 def refresh_light_list(scene):
     m = []
 
@@ -470,8 +476,115 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
     draw_corner(x2, y1, r, 'BR')  # Bottom right
 
 
+
+def detect_hdris(self, context):
+    hdris = {}
+
+    def check_folder_for_HDRIs(path):
+        allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
+        files = []
+        for f in os.listdir(path):
+            if os.path.isfile(os.path.join(path, f)):
+                files.append(f)
+            else:
+                check_folder_for_HDRIs(os.path.join(path, f))
+
+        prefs = bpy.context.user_preferences.addons[__package__].preferences
+        sub_path = path.replace(prefs.hdri_path, "")
+        if sub_path.startswith('\\') or sub_path.startswith('/'):
+            sub_path = sub_path[1:]
+
+        hdri_file_pairs = []
+        separators = ['_', '-', '.', ' ']
+        for f in files:
+            fn, ext = os.path.splitext(f)
+
+            if ext.lower() in allowed_file_types:
+                sep = ''
+                for c in fn[::-1]:  # Reversed filename to see which separator is last
+                    if c in separators:
+                        sep = c
+                        break
+                if sep != '':
+                    # Remove all character after the separator - what's left is the hdri name without resolution etc.
+                    hdri_name = sep.join(fn.split(sep)[:-1])
+                else:
+                    hdri_name = fn
+
+                # hdri_file_pairs.append([hdri_name, f])
+                hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
+
+        for h in hdri_file_pairs:
+            if h[0] in hdris:
+                hdris[h[0]].append(h[1])
+            else:
+                hdris[h[0]] = [h[1]]
+
+    # TODO handle tags, and prevent losing user-edited tags
+    prefs = bpy.context.user_preferences.addons[__package__].preferences
+    check_folder_for_HDRIs(prefs.hdri_path)
+
+    with open(hdri_list_path, 'w') as f:
+        f.write(json.dumps(hdris, indent=4))
+
+    hdri_list = hdris
+
+
 def get_hdri_list():
     with open(hdri_list_path) as f:
         data = json.load(f)
 
     return data
+
+if len(hdri_list) < 1:
+    hdri_list = get_hdri_list()
+
+def switch_hdri(self, context):
+    print ("switch")
+
+def update_variation(self, context):
+    pass
+
+def missing_thumb():
+    return os.path.join(icon_dir, 'missing_thumb.png')
+
+def previews_register():
+    import bpy.utils.previews
+    pcoll = bpy.utils.previews.new()
+    pcoll.previews = ()
+    preview_collections['main'] = pcoll
+
+def previews_unregister():
+    for pcoll in preview_collections.values():
+        bpy.utils.previews.remove(pcoll)
+    preview_collections.clear()
+
+def enum_previews(self, context):
+    """EnumProperty callback"""
+    enum_items = []
+
+
+    if context is None:
+        return enum_items
+
+    # Get the preview collection (defined in register func).
+    pcoll = preview_collections["main"]
+
+    for i, name in enumerate(hdri_list):
+        thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
+        if not os.path.exists(thumb_file):
+            thumb_file = missing_thumb()
+            try:
+                # Blender won't allow us to edit a scene prop sometimes (during registration?)
+                context.scene.gaf_props.RequestThumbGen = True
+            except:
+                pass
+
+        if name in pcoll:
+            thumb = pcoll[name]
+        else:
+            thumb = pcoll.load(name, thumb_file, 'IMAGE')
+        enum_items.append((name, name, "", thumb.icon_id, i))
+
+    pcoll.previews = enum_items
+    return pcoll.previews

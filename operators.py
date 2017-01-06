@@ -1001,62 +1001,13 @@ class GafDetectHDRIs(bpy.types.Operator):
     bl_idname = 'gaffer.detect_hdris'
     bl_label = 'Detect HDRIs'
 
-    hdris = {}
-
-    def check_folder_for_HDRIs(self, path):
-        allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
-        files = []
-        for f in os.listdir(path):
-            if os.path.isfile(os.path.join(path, f)):
-                files.append(f)
-            else:
-                self.check_folder_for_HDRIs(os.path.join(path, f))
-
-        prefs = bpy.context.user_preferences.addons[__package__].preferences
-        sub_path = path.replace(prefs.hdri_path, "")
-        if sub_path.startswith('\\') or sub_path.startswith('/'):
-            sub_path = sub_path[1:]
-
-        hdri_file_pairs = []
-        separators = ['_', '-', '.', ' ']
-        for f in files:
-            fn, ext = os.path.splitext(f)
-
-            if ext.lower() in allowed_file_types:
-                sep = ''
-                for c in fn[::-1]:  # Reversed filename to see which separator is last
-                    if c in separators:
-                        sep = c
-                        break
-                if sep != '':
-                    # Remove all character after the separator - what's left is the hdri name without resolution etc.
-                    hdri_name = sep.join(fn.split(sep)[:-1])
-                else:
-                    hdri_name = fn
-
-                # hdri_file_pairs.append([hdri_name, f])
-                hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
-
-        for h in hdri_file_pairs:
-            if h[0] in self.hdris:
-                self.hdris[h[0]].append(h[1])
-            else:
-                self.hdris[h[0]] = [h[1]]
-
     def execute(self, context):
-        # TODO handle tags, and prevent losing user-edited tags
-        prefs = bpy.context.user_preferences.addons[__package__].preferences
-
-        self.check_folder_for_HDRIs(prefs.hdri_path)
-
-        with open(hdri_list_path, 'w') as f:
-            f.write(json.dumps(self.hdris, indent=4))
-
+        detect_hdris(self, context)
         return {'FINISHED'}
 
 class GafHDRIThumbGen(bpy.types.Operator):
 
-    "Generate the thumbnail images for all HDRIs where they are missing"
+    "Generate missing thumbnail images for all HDRIs"
     bl_idname = 'gaffer.generate_hdri_thumbs'
     bl_label = 'Generate Thumbnails'
 
@@ -1082,16 +1033,13 @@ class GafHDRIThumbGen(bpy.types.Operator):
             
         return numpy.array(new_cols).ravel()
 
-
-
-
-
     def generate_thumb(self, name, files):
         import numpy
         # TODO run in background? or show some kind of progress bar
         # TODO download instead of render if possible
 
-        prefs = bpy.context.user_preferences.addons[__package__].preferences
+        context = bpy.context
+        prefs = context.user_preferences.addons[__package__].preferences
 
         chosen_file = ''
         downsample = True
@@ -1150,9 +1098,14 @@ class GafHDRIThumbGen(bpy.types.Operator):
             bpy.data.images.remove(out_img)
 
     def execute(self, context):
+        context.scene.gaf_props.RequestThumbGen = False
         hdris = get_hdri_list()
 
         for h in hdris:
             self.generate_thumb(h, hdris[h])
+
+        # Refresh previews
+        previews_unregister()
+        previews_register()
 
         return {'FINISHED'}

@@ -72,3 +72,6 @@ thumbnail_dir = os.path.join(data_dir, 'thumbs')
 if not os.path.exists(thumbnail_dir):
     os.makedirs(thumbnail_dir)
 hdri_list_path = os.path.join(data_dir, 'gaffer_hdris.json')
+preview_collections = {}
+icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
+hdri_list = {}
