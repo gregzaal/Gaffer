@@ -1063,7 +1063,34 @@ class GafHDRIThumbGen(bpy.types.Operator):
     # TODO render diffuse/gloss/plastic spheres instead of just the normal preview
     # TODO option to try to download sphere renders instead of rendering locally, as well as a separate option to upload local renders to help others skip rendering locally again
 
+    def downsample(self, img):
+        # TODO catch if input image is smaller than 256p
+        # TODO linear interoplation
+
+        import numpy
+        out_x = 256
+        out_y = 128
+        in_x = img.size[0]
+        in_y = img.size[1]
+    
+        p = numpy.split(numpy.array(img.pixels), len(img.pixels)/4)  # Group by RGBA
+        rows = numpy.split(numpy.array(p), in_y)
+        
+        new_cols = []
+        for r in [r[0] for r in numpy.array_split(rows,out_y)]:
+            new_cols.append([p[0] for p in numpy.array_split(r, out_x)])
+            
+        return numpy.array(new_cols).ravel()
+
+
+
+
+
     def generate_thumb(self, name, files):
+        import numpy
+        # TODO run in background? or show some kind of progress bar
+        # threaded if possible
+
         prefs = bpy.context.user_preferences.addons[__package__].preferences
 
         chosen_file = ''
@@ -1094,11 +1121,36 @@ class GafHDRIThumbGen(bpy.types.Operator):
         if not chosen_file:
             chosen_file = files[0]  # Safety fallback
 
-    '''
-    open image in blender
-    downsample if needed
-    save to jpg file
-    '''
+        # Create thumbnail
+        fp = os.path.join(prefs.hdri_path, chosen_file)
+        thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
+        if not os.path.exists(thumb_file):
+            print ()
+            print (name)
+            img = bpy.data.images.load(fp, check_existing=False)
+            out_img = bpy.data.images.new("tmp_"+name+"__thumb", 256, 128, alpha=True)
+            print(out_img.file_format)
+            out_img.filepath = thumb_file
+            print(out_img.file_format)
+            out_img.file_format = 'JPEG'
+            print(out_img.file_format)
+
+            pixels = []
+            if downsample:
+                pixels = self.downsample(img)
+            else:
+                pixels = numpy.array(img.pixels)
+
+            if img.colorspace_settings.name == 'Linear':
+                pixels = numpy.power(pixels, 1/2.2)
+
+            out_img.pixels = pixels
+            print(out_img.file_format)
+
+            out_img.save()
+            print(out_img.file_format)
+            bpy.data.images.remove(img)
+            bpy.data.images.remove(out_img)
 
     def execute(self, context):
         hdris = get_hdri_list()
