@@ -477,7 +477,7 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
 
 
 
-# HDRI handler stuffs
+# HDRI stuffs
 
 def detect_hdris(self, context):
     hdris = {}
@@ -489,7 +489,8 @@ def detect_hdris(self, context):
         files = []
         for f in os.listdir(path):
             if os.path.isfile(os.path.join(path, f)):
-                files.append(f)
+                if os.path.splitext(f)[1] in allowed_file_types:
+                    files.append(f)
             else:
                 check_folder_for_HDRIs(os.path.join(path, f))
 
@@ -498,25 +499,25 @@ def detect_hdris(self, context):
         if sub_path.startswith('\\') or sub_path.startswith('/'):
             sub_path = sub_path[1:]
 
+        files = sorted(files, key=lambda x: os.path.getsize(os.path.join(path, x)))
+
         hdri_file_pairs = []
         separators = ['_', '-', '.', ' ']
         for f in files:
             fn, ext = os.path.splitext(f)
+            sep = ''
+            for c in fn[::-1]:  # Reversed filename to see which separator is last
+                if c in separators:
+                    sep = c
+                    break
+            if sep != '':
+                # Remove all character after the separator - what's left is the hdri name without resolution etc.
+                hdri_name = sep.join(fn.split(sep)[:-1])
+            else:
+                hdri_name = fn
 
-            if ext.lower() in allowed_file_types:
-                sep = ''
-                for c in fn[::-1]:  # Reversed filename to see which separator is last
-                    if c in separators:
-                        sep = c
-                        break
-                if sep != '':
-                    # Remove all character after the separator - what's left is the hdri name without resolution etc.
-                    hdri_name = sep.join(fn.split(sep)[:-1])
-                else:
-                    hdri_name = fn
-
-                # hdri_file_pairs.append([hdri_name, f])
-                hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
+            # hdri_file_pairs.append([hdri_name, f])
+            hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
 
         for h in hdri_file_pairs:
             if h[0] in hdris:
@@ -541,6 +542,18 @@ def get_hdri_list():
 
 if len(hdri_list) < 1:
     hdri_list = get_hdri_list()
+
+def get_variation(hdri, mode=None, var=None):
+    variations = hdri_list[hdri]
+    hdri_path = bpy.context.user_preferences.addons[__package__].preferences.hdri_path
+    if mode == 'smallest':
+        return os.path.join(hdri_path, variations[0])
+    elif mode == 'biggest':
+        return os.path.join(hdri_path, variations[-1])
+    elif var:
+        return os.path.join(hdri_path, var)
+    else:
+        return "ERROR: Unsupported mode!"
 
 def handler_node(context, t, background=False):
     """ Return requested node, or create it """
@@ -621,7 +634,19 @@ def new_link(links, from_socket, to_socket, force=False):
     if not to_socket.is_linked or force: links.new(from_socket, to_socket)
 
 def switch_hdri(self, context):
-    # TODO when switching to new HDRI, use the lowest res first
+    gaf_props = context.scene.gaf_props
+    default_var = get_variation(gaf_props.hdri, mode='smallest')  # Default to smallest
+    
+    # But prefer 1k if there is one
+    for v in hdri_list[gaf_props.hdri]:
+        if '1k' in v:
+            default_var = get_variation(gaf_props.hdri, var=v)
+            break
+
+    gaf_props.hdri_variation = default_var
+    setup_hdri(self, context)
+
+def setup_hdri(self, context):
     gaf_props = context.scene.gaf_props
     prefs = context.user_preferences.addons[__package__].preferences
 
@@ -714,10 +739,15 @@ def switch_hdri(self, context):
     set_image(context, os.path.join(prefs.hdri_path, gaf_props.hdri_variation), n_img)
     if extra_nodes:
         if gaf_props.hdri_use_jpg_background:
-            if gaf_props.hdri_use_darkened_jpg:
-                set_image(context, os.path.join(jpg_dir, gaf_props.hdri+"_dark.jpg"), n_img_b)
+            jpg_path = os.path.join(jpg_dir, gaf_props.hdri+".jpg")
+            djpg_path = os.path.join(jpg_dir, gaf_props.hdri+"_dark.jpg")
+            if os.path.exists(jpg_path) and os.path.exists(djpg_path):
+                if gaf_props.hdri_use_darkened_jpg:
+                    set_image(context, djpg_path, n_img_b)
+                else:
+                    set_image(context, jpg_path, n_img_b)
             else:
-                set_image(context, os.path.join(jpg_dir, gaf_props.hdri+".jpg"), n_img_b)
+                gaf_props.RequestJPGGen = True
 
     # Run Updates
     update_rotation(self, context)
@@ -832,7 +862,7 @@ def update_clamp(self, context):
     n = handler_node(context, "ShaderNodeValue")
     n.outputs[0].default_value = value
 
-    switch_hdri(self, context)
+    setup_hdri(self, context)
 
     return None
 
@@ -929,7 +959,7 @@ def variation_enum_previews(self, context):
     if context is None:
         return enum_items
 
-    variations = sorted(hdri_list[gaf_props.hdri])
+    variations = hdri_list[gaf_props.hdri]
     for v in variations:
         enum_items.append((os.path.join(context.user_preferences.addons[__package__].preferences.hdri_path, v),
                            os.path.basename(v),

@@ -293,7 +293,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         name="Enable",
         description="Turn on/off Gaffer's HDRI handler",
         default=False,
-        update=functions.switch_hdri)
+        update=functions.setup_hdri)
     hdri = bpy.props.EnumProperty(
         name="HDRIs",
         items=functions.hdri_enum_previews,
@@ -338,25 +338,25 @@ class GafferProperties(bpy.types.PropertyGroup):
         name = "Use high-res JPG background",
         default = False,
         description = "Use a higher-res JPG image for the background, keeping the HDR just for lighting - enable this and set the main resolution to a low option to save memory",
-        update=functions.switch_hdri
+        update=functions.setup_hdri
         )
     hdri_use_darkened_jpg = bpy.props.BoolProperty(
         name = "Pre-darkened",
         default = False,
         description = "Use a darker version of the JPG to avoid clipped highlights (but at the cost of potential banding)",
-        update=functions.switch_hdri
+        update=functions.setup_hdri
         )
     hdri_use_bg_reflections = bpy.props.BoolProperty(
         name = "Use for reflections",
         default = False,
         description = "Use these settings for the appearance of reflections as well",
-        update=functions.switch_hdri
+        update=functions.setup_hdri
         )
     hdri_use_separate_brightness = bpy.props.BoolProperty(
         name = "Brightness",
         default = False,
         description = "Adjust the brightness value for the background separately from the lighting",
-        update=functions.switch_hdri
+        update=functions.setup_hdri
         )
     hdri_background_brightness = bpy.props.FloatProperty(
         name="Value",
@@ -370,7 +370,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         name = "Contrast",
         default = False,
         description = "Adjust the contrast value for the background separately from the lighting",
-        update=functions.switch_hdri
+        update=functions.setup_hdri
         )
     hdri_background_contrast = bpy.props.FloatProperty(
         name="Value",
@@ -384,7 +384,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         name = "Saturation",
         default = False,
         description = "Adjust the saturation value for the background separately from the lighting",
-        update=functions.switch_hdri
+        update=functions.setup_hdri
         )
     hdri_background_saturation = bpy.props.FloatProperty(
         name="Value",
@@ -407,6 +407,11 @@ class GafferProperties(bpy.types.PropertyGroup):
         description = "Show/hide advanced settings",
         default = False
         )
+    hdri_jpg_gen_all = bpy.props.BoolProperty(
+        name="Generate for ALL HDRIs",
+        description = "Generate the JPG and darkened JPG for all HDRIs that you have. This will probably take a while",
+        default = False
+        )
 
     # Internal vars (not shown in UI)
     IsShowingRadius = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
@@ -415,6 +420,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     VarNameCounter = bpy.props.IntProperty(default = 0, options={'HIDDEN'})
     HDRIList = bpy.props.StringProperty(default = "", options={'HIDDEN'})
     RequestThumbGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
+    RequestJPGGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     Blacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
 

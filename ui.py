@@ -847,6 +847,19 @@ class GafferPanelHDRIs (bpy.types.Panel):
                 sub = row.row(align=True)
                 sub.active = gaf_props.hdri_use_jpg_background
                 sub.prop(gaf_props, 'hdri_use_darkened_jpg')
+                if gaf_props.RequestJPGGen and gaf_props.hdri_use_jpg_background:
+                    col.separator()
+                    col.separator()
+                    col.label("No JPGs have been created yet,", icon='ERROR')
+                    col.label("please click 'Generate JPGs' below.")
+                    col.label("Note: This may take a while for high-res images")
+                    col.operator('gaffer.generate_jpgs')
+                    col.prop(gaf_props, 'hdri_jpg_gen_all')
+                    if gaf_props.hdri_jpg_gen_all:
+                        col.label("This is REALLY going to take a while.")
+                        col.label("See the console for progress.")
+                    col.separator()
+
                 col.separator()
                 col.label("Control background separately from lighting:")
                 row = col.row(align=True)
