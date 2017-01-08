@@ -288,16 +288,125 @@ class GafferProperties(bpy.types.PropertyGroup):
         default="",
         description="The lamp object to use to drive the Sky rotation")
 
+    # HDRI Handler stuffs
+    hdri_handler_enabled = bpy.props.BoolProperty(
+        name="Enable",
+        description="Turn on/off Gaffer's HDRI handler",
+        default=False,
+        update=functions.switch_hdri)
     hdri = bpy.props.EnumProperty(
         name="HDRIs",
-        items=functions.enum_previews,
+        items=functions.hdri_enum_previews,
         update=functions.switch_hdri
         )
-    # variation = bpy.props.EnumProperty(
-    #     name="Variation",
-    #     items=enum_variations,
-    #     update=update_variation
-    #     )
+    hdri_variation = bpy.props.EnumProperty(
+        name="Variation",
+        items=functions.variation_enum_previews,
+        update=functions.update_variation
+        )
+    hdri_rotation = bpy.props.FloatProperty(
+        name="Rotation",
+        description='Rotate the HDRI (in degrees) around the Z-axis',
+        default=0,
+        update=functions.update_rotation
+        )
+    hdri_brightness = bpy.props.FloatProperty(
+        name="Brightness",
+        description='Change the exposure of the HDRI to emit more or less light',
+        default=1,
+        min=0,
+        soft_max=2,
+        update=functions.update_brightness
+        )
+    hdri_contrast = bpy.props.FloatProperty(
+        name="Contrast",
+        description='Change how much light is emitted by only the brightest parts of the HDRI (use to make shadows more or less noticable)',
+        default=1,
+        min=0,
+        soft_max=2,
+        update=functions.update_contrast
+        )
+    hdri_saturation = bpy.props.FloatProperty(
+        name="Saturation",
+        description='Control how strong the colours in the HDRI are',
+        default=1,
+        min=0,
+        soft_max=2,
+        update=functions.update_saturation
+        )
+    hdri_use_jpg_background = bpy.props.BoolProperty(
+        name = "Use high-res JPG background",
+        default = False,
+        description = "Use a higher-res JPG image for the background, keeping the HDR just for lighting - enable this and set the main resolution to a low option to save memory",
+        update=functions.switch_hdri
+        )
+    hdri_use_darkened_jpg = bpy.props.BoolProperty(
+        name = "Pre-darkened",
+        default = False,
+        description = "Use a darker version of the JPG to avoid clipped highlights (but at the cost of potential banding)",
+        update=functions.switch_hdri
+        )
+    hdri_use_bg_reflections = bpy.props.BoolProperty(
+        name = "Use for reflections",
+        default = False,
+        description = "Use these settings for the appearance of reflections as well",
+        update=functions.switch_hdri
+        )
+    hdri_use_separate_brightness = bpy.props.BoolProperty(
+        name = "Brightness",
+        default = False,
+        description = "Adjust the brightness value for the background separately from the lighting",
+        update=functions.switch_hdri
+        )
+    hdri_background_brightness = bpy.props.FloatProperty(
+        name="Value",
+        description='Make the background image brighter or darker without affecting the lighting',
+        default=1,
+        min=0,
+        soft_max=2,
+        update=functions.update_background_brightness
+        )
+    hdri_use_separate_contrast = bpy.props.BoolProperty(
+        name = "Contrast",
+        default = False,
+        description = "Adjust the contrast value for the background separately from the lighting",
+        update=functions.switch_hdri
+        )
+    hdri_background_contrast = bpy.props.FloatProperty(
+        name="Value",
+        description='Give the background image more or less contrast without affecting the lighting',
+        default=1,
+        min=0,
+        soft_max=2,
+        update=functions.update_background_contrast
+        )
+    hdri_use_separate_saturation = bpy.props.BoolProperty(
+        name = "Saturation",
+        default = False,
+        description = "Adjust the saturation value for the background separately from the lighting",
+        update=functions.switch_hdri
+        )
+    hdri_background_saturation = bpy.props.FloatProperty(
+        name="Value",
+        description='Change the saturation of background image without affecting the lighting',
+        default=1,
+        min=0,
+        soft_max=2,
+        update=functions.update_background_saturation
+        )
+    hdri_clamp = bpy.props.FloatProperty(
+        name="Clamp Brightness",
+        description = "Set any values brighter than this value to this value. Disabled when on 0. Use when bright lights (e.g. sun) are too bright",
+        default = 0,
+        min = 0,
+        soft_max = 50000,
+        update = functions.update_clamp
+        )
+    hdri_advanced = bpy.props.BoolProperty(
+        name="Advanced",
+        description = "Show/hide advanced settings",
+        default = False
+        )
 
     # Internal vars (not shown in UI)
     IsShowingRadius = bpy.props.BoolProperty(default = False, options={'HIDDEN'})

@@ -1104,8 +1104,6 @@ class GafHDRIThumbGen(bpy.types.Operator):
         for h in hdris:
             self.generate_thumb(h, hdris[h])
 
-        # Refresh previews
-        previews_unregister()
-        previews_register()
+        refresh_previews()
 
         return {'FINISHED'}
