@@ -24,9 +24,9 @@ bl_info = {
     "blender": (2, 77, 0),
     "location": "3D View > Tools",
     "warning": "",
-    "wiki_url": "",
-    "tracker_url": "",
-    "category": "3D View"}
+    "wiki_url": "https://blendermarket.com/products/gaffer-light-manager",
+    "tracker_url": "https://github.com/gregzaal/Gaffer/issues",
+    "category": "Lighting"}
 
 if "bpy" in locals():
     import imp
