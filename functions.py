@@ -479,8 +479,6 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
 
 # HDRI stuffs
 
-# TODO sort by file name
-
 def detect_hdris(self, context):
     hdris = {}
 
@@ -525,9 +523,10 @@ def detect_hdris(self, context):
             else:
                 hdris[h[0]] = [h[1]]
 
-    # TODO handle tags, and prevent losing user-edited tags
     prefs = bpy.context.user_preferences.addons[__package__].preferences
     check_folder_for_HDRIs(prefs.hdri_path)
+
+    hdris = OrderedDict(sorted(hdris.items()))  # Sort by hdri name
 
     with open(hdri_list_path, 'w') as f:
         f.write(json.dumps(hdris, indent=4))
