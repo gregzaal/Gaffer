@@ -479,10 +479,10 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
 
 # HDRI stuffs
 
+# TODO sort by file name
+
 def detect_hdris(self, context):
     hdris = {}
-
-    # TODO sort by file size (which will basically sort by resolution)
 
     def check_folder_for_HDRIs(path):
         allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
@@ -908,6 +908,42 @@ def update_background_saturation (self, context):
 
 def missing_thumb():
     return os.path.join(icon_dir, 'missing_thumb.png')
+
+def save_image(context, img, filepath, fileformat, exposure=0):
+    # Saving using 'img.save_render' will apply all render color management
+    # stuffs to it, which is probably not desired.
+    # So first remember user's settings, then reset to default before saving
+    vs = context.scene.view_settings
+    old_vs = {}
+    for a in dir(vs):
+        if (not a.startswith('__')) and ('rna' not in a) and (a != 'curve_mapping'):
+            old_vs[a] = getattr(vs, a)
+    vs.exposure = exposure
+    vs.gamma = 1
+    vs.look = 'None'
+    vs.use_curve_mapping = False
+    try:
+        # Filmic Blender doesn't have a "Default"
+        vs.view_transform = 'Default'
+    except:
+        try:
+            vs.view_transform = 'sRGB EOTF'  # Default for Filmic
+        except:
+            print ("WARNING: Unable to set default for view transform.")
+
+    settings = context.scene.render.image_settings
+    old_quality = settings.quality
+    old_format = settings.file_format
+
+    settings.quality = 95
+    settings.file_format = fileformat
+
+    img.save_render(filepath = filepath, scene=context.scene)
+
+    settings.quality = old_quality
+    settings.file_format = old_format
+    for a in old_vs:
+        setattr(vs, a, old_vs[a])
 
 def previews_register():
     import bpy.utils.previews

@@ -1075,8 +1075,6 @@ class GafHDRIThumbGen(bpy.types.Operator):
         if not os.path.exists(thumb_file):
             img = bpy.data.images.load(fp, check_existing=False)
             out_img = bpy.data.images.new("tmp_"+name+"__thumb", 256, 128, alpha=True)
-            out_img.filepath = thumb_file
-            out_img.file_format = 'JPEG'
 
             pixels = []
             if downsample:
@@ -1089,10 +1087,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
 
             out_img.pixels = pixels
 
-            old_quality = context.scene.render.image_settings.quality
-            context.scene.render.image_settings.quality = 95
-            out_img.save_render(filepath = out_img.filepath, scene=context.scene)
-            context.scene.render.image_settings.quality = old_quality
+            save_image(context, out_img, thumb_file, 'JPEG')
 
             bpy.data.images.remove(img)
             bpy.data.images.remove(out_img)
@@ -1119,45 +1114,18 @@ class GafHDRIJPGGen(bpy.types.Operator):
         gaf_props = context.scene.gaf_props
 
         hdri_path = get_variation(name, mode="biggest")
-        print ("Opening HDR")
-        hdri_img = bpy.data.images.load(hdri_path, check_existing=False)
 
-        pixels = []
-        print ("Collecting pixels")
-        if hdri_img.colorspace_settings.name == 'Linear':
-            pixels = numpy.power(numpy.array(hdri_img.pixels), 1/2.2)
-        else:
-            pixels = numpy.array(hdri_img.pixels)
-
-        old_quality = context.scene.render.image_settings.quality
+        img_exists = False
         for m in ['', '_dark']:  # Run twice, once for normal JPG and once for darkened JPG
-            darkened = m == '_dark'
-            
-            jpg_path = os.path.join(jpg_dir, gaf_props.hdri + ("_dark" if darkened else "") + ".jpg")
-
-            print ("Creating placeholder image")
-            jpg_img = bpy.data.images.new("tmp_" + name + "__jpg" + ("_dark" if darkened else ""),
-                                          hdri_img.size[0], hdri_img.size[1], alpha=True)
-            jpg_img.filepath = jpg_path
-            jpg_img.file_format = 'JPEG'
-
-            if darkened:
-                print ("Darkening")
-                pixels = pixels * 0.05  # Reduce by ~4 EVs
-
-            print ("Applying pixels")
-            jpg_img.pixels = pixels
-
-            print ("Saving")
-            context.scene.render.image_settings.quality = 95
-            jpg_img.save_render(filepath = jpg_img.filepath, scene=context.scene)
-            
-            print ("Removing image from blender")
-            bpy.data.images.remove(jpg_img)
-
-        print ("Cleaning up")
-        context.scene.render.image_settings.quality = old_quality
-        bpy.data.images.remove(hdri_img)
+            jpg_path = os.path.join(jpg_dir, name + m + ".jpg")
+            if not os.path.exists(jpg_path):
+                if not img_exists:
+                    img = bpy.data.images.load(hdri_path, check_existing=False)
+                    img_exists = True
+                darkened = m == '_dark'
+                save_image(context, img, jpg_path, 'JPEG', -4 if darkened else 0)
+        if img_exists:
+            bpy.data.images.remove(img)
 
     def execute(self, context):
         gaf_props = context.scene.gaf_props
@@ -1168,8 +1136,9 @@ class GafHDRIJPGGen(bpy.types.Operator):
             hdris = get_hdri_list()
             num_hdris = len(hdris)
             for i, hdri in enumerate(hdris):
-                print ('('+str(i+1)+'/'+str(len(num_hdris))+') Generating thumbnail for '+hdri+' ...')
+                print ('('+str(i+1)+'/'+str(num_hdris)+') Generating JPG for '+hdri+' ...')
                 self.generate_jpgs(context, hdri)
+            print ("Done!")
         else:
             self.generate_jpgs(context, gaf_props.hdri)
 
