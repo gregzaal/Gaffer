@@ -921,8 +921,8 @@ def previews_unregister():
     preview_collections.clear()
 
 def refresh_previews():
-    previews_register()
     previews_unregister()
+    previews_register()
 
 def hdri_enum_previews(self, context):
     enum_items = []
