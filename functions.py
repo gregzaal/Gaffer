@@ -1042,3 +1042,14 @@ def get_hdri_haven_list():
 
 if len(hdri_haven_list) < 1:
     hdri_haven_list = get_hdri_haven_list()
+
+def progress_begin(context):
+    context.scene.gaf_props.ShowProgress = True
+    _force_redraw_hack()
+def progress_update(context, value, text):
+    context.scene.gaf_props.Progress = value
+    context.scene.gaf_props.ProgressText = text
+    _force_redraw_hack()
+def progress_end(context):
+    context.scene.gaf_props.Progress = 0
+    context.scene.gaf_props.ShowProgress = False

@@ -807,6 +807,23 @@ class GafferPanelHDRIs (bpy.types.Panel):
         prefs = context.user_preferences.addons[__package__].preferences
 
         layout = self.layout
+
+        if gaf_props.ShowProgress:
+            layout.separator()
+            split = layout.split(percentage=gaf_props.Progress, align=True)
+            b = split.box()
+            r = b.row()
+            r.alignment='CENTER'
+            r.label(gaf_props.ProgressText if gaf_props.Progress >= 0.5 else "")
+            r = split.row()
+            r.alignment='CENTER'
+            c = r.column(align=True)
+            c.separator()
+            c.label(gaf_props.ProgressText if gaf_props.Progress < 0.5 else "")
+            layout.separator()
+        
+
+
         if gaf_props.hdri_handler_enabled:
             col = layout.column()
             if not os.path.exists(prefs.hdri_path):

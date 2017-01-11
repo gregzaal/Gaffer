@@ -1096,8 +1096,12 @@ class GafHDRIThumbGen(bpy.types.Operator):
         context.scene.gaf_props.RequestThumbGen = False
         hdris = get_hdri_list()
 
-        for h in hdris:
+        progress_begin(context)
+        num_hdris = len(hdris)
+        for i, h in enumerate(hdris):
+            progress_update(context, i/num_hdris, "Generating thumb: "+str(i+1)+'/'+str(num_hdris))
             self.generate_thumb(h, hdris[h])
+        progress_end(context)
 
         refresh_previews()
 
@@ -1137,10 +1141,13 @@ class GafHDRIJPGGen(bpy.types.Operator):
         if gen_all:
             hdris = get_hdri_list()
             num_hdris = len(hdris)
+            progress_begin(context)
             for i, hdri in enumerate(hdris):
+                progress_update(context, i/num_hdris, "Generating JPG: "+str(i+1)+'/'+str(num_hdris))
                 print ('('+str(i+1)+'/'+str(num_hdris)+') Generating JPG for '+hdri+' ...')
                 self.generate_jpgs(context, hdri)
             print ("Done!")
+            progress_end(context)
         else:
             self.generate_jpgs(context, gaf_props.hdri)
 
@@ -1191,25 +1198,29 @@ class GafGetHDRIHaven(bpy.types.Operator):
     bl_label = 'Get Free HDRIs'
 
     def execute(self, context):
-        hdrihaven_hdris = get_hdri_haven_list(context)
+        hdrihaven_hdris = get_hdri_haven_list()
+        num_hdris = len(hdrihaven_hdris)
         if hdrihaven_hdris:
             from urllib.request import urlretrieve
             prefs = bpy.context.user_preferences.addons[__package__].preferences
             hdri_list = get_hdri_list()
-            for hh in hdrihaven_hdris:
+            for i, hh in enumerate(hdrihaven_hdris):
+                progress_begin(context)
                 filename = hh+'_1k.hdr'
                 out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
                 if not os.path.exists(out_folder):
                     os.makedirs(out_folder)
                 if hh not in hdri_list:
                     filepath = os.path.join(out_folder, filename)
-                    print ("Downloading:", filename)
+                    print (str(i+1)+'/'+str(num_hdris), "Downloading:", filename)
+                    progress_update(context, i/num_hdris, "Downloading: "+str(i+1)+'/'+str(num_hdris))
                     try:
                         urlretrieve('https://hdrihaven.com/hdris/hdris/'+filename, filepath)
                     except:
                         print ("    Failed to download: " + filename)
                 else:
                     print ("Skipping " + filename + ", you already have it")
+                progress_end(context)
         return {'FINISHED'}
 
 class GafOpenHDRIHaven(bpy.types.Operator):

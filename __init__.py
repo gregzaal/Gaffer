@@ -445,6 +445,9 @@ class GafferProperties(bpy.types.PropertyGroup):
     HDRIList = bpy.props.StringProperty(default = "", options={'HIDDEN'})
     RequestThumbGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     RequestJPGGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
+    ShowProgress = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
+    Progress = bpy.props.FloatProperty(default = 0.0, options={'HIDDEN'})
+    ProgressText = bpy.props.StringProperty(default = "", options={'HIDDEN'})
     Blacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
 
