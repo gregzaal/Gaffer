@@ -819,7 +819,16 @@ class GafferPanelHDRIs (bpy.types.Panel):
                 row.label("Remember to click 'Save User Settings'")
             else:
 
-                col.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
+                row = col.row(align=True)
+                tmpc = row.column()
+                tmpc.scale_y=9
+                tmpc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
+                tmpc = row.column()
+                tmpc.scale_y=1.5
+                tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
+                tmpc = row.column()
+                tmpc.scale_y=9
+                tmpc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
 
                 if context.scene.gaf_props.RequestThumbGen:
                     col.operator('gaffer.generate_hdri_thumbs')

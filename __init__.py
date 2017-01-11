@@ -95,6 +95,11 @@ class GafferPreferences(bpy.types.AddonPreferences):
         default='',
         update=functions.detect_hdris
         )
+    show_hdri_list = bpy.props.BoolProperty(
+        name="Show",
+        description="List all the detected HDRIs and their variants/resolutions below",
+        default=False
+        )
 
 
     def draw(self, context):
@@ -102,6 +107,24 @@ class GafferPreferences(bpy.types.AddonPreferences):
 
         col = layout.column()
         col.prop(self, 'hdri_path')
+
+        hdris = functions.get_hdri_list()
+        if hdris:
+            hdris = OrderedDict(sorted(hdris.items()))
+            num_hdris = len(hdris)
+            row = col.row()
+            row.alignment = 'RIGHT'
+            row.label("Found " + str(num_hdris) + " HDRIs")
+            if num_hdris > 0:
+                row.prop(self, 'show_hdri_list', toggle=True)
+            row.operator('gaffer.detect_hdris', "Refresh", icon="FILE_REFRESH")
+
+            if self.show_hdri_list:
+                col = layout.column(align=True)
+                for name in hdris:
+                    col.label(name)
+                    for v in hdris[name]:
+                        col.label('    '+v)
 
         addon_updater_ops.update_settings_ui(self,context)
 

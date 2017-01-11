@@ -1149,3 +1149,32 @@ class GafHDRIJPGGen(bpy.types.Operator):
 
 
         return {'FINISHED'}
+
+class GafHDRIPaddles(bpy.types.Operator):
+
+    "Switch to the next/previous HDRI"
+    bl_idname = 'gaffer.hdri_paddles'
+    bl_label = 'Next/Previous'
+    do_next = bpy.props.BoolProperty()
+
+    def execute(self, context):
+        gaf_props = context.scene.gaf_props
+        hdris = get_hdri_list()
+        current_hdri = gaf_props.hdri
+        current_index = -1
+        prev_hdri = ''
+        next_hdri = ''
+        for i, h in enumerate(hdris):
+            if next_hdri:
+                next_hdri = h
+                break
+            if h == current_hdri:
+                current_index = i
+                next_hdri = "blah"
+            else:
+                prev_hdri = h
+        if self.do_next:
+            gaf_props.hdri = next_hdri
+        else:
+            gaf_props.hdri = prev_hdri
+        return {'FINISHED'}
