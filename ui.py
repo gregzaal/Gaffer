@@ -833,7 +833,12 @@ class GafferPanelHDRIs (bpy.types.Panel):
                 if context.scene.gaf_props.RequestThumbGen:
                     col.operator('gaffer.generate_hdri_thumbs')
                 
-                col.prop(gaf_props, "hdri_variation", text="")
+                row = col.row(align=True)
+                row.prop(gaf_props, "hdri_variation", text="")
+                if hdri_haven_list and hdri_list:
+                    if gaf_props.hdri in hdri_haven_list:
+                        if not any(("_16k" in h or "_8k" in h or "_4k" in h) for h in hdri_list[gaf_props.hdri]):
+                            row.operator('gaffer.buy_hdri_haven', text="", icon='WORLD').url="https://hdrihaven.com/hdri.php?hdri="+gaf_props.hdri
 
                 col.separator()
                 col.prop(gaf_props, 'hdri_rotation')

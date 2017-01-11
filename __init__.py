@@ -324,7 +324,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         update=functions.switch_hdri
         )
     hdri_variation = bpy.props.EnumProperty(
-        name="Variation",
+        name="Resolution / Variation",
         items=functions.variation_enum_previews,
         update=functions.update_variation
         )

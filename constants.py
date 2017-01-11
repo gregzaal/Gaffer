@@ -76,3 +76,4 @@ hdri_list_path = os.path.join(data_dir, 'gaffer_hdris.json')
 preview_collections = {}
 icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
 hdri_list = {}
+hdri_haven_list = []

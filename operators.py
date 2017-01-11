@@ -1155,6 +1155,7 @@ class GafHDRIPaddles(bpy.types.Operator):
     "Switch to the next/previous HDRI"
     bl_idname = 'gaffer.hdri_paddles'
     bl_label = 'Next/Previous'
+    bl_options = {'INTERNAL'}
     do_next = bpy.props.BoolProperty()
 
     def execute(self, context):
@@ -1177,4 +1178,43 @@ class GafHDRIPaddles(bpy.types.Operator):
             gaf_props.hdri = next_hdri
         else:
             gaf_props.hdri = prev_hdri
+        return {'FINISHED'}
+
+class GafGetHDRIHaven(bpy.types.Operator):
+
+    "Download HDRIs from hdrihaven.com"
+    bl_idname = 'gaffer.get_hdri_haven'
+    bl_label = 'Get Free HDRIs'
+
+    def execute(self, context):
+        hdrihaven_hdris = get_hdri_haven_list(context)
+        if hdrihaven_hdris:
+            from urllib.request import urlretrieve
+            prefs = bpy.context.user_preferences.addons[__package__].preferences
+            hdri_list = get_hdri_list()
+            for hh in hdrihaven_hdris:
+                filename = hh+'_1k.hdr'
+                out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
+                if not os.path.exists(out_folder):
+                    os.makedirs(out_folder)
+                if hh not in hdri_list:
+                    filepath = os.path.join(out_folder, filename)
+                    print ("Downloading:", filename)
+                    try:
+                        urlretrieve('https://hdrihaven.com/hdris/hdris/'+filename, filepath)
+                    except:
+                        print ("    Failed to download: " + filename)
+                else:
+                    print ("Skipping " + filename + ", you already have it")
+        return {'FINISHED'}
+
+class GafOpenHDRIHaven(bpy.types.Operator):
+
+    "Buy the full 16k resolution of this HDRI for $5.95 (opens web browser)"
+    bl_idname = 'gaffer.buy_hdri_haven'
+    bl_label = 'Buy full-res HDRI'
+    url = bpy.props.StringProperty()
+
+    def execute(self, context):
+        bpy.ops.wm.url_open(url=self.url)
         return {'FINISHED'}
