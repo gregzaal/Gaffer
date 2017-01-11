@@ -480,6 +480,7 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
 # HDRI stuffs
 
 def detect_hdris(self, context):
+    global hdri_list
     hdris = {}
 
     def check_folder_for_HDRIs(path):
@@ -524,20 +525,25 @@ def detect_hdris(self, context):
                 hdris[h[0]] = [h[1]]
 
     prefs = bpy.context.user_preferences.addons[__package__].preferences
-    check_folder_for_HDRIs(prefs.hdri_path)
+    if (prefs.hdri_path):
+        check_folder_for_HDRIs(prefs.hdri_path)
 
-    hdris = OrderedDict(sorted(hdris.items()))  # Sort by hdri name
+        hdris = OrderedDict(sorted(hdris.items()))  # Sort by hdri name
 
-    with open(hdri_list_path, 'w') as f:
-        f.write(json.dumps(hdris, indent=4))
+        with open(hdri_list_path, 'w') as f:
+            f.write(json.dumps(hdris, indent=4))
 
-    hdri_list = hdris
+        hdri_list = hdris
+        refresh_previews()
 
 def get_hdri_list():
-    with open(hdri_list_path) as f:
-        data = json.load(f)
+    if os.path.exists(hdri_list_path):
+        with open(hdri_list_path) as f:
+            data = json.load(f)
 
-    return data
+        return data
+    else:
+        return None
 
 if len(hdri_list) < 1:
     hdri_list = get_hdri_list()
@@ -759,6 +765,18 @@ def setup_hdri(self, context):
 
     return None
 
+def hdri_enable(self, context):
+    gaf_props = context.scene.gaf_props
+    if gaf_props.hdri_handler_enabled:
+        prefs = context.user_preferences.addons[__package__].preferences
+        if prefs.hdri_path != "" and os.path.exists(prefs.hdri_path):
+            setup_hdri(self, context)
+            if gaf_props.hdri:
+                if not os.path.exists(os.path.join(thumbnail_dir, gaf_props.hdri+"__thumb_preview.jpg")):
+                    context.scene.gaf_props.RequestThumbGen = True
+        else:
+            gaf_props.hdri_handler_enabled = False
+
 def update_variation(self, context):
     gaf_props = context.scene.gaf_props
     prefs = context.user_preferences.addons[__package__].preferences
@@ -943,6 +961,14 @@ def save_image(context, img, filepath, fileformat, exposure=0):
     settings.file_format = old_format
     for a in old_vs:
         setattr(vs, a, old_vs[a])
+
+def nice_hdri_name(name):
+    dont_capitalize = ['a', 'an', 'the', 'for', 'and', 'by', 'at', 'of',' from', 'on', 'with']
+    name = name.replace('_', ' ').replace('-', ' ').replace('.', ' ')
+    name = ' '.join([w[0].upper() + w[1:] for w in name.split(' ')])  # Title case but only for first character
+    for w in dont_capitalize:
+        name.replace(' '+w.title(), ' '+w)
+    return name
 
 def previews_register():
     import bpy.utils.previews

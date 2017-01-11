@@ -786,7 +786,7 @@ class GafferPanelTools(bpy.types.Panel):
 
 class GafferPanelHDRIs (bpy.types.Panel):
 
-    bl_label = "HDRI"
+    bl_label = " "
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = 'world'
@@ -795,95 +795,107 @@ class GafferPanelHDRIs (bpy.types.Panel):
         gaf_props = context.scene.gaf_props
 
         layout = self.layout
-        layout.prop(gaf_props, 'hdri_handler_enabled', text="")
+        row = layout.row(align=True)
+        row.prop(gaf_props, 'hdri_handler_enabled', text="")
+        if gaf_props.hdri and gaf_props.hdri_handler_enabled:
+            row.label("HDRI: " + nice_hdri_name(gaf_props.hdri))
+        else:
+            row.label("HDRI")
 
     def draw(self, context):
         gaf_props = context.scene.gaf_props
         prefs = context.user_preferences.addons[__package__].preferences
 
         layout = self.layout
-        layout.active = gaf_props.hdri_handler_enabled  # Grey everything out when HDRI handler is disabled
+        if gaf_props.hdri_handler_enabled:
+            col = layout.column()
+            if not os.path.exists(prefs.hdri_path):
+                row = col.row()
+                row.alignment = 'CENTER'
+                row.label("Select a folder in the User Preferences")
+                row = col.row()
+                row.alignment = 'CENTER'
+                row.label("(Ctrl-Alt-U)")
+                row.label("Remember to click 'Save User Settings'")
+            else:
 
-        col = layout.column()
-        if not os.path.exists(prefs.hdri_path):
-            row = col.row()
-            row.alignment = 'CENTER'
-            row.label("Select a folder in the User Preferences")
-            row = col.row()
-            row.alignment = 'CENTER'
-            row.label("(Ctrl-Alt-U)")
-            row.label("Remember to click 'Save User Settings'")
+                col.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
+
+                if context.scene.gaf_props.RequestThumbGen:
+                    col.operator('gaffer.generate_hdri_thumbs')
+                
+                col.prop(gaf_props, "hdri_variation", text="")
+
+                col.separator()
+                col.prop(gaf_props, 'hdri_rotation')
+
+                col = layout.column(align = True)
+                col.prop(gaf_props, 'hdri_brightness', slider=True)
+                row = col.row(align = True)
+                row.prop(gaf_props, 'hdri_contrast', slider=True)
+                row.prop(gaf_props, 'hdri_saturation', slider=True)
+                col.separator()
+                col.prop(gaf_props, 'hdri_clamp', slider=True)
+
+                col.separator()
+
+                box = col.box()
+                col = box.column(align = True)
+                row = col.row(align=True)
+                row.alignment = 'LEFT'
+                row.prop(gaf_props, 'hdri_advanced', icon="TRIA_DOWN" if gaf_props.hdri_advanced else "TRIA_RIGHT", emboss=False, toggle=True)
+                if gaf_props.hdri_advanced:
+                    col.separator()
+                    row = col.row(align=True)
+                    row.prop(gaf_props, 'hdri_use_jpg_background')
+                    sub = row.row(align=True)
+                    sub.active = gaf_props.hdri_use_jpg_background
+                    sub.prop(gaf_props, 'hdri_use_darkened_jpg')
+                    if gaf_props.RequestJPGGen and gaf_props.hdri_use_jpg_background:
+                        col.separator()
+                        col.separator()
+                        col.label("No JPGs have been created yet,", icon='ERROR')
+                        col.label("please click 'Generate JPGs' below.")
+                        col.label("Note: This may take a while for high-res images")
+                        col.operator('gaffer.generate_jpgs')
+                        col.prop(gaf_props, 'hdri_jpg_gen_all')
+                        if gaf_props.hdri_jpg_gen_all:
+                            col.label("This is REALLY going to take a while.")
+                            col.label("See the console for progress.")
+                        col.separator()
+
+                    col.separator()
+                    col.label("Control background separately from lighting:")
+                    row = col.row(align=True)
+                    row.prop(gaf_props, 'hdri_use_separate_brightness', toggle=True)
+                    sub = row.row(align=True)
+                    sub.active = gaf_props.hdri_use_separate_brightness
+                    sub.prop(gaf_props, 'hdri_background_brightness', slider=True)
+                    row = col.row(align=True)
+                    row.prop(gaf_props, 'hdri_use_separate_contrast', toggle=True)
+                    sub = row.row(align=True)
+                    sub.active = gaf_props.hdri_use_separate_contrast
+                    sub.prop(gaf_props, 'hdri_background_contrast', slider=True)
+                    row = col.row(align=True)
+                    row.prop(gaf_props, 'hdri_use_separate_saturation', toggle=True)
+                    sub = row.row(align=True)
+                    sub.active = gaf_props.hdri_use_separate_saturation
+                    sub.prop(gaf_props, 'hdri_background_saturation', slider=True)
+                    col.separator()
+                    sub = col.row(align=True)
+                    sub.active = any([gaf_props.hdri_use_jpg_background,
+                                      gaf_props.hdri_use_separate_brightness,
+                                      gaf_props.hdri_use_separate_contrast,
+                                      gaf_props.hdri_use_separate_saturation])
+                    sub.prop(gaf_props, 'hdri_use_bg_reflections')
         else:
-
-            col.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
-
-            if context.scene.gaf_props.RequestThumbGen:
-                col.operator('gaffer.generate_hdri_thumbs')
-            
-            col.prop(gaf_props, "hdri_variation", text="")
-
-            col.separator()
-            col.prop(gaf_props, 'hdri_rotation')
-
-            col = layout.column(align = True)
-            col.prop(gaf_props, 'hdri_brightness', slider=True)
-            row = col.row(align = True)
-            row.prop(gaf_props, 'hdri_contrast', slider=True)
-            row.prop(gaf_props, 'hdri_saturation', slider=True)
-            col.separator()
-            col.prop(gaf_props, 'hdri_clamp', slider=True)
-
-            col.separator()
-
-            box = col.box()
-            col = box.column(align = True)
-            row = col.row(align=True)
-            row.alignment = 'LEFT'
-            row.prop(gaf_props, 'hdri_advanced', icon="TRIA_DOWN" if gaf_props.hdri_advanced else "TRIA_RIGHT", emboss=False, toggle=True)
-            if gaf_props.hdri_advanced:
-                col.separator()
-                row = col.row(align=True)
-                row.prop(gaf_props, 'hdri_use_jpg_background')
-                sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_jpg_background
-                sub.prop(gaf_props, 'hdri_use_darkened_jpg')
-                if gaf_props.RequestJPGGen and gaf_props.hdri_use_jpg_background:
-                    col.separator()
-                    col.separator()
-                    col.label("No JPGs have been created yet,", icon='ERROR')
-                    col.label("please click 'Generate JPGs' below.")
-                    col.label("Note: This may take a while for high-res images")
-                    col.operator('gaffer.generate_jpgs')
-                    col.prop(gaf_props, 'hdri_jpg_gen_all')
-                    if gaf_props.hdri_jpg_gen_all:
-                        col.label("This is REALLY going to take a while.")
-                        col.label("See the console for progress.")
-                    col.separator()
-
-                col.separator()
-                col.label("Control background separately from lighting:")
-                row = col.row(align=True)
-                row.prop(gaf_props, 'hdri_use_separate_brightness', toggle=True)
-                sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_separate_brightness
-                sub.prop(gaf_props, 'hdri_background_brightness', slider=True)
-                row = col.row(align=True)
-                row.prop(gaf_props, 'hdri_use_separate_contrast', toggle=True)
-                sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_separate_contrast
-                sub.prop(gaf_props, 'hdri_background_contrast', slider=True)
-                row = col.row(align=True)
-                row.prop(gaf_props, 'hdri_use_separate_saturation', toggle=True)
-                sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_separate_saturation
-                sub.prop(gaf_props, 'hdri_background_saturation', slider=True)
-                col.separator()
-                sub = col.row(align=True)
-                sub.active = any([gaf_props.hdri_use_jpg_background,
-                                  gaf_props.hdri_use_separate_brightness,
-                                  gaf_props.hdri_use_separate_contrast,
-                                  gaf_props.hdri_use_separate_saturation])
-                sub.prop(gaf_props, 'hdri_use_bg_reflections')
+            col = layout.column()
+            row = col.row()
+            row.alignment = 'CENTER'
+            row.label("Gaffer's HDRI handler is disabled.")
+            row = col.row()
+            row.alignment = 'CENTER'
+            row.label("Enable it with the checkbox in this panel's header")
 
 
 class OBJECT_UL_object_list(bpy.types.UIList):

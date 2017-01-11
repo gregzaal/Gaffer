@@ -1011,11 +1011,11 @@ class GafHDRIThumbGen(bpy.types.Operator):
     bl_idname = 'gaffer.generate_hdri_thumbs'
     bl_label = 'Generate Thumbnails'
 
+    # TODO show progess
     # TODO render diffuse/gloss/plastic spheres instead of just the normal preview
     # TODO option to try to download sphere renders instead of rendering locally, as well as a separate option to upload local renders to help others skip rendering locally again
 
     def downsample(self, img):
-        # TODO catch if input image is smaller than 256p
         # TODO linear interoplation
 
         import numpy
@@ -1023,6 +1023,9 @@ class GafHDRIThumbGen(bpy.types.Operator):
         out_y = 128
         in_x = img.size[0]
         in_y = img.size[1]
+
+        if in_x < 256 or in_y < 128:
+            return numpy.array(img.pixels)
     
         p = numpy.split(numpy.array(img.pixels), len(img.pixels)/4)  # Group by RGBA
         rows = numpy.split(numpy.array(p), in_y)
@@ -1035,8 +1038,6 @@ class GafHDRIThumbGen(bpy.types.Operator):
 
     def generate_thumb(self, name, files):
         import numpy
-        # TODO run in background? or show some kind of progress bar
-        # TODO download instead of render if possible
 
         context = bpy.context
         prefs = context.user_preferences.addons[__package__].preferences
@@ -1108,6 +1109,8 @@ class GafHDRIJPGGen(bpy.types.Operator):
     "Generate regular JPG and darkened JPG from HDRI"
     bl_idname = 'gaffer.generate_jpgs'
     bl_label = 'Generate JPGs'
+
+    # TODO show progess
 
     def generate_jpgs(self, context, name):
         import numpy

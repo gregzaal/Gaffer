@@ -91,7 +91,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         name="HDRI Folder",
         subtype='DIR_PATH',
         description='The folder where all your HDRIs are stored',
-        default='X:/tmp/HDRIs',  # TODO reset - maybe allow multiple HDRI folders
+        default='',
         update=functions.detect_hdris
         )
 
@@ -293,7 +293,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         name="Enable",
         description="Turn on/off Gaffer's HDRI handler",
         default=False,
-        update=functions.setup_hdri)
+        update=functions.hdri_enable)
     hdri = bpy.props.EnumProperty(
         name="HDRIs",
         items=functions.hdri_enum_previews,
