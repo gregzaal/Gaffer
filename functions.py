@@ -528,7 +528,7 @@ def detect_hdris(self, context):
     if (prefs.hdri_path):
         check_folder_for_HDRIs(prefs.hdri_path)
 
-        hdris = OrderedDict(sorted(hdris.items()))  # Sort by hdri name
+        hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))  # Sort by hdri name
 
         with open(hdri_list_path, 'w') as f:
             f.write(json.dumps(hdris, indent=4))

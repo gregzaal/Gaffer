@@ -18,7 +18,6 @@
 
 import bpy
 import os
-from collections import OrderedDict
 import bgl, blf
 from math import pi, cos, sin, log
 from mathutils import Vector, Matrix

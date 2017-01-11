@@ -18,7 +18,6 @@
 
 import bpy
 import json
-from collections import OrderedDict
 import bgl, blf
 from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
@@ -1165,18 +1164,23 @@ class GafHDRIPaddles(bpy.types.Operator):
         current_index = -1
         prev_hdri = ''
         next_hdri = ''
+
+        # if (current_hdri == hdris[0] and not do_next) or (current_hdri == hdris[-1] and do_next):
+        #     return {'CANCELLED'}
+
         for i, h in enumerate(hdris):
             if next_hdri:
                 next_hdri = h
                 break
             if h == current_hdri:
                 current_index = i
-                next_hdri = "blah"
+                next_hdri = "__LAST_HDRI__"
             else:
                 prev_hdri = h
         if self.do_next:
-            gaf_props.hdri = next_hdri
-        else:
+            if next_hdri != "__LAST_HDRI__":
+                gaf_props.hdri = next_hdri
+        elif prev_hdri:
             gaf_props.hdri = prev_hdri
         return {'FINISHED'}
 

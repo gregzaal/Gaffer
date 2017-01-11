@@ -110,7 +110,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
 
         hdris = functions.get_hdri_list()
         if hdris:
-            hdris = OrderedDict(sorted(hdris.items()))
+            hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
             num_hdris = len(hdris)
             row = col.row()
             row.alignment = 'RIGHT'
