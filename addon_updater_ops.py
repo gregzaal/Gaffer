@@ -548,126 +548,130 @@ def update_settings_ui(self, context):
 	box = layout.box()
 
 	# auto-update settings
-	box.label("Updater Settings")
 	row = box.row()
+	row.alignment = 'LEFT'
+	row.prop(settings, 'updater_expand_prefs', text="Updates", icon="TRIA_DOWN" if settings.updater_expand_prefs else "TRIA_RIGHT", emboss=False)
 
-	# special case to tell user to restart blender, if set that way
-	if updater.auto_reload_post_update == False:
-		saved_state = updater.json
-		if "just_updated" in saved_state and saved_state["just_updated"] == True:
-			row.label("Restart blender to complete update", icon="ERROR")
-			return
+	if settings.updater_expand_prefs:
+		row = box.row()
 
-	split = row.split(percentage=0.3)
-	subcol = split.column()
-	subcol.prop(settings, "auto_check_update")
-	subcol = split.column()
+		# special case to tell user to restart blender, if set that way
+		if updater.auto_reload_post_update == False:
+			saved_state = updater.json
+			if "just_updated" in saved_state and saved_state["just_updated"] == True:
+				row.label("Restart blender to complete update", icon="ERROR")
+				return
 
-	if settings.auto_check_update==False: subcol.enabled = False
-	subrow = subcol.row()
-	subrow.label("Interval between checks")
-	subrow = subcol.row(align=True)
-	checkcol = subrow.column(align=True)
-	checkcol.prop(settings,"updater_intrval_months")
-	checkcol = subrow.column(align=True)
-	checkcol.prop(settings,"updater_intrval_days")
-	checkcol = subrow.column(align=True)
-	checkcol.prop(settings,"updater_intrval_hours")
-	checkcol = subrow.column(align=True)
-	checkcol.prop(settings,"updater_intrval_minutes")
+		split = row.split(percentage=0.3)
+		subcol = split.column()
+		subcol.prop(settings, "auto_check_update")
+		subcol = split.column()
+
+		if settings.auto_check_update==False: subcol.enabled = False
+		subrow = subcol.row()
+		subrow.label("Interval between checks")
+		subrow = subcol.row(align=True)
+		checkcol = subrow.column(align=True)
+		checkcol.prop(settings,"updater_intrval_months")
+		checkcol = subrow.column(align=True)
+		checkcol.prop(settings,"updater_intrval_days")
+		checkcol = subrow.column(align=True)
+		checkcol.prop(settings,"updater_intrval_hours")
+		checkcol = subrow.column(align=True)
+		checkcol.prop(settings,"updater_intrval_minutes")
 
 
-	# checking / managing updates
-	row = box.row()
-	col = row.column()
-	movemosue = False
-	if updater.error != None:
-		subcol = col.row(align=True)
-		subcol.scale_y = 1
-		split = subcol.split(align=True)
-		split.enabled = False
-		split.scale_y = 2
-		split.operator(addon_updater_check_now.bl_idname,
-						updater.error)
-		split = subcol.split(align=True)
-		split.scale_y = 2
-		split.operator(addon_updater_check_now.bl_idname,
-						text = "", icon="FILE_REFRESH")
+		# checking / managing updates
+		row = box.row()
+		col = row.column()
+		movemosue = False
+		if updater.error != None:
+			subcol = col.row(align=True)
+			subcol.scale_y = 1
+			split = subcol.split(align=True)
+			split.enabled = False
+			split.scale_y = 2
+			split.operator(addon_updater_check_now.bl_idname,
+							updater.error)
+			split = subcol.split(align=True)
+			split.scale_y = 2
+			split.operator(addon_updater_check_now.bl_idname,
+							text = "", icon="FILE_REFRESH")
 
-	elif updater.update_ready == None and updater.async_checking == False:
-		col.scale_y = 2
-		col.operator(addon_updater_check_now.bl_idname)
-	elif updater.update_ready == None: # async is running
-		subcol = col.row(align=True)
-		subcol.scale_y = 1
-		split = subcol.split(align=True)
-		split.enabled = False
-		split.scale_y = 2
-		split.operator(addon_updater_check_now.bl_idname,
-						"Checking...")
-		split = subcol.split(align=True)
-		split.scale_y = 2
-		split.operator(addon_updater_end_background.bl_idname,
-						text = "", icon="X")
-		
-	elif updater.update_ready==True and updater.manual_only==False:
-		subcol = col.row(align=True)
-		subcol.scale_y = 1
-		split = subcol.split(align=True)
-		split.scale_y = 2
-		split.operator(addon_updater_update_now.bl_idname,
-					"Update now to "+str(updater.update_version))
-		split = subcol.split(align=True)
-		split.scale_y = 2
-		split.operator(addon_updater_check_now.bl_idname,
-						text = "", icon="FILE_REFRESH")
+		elif updater.update_ready == None and updater.async_checking == False:
+			col.scale_y = 2
+			col.operator(addon_updater_check_now.bl_idname)
+		elif updater.update_ready == None: # async is running
+			subcol = col.row(align=True)
+			subcol.scale_y = 1
+			split = subcol.split(align=True)
+			split.enabled = False
+			split.scale_y = 2
+			split.operator(addon_updater_check_now.bl_idname,
+							"Checking...")
+			split = subcol.split(align=True)
+			split.scale_y = 2
+			split.operator(addon_updater_end_background.bl_idname,
+							text = "", icon="X")
+			
+		elif updater.update_ready==True and updater.manual_only==False:
+			subcol = col.row(align=True)
+			subcol.scale_y = 1
+			split = subcol.split(align=True)
+			split.scale_y = 2
+			split.operator(addon_updater_update_now.bl_idname,
+						"Update now to "+str(updater.update_version))
+			split = subcol.split(align=True)
+			split.scale_y = 2
+			split.operator(addon_updater_check_now.bl_idname,
+							text = "", icon="FILE_REFRESH")
 
-	elif updater.update_ready==True and updater.manual_only==True:
-		col.scale_y = 2
-		col.operator("wm.url_open",
-				"Download "+str(updater.update_version)).url=updater.website
-	else: # ie that updater.update_ready == False
-		subcol = col.row(align=True)
-		subcol.scale_y = 1
-		split = subcol.split(align=True)
-		split.enabled = False
-		split.scale_y = 2
-		split.operator(addon_updater_check_now.bl_idname,
-						"Addon is up to date")
-		split = subcol.split(align=True)
-		split.scale_y = 2
-		split.operator(addon_updater_check_now.bl_idname,
-						text = "", icon="FILE_REFRESH")
+		elif updater.update_ready==True and updater.manual_only==True:
+			col.scale_y = 2
+			col.operator("wm.url_open",
+					"Download "+str(updater.update_version)).url=updater.website
+		else: # ie that updater.update_ready == False
+			subcol = col.row(align=True)
+			subcol.scale_y = 1
+			split = subcol.split(align=True)
+			split.enabled = False
+			split.scale_y = 2
+			split.operator(addon_updater_check_now.bl_idname,
+							"Addon is up to date")
+			split = subcol.split(align=True)
+			split.scale_y = 2
+			split.operator(addon_updater_check_now.bl_idname,
+							text = "", icon="FILE_REFRESH")
 
-	if updater.manual_only == False:
-		col = row.column(align=True)
-		if updater.include_master == True:
-			col.operator(addon_updater_update_target.bl_idname,
-					"Install master / old verison")
-		else:
-			col.operator(addon_updater_update_target.bl_idname,
-					"Reinstall / install old verison")
-		lastdate = "none found"
-		backuppath = os.path.join(updater.stage_path,"backup")
-		if "backup_date" in updater.json and os.path.isdir(backuppath):
-			if updater.json["backup_date"] == "":
-				lastdate = "Date not found"
+		if updater.manual_only == False:
+			col = row.column(align=True)
+			if updater.include_master == True:
+				col.operator(addon_updater_update_target.bl_idname,
+						"Install master / old verison")
 			else:
-				lastdate = updater.json["backup_date"]
-		backuptext = "Restore addon backup ({x})".format(x=lastdate)
-		col.operator(addon_updater_restore_backup.bl_idname, backuptext)
+				col.operator(addon_updater_update_target.bl_idname,
+						"Reinstall / install old verison")
+			lastdate = "none found"
+			backuppath = os.path.join(updater.stage_path,"backup")
+			if "backup_date" in updater.json and os.path.isdir(backuppath):
+				if updater.json["backup_date"] == "":
+					lastdate = "Date not found"
+				else:
+					lastdate = updater.json["backup_date"]
+			backuptext = "Restore addon backup ({x})".format(x=lastdate)
+			col.operator(addon_updater_restore_backup.bl_idname, backuptext)
 
-	row = box.row()
-	lastcheck = updater.json["last_check"]
-	if updater.error != None and updater.error_msg != None:
-		row.label(updater.error_msg)
-	elif movemosue == True:
-		row.label("Move mouse if button doesn't update")
-	elif lastcheck != "" and lastcheck != None:
-		lastcheck = lastcheck[0: lastcheck.index(".") ]
-		row.label("Last update check: " + lastcheck)
-	else:
-		row.label("Last update check: None")
+		row = box.row()
+		lastcheck = updater.json["last_check"]
+		if updater.error != None and updater.error_msg != None:
+			row.label(updater.error_msg)
+		elif movemosue == True:
+			row.label("Move mouse if button doesn't update")
+		elif lastcheck != "" and lastcheck != None:
+			lastcheck = lastcheck[0: lastcheck.index(".") ]
+			row.label("Last update check: " + lastcheck)
+		else:
+			row.label("Last update check: None")
 
 
 # a global function for tag skipping

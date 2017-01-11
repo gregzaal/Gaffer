@@ -86,6 +86,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         min=0,
         max=59
         )
+    updater_expand_prefs = bpy.props.BoolProperty(default=False)
 
     hdri_path = bpy.props.StringProperty(
         name="HDRI Folder",
