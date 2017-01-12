@@ -851,6 +851,7 @@ class GafferPanelHDRIs (bpy.types.Panel):
                 row = col.row(align = True)
                 row.prop(gaf_props, 'hdri_contrast', slider=True)
                 row.prop(gaf_props, 'hdri_saturation', slider=True)
+                col.prop(gaf_props, 'hdri_warmth', slider=True)
                 col.separator()
                 col.prop(gaf_props, 'hdri_clamp', slider=True)
 
@@ -898,12 +899,19 @@ class GafferPanelHDRIs (bpy.types.Panel):
                     sub = row.row(align=True)
                     sub.active = gaf_props.hdri_use_separate_saturation
                     sub.prop(gaf_props, 'hdri_background_saturation', slider=True)
+                    row = col.row(align=True)
+                    row.prop(gaf_props, 'hdri_use_separate_warmth', toggle=True)
+                    sub = row.row(align=True)
+                    sub.active = gaf_props.hdri_use_separate_warmth
+                    sub.prop(gaf_props, 'hdri_background_warmth', slider=True)
+
                     col.separator()
                     sub = col.row(align=True)
                     sub.active = any([gaf_props.hdri_use_jpg_background,
                                       gaf_props.hdri_use_separate_brightness,
                                       gaf_props.hdri_use_separate_contrast,
-                                      gaf_props.hdri_use_separate_saturation])
+                                      gaf_props.hdri_use_separate_saturation,
+                                      gaf_props.hdri_use_separate_warmth])
                     sub.prop(gaf_props, 'hdri_use_bg_reflections')
 
                 if gaf_props.ShowHDRIHaven:

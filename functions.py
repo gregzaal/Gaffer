@@ -564,6 +564,85 @@ def get_variation(hdri, mode=None, var=None):
         return "ERROR: Unsupported mode!"
 
 def handler_node(context, t, background=False):
+
+    def warmth_node(context):
+        group_name = "Warmth (Gaffer)"
+        n = context.scene.world.node_tree.nodes.new('ShaderNodeGroup')
+        if group_name not in bpy.data.node_groups:
+            tree = context.scene.world.node_tree
+
+            group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+
+            group_inputs = group.nodes.new('NodeGroupInput')
+            group_inputs.location = (-70.08822631835938, -477.9051513671875)
+            group.inputs.new('NodeSocketColor','Image')
+            group.inputs.new('NodeSocketFloat','Temp')
+            group.inputs.new('NodeSocketFloat','Tint')
+            group.inputs[1].min_value = -100
+            group.inputs[1].max_value = 100
+            group.inputs[2].min_value = -100
+            group.inputs[2].max_value = 100
+            group_outputs = group.nodes.new('NodeGroupOutput')
+            group_outputs.location = (1032.72119140625, -158.30892944335938)
+            group.outputs.new('NodeSocketColor','Image')
+
+            n1 = group.nodes.new('ShaderNodeMath')
+            n1.operation = 'DIVIDE'
+            n1.inputs[1].default_value = 150
+            n1.location = (214.2261199951172, -338.8708190917969)
+
+            n2 = group.nodes.new('ShaderNodeMath')
+            n2.operation = 'ADD'
+            n2.inputs[1].default_value = 1.0
+            n2.location = (407.1993713378906, -335.6588134765625)
+
+            n3 = group.nodes.new('ShaderNodeSeparateRGB')
+            n3.location = (408.24310302734375, -167.7357940673828)
+
+            n4 = group.nodes.new('ShaderNodeMath')
+            n4.operation = 'MULTIPLY'
+            n4.location = (626.5187377929688, 85.08377838134766)
+
+            n5 = group.nodes.new('ShaderNodeMath')
+            n5.operation = 'MULTIPLY'
+            n5.location = (626.5187377929688, -90.68150329589844)
+
+            n6 = group.nodes.new('ShaderNodeMath')
+            n6.operation = 'DIVIDE'
+            n6.location = (626.5187377929688, -239.59378051757812)
+
+            n7 = group.nodes.new('ShaderNodeMath')
+            n7.operation = 'DIVIDE'
+            n7.inputs[1].default_value = 150
+            n7.location = (214.2261199951172, -547.5130615234375)
+
+            n8 = group.nodes.new('ShaderNodeMath')
+            n8.operation = 'ADD'
+            n8.inputs[1].default_value = 1.0
+            n8.location = (407.1993713378906, -529.1270751953125)
+
+            n9 = group.nodes.new('ShaderNodeCombineRGB')
+            n9.location = (807.5265502929688, -162.73184204101562)
+
+            group.links.new(group_inputs.outputs[1], n1.inputs[0])
+            group.links.new(n1.outputs[0], n2.inputs[0])
+            group.links.new(n2.outputs[0], n4.inputs[1])
+            group.links.new(n2.outputs[0], n6.inputs[1])
+            group.links.new(group_inputs.outputs[2], n7.inputs[0])
+            group.links.new(n7.outputs[0], n8.inputs[0])
+            group.links.new(n8.outputs[0], n5.inputs[1])
+            group.links.new(group_inputs.outputs[0], n3.inputs[0])
+            group.links.new(n3.outputs[0], n4.inputs[0])
+            group.links.new(n3.outputs[1], n5.inputs[0])
+            group.links.new(n3.outputs[2], n6.inputs[0])
+            group.links.new(n4.outputs[0], n9.inputs[0])
+            group.links.new(n5.outputs[0], n9.inputs[1])
+            group.links.new(n6.outputs[0], n9.inputs[2])
+            group.links.new(n9.outputs[0], group_outputs.inputs[0])
+
+        n.node_tree = bpy.data.node_groups[group_name]
+        return n
+
     """ Return requested node, or create it """
     nodes = context.scene.world.node_tree.nodes
     name = "HDRIHandler_" + t + ("_B" if background else "")
@@ -571,17 +650,21 @@ def handler_node(context, t, background=False):
         if n.name == name:
             return n
 
-    n = nodes.new(t)
+    if t == "Warmth":
+        n = warmth_node(context)
+    else:
+        n = nodes.new(t)
     n.name = name
     n.select = False
 
     y_offset = 220 if background else 0
     positions = {
-        "ShaderNodeTexCoord": (-821.785, 118.4),
-        "ShaderNodeMapping": (-631.785, 138.4),
-        "ShaderNodeTexEnvironment": (-261.785, 90.465 - y_offset),
+        "ShaderNodeTexCoord": (-1021.785, 118.4),
+        "ShaderNodeMapping": (-831.785, 138.4),
+        "ShaderNodeTexEnvironment": (-461.785, 90.465 - y_offset),
         "ShaderNodeBrightContrast": (-71.785, 59.522 - y_offset),
         "ShaderNodeHueSaturation": (118.214, 81.406 - y_offset),
+        "Warmth": (-262.389, 72.821 - y_offset),
         "ShaderNodeBackground": (318.214, 48.494 - y_offset),
         "ShaderNodeMixShader": (523.77, 59.349),
         "ShaderNodeLightPath": (123.77, 362.16),
@@ -625,6 +708,10 @@ def uses_default_values(node, node_type):
             "_socket_2": 1,
             "_socket_3": 1,
         },
+        "Warmth": {
+            "_socket_1": 0,
+            "_socket_2": 0,
+        },
     }
 
     defaults = defaults_dict[node_type]
@@ -666,7 +753,8 @@ def setup_hdri(self, context):
         gaf_props.hdri_use_jpg_background, 
         gaf_props.hdri_use_separate_brightness, 
         gaf_props.hdri_use_separate_contrast, 
-        gaf_props.hdri_use_separate_saturation
+        gaf_props.hdri_use_separate_saturation,
+        gaf_props.hdri_use_separate_warmth
         ])
 
     w = context.scene.world
@@ -680,6 +768,7 @@ def setup_hdri(self, context):
     n_coord    = handler_node(context, "ShaderNodeTexCoord")
     n_mapping  = handler_node(context, "ShaderNodeMapping")
     n_img      = handler_node(context, "ShaderNodeTexEnvironment")
+    n_warm     = handler_node(context, "Warmth")
     n_cont     = handler_node(context, "ShaderNodeBrightContrast")
     n_sat      = handler_node(context, "ShaderNodeHueSaturation")
     n_shader   = handler_node(context, "ShaderNodeBackground")
@@ -692,6 +781,7 @@ def setup_hdri(self, context):
         n_img_b    = handler_node(context, "ShaderNodeTexEnvironment", background=gaf_props.hdri_use_jpg_background)
         n_cont_b   = handler_node(context, "ShaderNodeBrightContrast", background=True)
         n_sat_b    = handler_node(context, "ShaderNodeHueSaturation", background=True)
+        n_warm_b   = handler_node(context, "Warmth", background=True)
         n_shader_b = handler_node(context, "ShaderNodeBackground", background=True)
         n_mix      = handler_node(context, "ShaderNodeMixShader")
         n_lp       = handler_node(context, "ShaderNodeLightPath")
@@ -710,13 +800,15 @@ def setup_hdri(self, context):
     links = w.node_tree.links
     new_link(links, n_coord.outputs[0], n_mapping.inputs[0])
     new_link(links, n_mapping.outputs[0], n_img.inputs[0])
-    new_link(links, n_img.outputs[0], n_cont.inputs[0])
+    new_link(links, n_img.outputs[0], n_warm.inputs[0])
+    new_link(links, n_warm.outputs[0], n_cont.inputs[0])
     new_link(links, n_cont.outputs[0], n_sat.inputs[4])
     new_link(links, n_sat.outputs[0], n_shader.inputs[0], force=True)
 
     if extra_nodes:
         new_link(links, n_mapping.outputs[0], n_img_b.inputs[0], force=True)
-        new_link(links, n_img_b.outputs[0], n_cont_b.inputs[0], force=True)
+        new_link(links, n_img_b.outputs[0], n_warm_b.inputs[0], force=True)
+        new_link(links, n_warm_b.outputs[0], n_cont_b.inputs[0], force=True)
         new_link(links, n_cont_b.outputs[0], n_sat_b.inputs[4], force=True)
         new_link(links, n_sat_b.outputs[0], n_shader_b.inputs[0], force=True)
         new_link(links, n_shader.outputs[0], n_mix.inputs[1], force=True)
@@ -763,9 +855,11 @@ def setup_hdri(self, context):
     update_brightness(self, context)
     update_contrast(self, context)
     update_saturation(self, context)
+    update_warmth(self, context)
     update_background_brightness(self, context)
     update_background_contrast(self, context)
     update_background_saturation(self, context)
+    update_background_warmth(self, context)
 
     return None
 
@@ -818,7 +912,8 @@ def update_brightness(self, context):
         gaf_props.hdri_use_jpg_background, 
         gaf_props.hdri_use_separate_brightness, 
         gaf_props.hdri_use_separate_contrast, 
-        gaf_props.hdri_use_separate_saturation
+        gaf_props.hdri_use_separate_saturation,
+        gaf_props.hdri_use_separate_warmth
         ])
     if not gaf_props.hdri_use_separate_brightness and extra_nodes:
         if gaf_props.hdri_use_darkened_jpg:
@@ -842,7 +937,8 @@ def update_contrast(self, context):
         gaf_props.hdri_use_jpg_background, 
         gaf_props.hdri_use_separate_brightness, 
         gaf_props.hdri_use_separate_contrast, 
-        gaf_props.hdri_use_separate_saturation
+        gaf_props.hdri_use_separate_saturation,
+        gaf_props.hdri_use_separate_warmth
         ])
     if not gaf_props.hdri_use_separate_contrast and extra_nodes:
         n = handler_node(context, "ShaderNodeBrightContrast", background=True)
@@ -865,12 +961,37 @@ def update_saturation(self, context):
         gaf_props.hdri_use_jpg_background, 
         gaf_props.hdri_use_separate_brightness, 
         gaf_props.hdri_use_separate_contrast, 
-        gaf_props.hdri_use_separate_saturation
+        gaf_props.hdri_use_separate_saturation,
+        gaf_props.hdri_use_separate_warmth
         ])
     if not gaf_props.hdri_use_separate_saturation and extra_nodes:
         n = handler_node(context, "ShaderNodeHueSaturation", background=True)
         n.inputs[1].default_value = value
         n.mute = uses_default_values(n, "ShaderNodeHueSaturation")
+
+    return None
+
+def update_warmth(self, context):
+    gaf_props = context.scene.gaf_props
+    if not gaf_props.hdri_handler_enabled:
+        return None  # Don't do anything if handler is disabled
+
+    value = gaf_props.hdri_warmth
+    n = handler_node(context, "Warmth")
+    n.inputs[1].default_value = value
+    n.mute = uses_default_values(n, "Warmth")
+
+    extra_nodes = any([
+        gaf_props.hdri_use_jpg_background, 
+        gaf_props.hdri_use_separate_brightness, 
+        gaf_props.hdri_use_separate_contrast, 
+        gaf_props.hdri_use_separate_saturation,
+        gaf_props.hdri_use_separate_warmth
+        ])
+    if not gaf_props.hdri_use_separate_warmth and extra_nodes:
+        n = handler_node(context, "Warmth", background=True)
+        n.inputs[1].default_value = value
+        n.mute = uses_default_values(n, "Warmth")
 
     return None
 
@@ -924,6 +1045,19 @@ def update_background_saturation (self, context):
     n = handler_node(context, "ShaderNodeHueSaturation", background=True)
     n.inputs[1].default_value = value
     n.mute = uses_default_values(n, "ShaderNodeHueSaturation")
+
+    return None
+
+def update_background_warmth (self, context):
+    gaf_props = context.scene.gaf_props
+    if not gaf_props.hdri_handler_enabled or not gaf_props.hdri_use_separate_warmth:
+        update_warmth(self, context)
+        return None
+
+    value = gaf_props.hdri_background_warmth
+    n = handler_node(context, "Warmth", background=True)
+    n.inputs[1].default_value = value
+    n.mute = uses_default_values(n, "Warmth")
 
     return None
 

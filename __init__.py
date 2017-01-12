@@ -358,6 +358,14 @@ class GafferProperties(bpy.types.PropertyGroup):
         soft_max=2,
         update=functions.update_saturation
         )
+    hdri_warmth = bpy.props.FloatProperty(
+        name="Warmth",
+        description='Control the relative color temperature of the HDRI (blue/orange)',
+        default=0,
+        soft_min=-100,
+        soft_max=100,
+        update=functions.update_warmth
+        )
     hdri_use_jpg_background = bpy.props.BoolProperty(
         name = "Use high-res JPG background",
         default = False,
@@ -417,6 +425,20 @@ class GafferProperties(bpy.types.PropertyGroup):
         min=0,
         soft_max=2,
         update=functions.update_background_saturation
+        )
+    hdri_use_separate_warmth = bpy.props.BoolProperty(
+        name = "Warmth",
+        default = False,
+        description = "Adjust the warmth value for the background separately from the lighting",
+        update=functions.setup_hdri
+        )
+    hdri_background_warmth = bpy.props.FloatProperty(
+        name="Value",
+        description='Change the saturation of background image without affecting the lighting',
+        default=0,
+        soft_min=-100,
+        soft_max=100,
+        update=functions.update_background_warmth
         )
     hdri_clamp = bpy.props.FloatProperty(
         name="Clamp Brightness",
