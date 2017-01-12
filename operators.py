@@ -1009,8 +1009,8 @@ class GafHDRIThumbGen(bpy.types.Operator):
     "Generate missing thumbnail images for all HDRIs"
     bl_idname = 'gaffer.generate_hdri_thumbs'
     bl_label = 'Generate Thumbnails'
+    bl_options = {'INTERNAL'}
 
-    # TODO show progess
     # TODO render diffuse/gloss/plastic spheres instead of just the normal preview
     # TODO option to try to download sphere renders instead of rendering locally, as well as a separate option to upload local renders to help others skip rendering locally again
 
@@ -1099,7 +1099,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
         progress_begin(context)
         num_hdris = len(hdris)
         for i, h in enumerate(hdris):
-            progress_update(context, i/num_hdris, "Generating thumb: "+str(i+1)+'/'+str(num_hdris))
+            progress_update(context, i/num_hdris, "Generating thumbnail "+str(i+1)+' of '+str(num_hdris))
             self.generate_thumb(h, hdris[h])
         progress_end(context)
 
@@ -1112,6 +1112,7 @@ class GafHDRIJPGGen(bpy.types.Operator):
     "Generate regular JPG and darkened JPG from HDRI"
     bl_idname = 'gaffer.generate_jpgs'
     bl_label = 'Generate JPGs'
+    bl_options = {'INTERNAL'}
 
     # TODO show progess
 
@@ -1189,10 +1190,25 @@ class GafGetHDRIHaven(bpy.types.Operator):
     "Download HDRIs from hdrihaven.com"
     bl_idname = 'gaffer.get_hdri_haven'
     bl_label = 'Get Free HDRIs'
+    bl_options = {'INTERNAL'}
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column(align=True)
+        row = col.row()
+        row.alignment='CENTER'
+        row.label("This will download ~100 1k HDRIs from hdrihaven.com")
+        row = col.row()
+        row.alignment='CENTER'
+        row.label("If you already have some of them, those will be skipped")
+        row = col.row()
+        row.alignment='CENTER'
+        row.label("(~160 MB)")
 
     def execute(self, context):
         hdrihaven_hdris = get_hdri_haven_list()
         num_hdris = len(hdrihaven_hdris)
+        success = False
         if hdrihaven_hdris:
             from urllib.request import urlretrieve
             prefs = bpy.context.user_preferences.addons[__package__].preferences
@@ -1209,11 +1225,30 @@ class GafGetHDRIHaven(bpy.types.Operator):
                     progress_update(context, i/num_hdris, "Downloading: "+str(i+1)+'/'+str(num_hdris))
                     try:
                         urlretrieve('https://hdrihaven.com/hdris/hdris/'+filename, filepath)
+                        success = True
                     except:
                         print ("    Failed to download: " + filename)
                 else:
                     print ("Skipping " + filename + ", you already have it")
                 progress_end(context)
+
+        if success:
+            context.scene.gaf_props.ShowHDRIHaven = False
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+class GafHideHDRIHaven(bpy.types.Operator):
+
+    "Hide this button for good."
+    bl_idname = 'gaffer.hide_hdri_haven'
+    bl_label = 'Hide'
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        set_persistent_setting('show_hdri_haven', False)
+        context.scene.gaf_props.ShowHDRIHaven = False
         return {'FINISHED'}
 
 class GafOpenHDRIHaven(bpy.types.Operator):

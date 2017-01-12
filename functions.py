@@ -480,6 +480,9 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
 # HDRI stuffs
 
 def detect_hdris(self, context):
+
+    show_hdrihaven()
+
     global hdri_list
     hdris = {}
 
@@ -638,7 +641,7 @@ def uses_default_values(node, node_type):
 def new_link(links, from_socket, to_socket, force=False):
     if not to_socket.is_linked or force: links.new(from_socket, to_socket)
 
-def switch_hdri(self, context):
+def switch_hdri(self, context):    
     gaf_props = context.scene.gaf_props
     default_var = get_variation(gaf_props.hdri, mode='smallest')  # Default to smallest
     
@@ -650,6 +653,7 @@ def switch_hdri(self, context):
 
     gaf_props.hdri_variation = default_var
     setup_hdri(self, context)
+    show_hdrihaven()
 
 def setup_hdri(self, context):
     gaf_props = context.scene.gaf_props
@@ -976,10 +980,21 @@ def previews_register():
     pcoll.previews = ()
     preview_collections['main'] = pcoll
 
+    import bpy.utils.previews
+    global custom_icons
+    custom_icons = bpy.utils.previews.new()
+    custom_icons.load("hdri_haven", os.path.join(icon_dir, 'hdri_haven.png'), 'IMAGE')
+
 def previews_unregister():
     for pcoll in preview_collections.values():
         bpy.utils.previews.remove(pcoll)
     preview_collections.clear()
+
+    global custom_icons
+    bpy.utils.previews.remove(custom_icons)
+
+def get_icons():
+    return custom_icons
 
 def refresh_previews():
     previews_unregister()
@@ -1043,13 +1058,66 @@ def get_hdri_haven_list():
 if len(hdri_haven_list) < 1:
     hdri_haven_list = get_hdri_haven_list()
 
+def show_hdrihaven():
+    prefs = bpy.context.user_preferences.addons[__package__].preferences
+    if not os.path.exists(os.path.join(prefs.hdri_path, 'HDRI Haven')):
+        if get_persistent_setting('show_hdri_haven'):
+            bpy.context.scene.gaf_props.ShowHDRIHaven = True
+
+def draw_progress_bar(gaf_props, layout):
+    if gaf_props.ShowProgress:
+        layout.separator()
+        b = layout.box()
+        col = b.column(align=True)
+        col.label(gaf_props.ProgressText)
+        split = col.split(percentage=max(0.01, gaf_props.Progress), align=True)
+        r = split.row()
+        r.alert=True
+        r.prop(gaf_props, 'ProgressBarText', "")
+        r = split.row()
+        r.label("")
+        layout.separator()
 def progress_begin(context):
     context.scene.gaf_props.ShowProgress = True
     _force_redraw_hack()
 def progress_update(context, value, text):
     context.scene.gaf_props.Progress = value
     context.scene.gaf_props.ProgressText = text
+    context.scene.gaf_props.ProgressBarText = str(round(value*100))+"%"
     _force_redraw_hack()
 def progress_end(context):
     context.scene.gaf_props.Progress = 0
     context.scene.gaf_props.ShowProgress = False
+
+
+def init_persistent_settings(set_name=None, set_value=None):
+    ''' Initialize persistent settings file with option to change a default value'''
+
+    settings = {'show_hdri_haven': True}
+
+    if set_name is not None:
+        settings[set_name] = set_value
+
+    with open(settings_file, 'w') as f:
+        f.write(json.dumps(settings, indent=4))
+
+    return settings
+
+def get_persistent_setting(name):
+    if os.path.exists(settings_file):
+        with open(settings_file) as f:
+            settings = json.load(f)
+        if name in settings:
+            return settings[name]
+
+    return init_persistent_settings()[name]
+
+def set_persistent_setting(name, value):
+    if not os.path.exists(settings_file):
+        init_persistent_settings(name, value)
+    else:
+        with open(settings_file) as f:
+            settings = json.load(f)
+        settings[name] = value
+        with open(settings_file, 'w') as f:
+            f.write(json.dumps(settings, indent=4))

@@ -448,6 +448,8 @@ class GafferProperties(bpy.types.PropertyGroup):
     ShowProgress = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     Progress = bpy.props.FloatProperty(default = 0.0, options={'HIDDEN'})
     ProgressText = bpy.props.StringProperty(default = "", options={'HIDDEN'})
+    ProgressBarText = bpy.props.StringProperty(default = "", options={'HIDDEN'})
+    ShowHDRIHaven = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     Blacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
 

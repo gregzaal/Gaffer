@@ -72,7 +72,9 @@ if not os.path.exists(thumbnail_dir): os.makedirs(thumbnail_dir)
 jpg_dir = os.path.join(data_dir, 'hdri_jpgs')
 if not os.path.exists(jpg_dir): os.makedirs(jpg_dir)
 hdri_list_path = os.path.join(data_dir, 'gaffer_hdris.json')
+settings_file = os.path.join(data_dir, 'settings.json')
 preview_collections = {}
 icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
 hdri_list = {}
 hdri_haven_list = []
+custom_icons = None

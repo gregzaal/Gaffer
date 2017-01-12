@@ -808,19 +808,7 @@ class GafferPanelHDRIs (bpy.types.Panel):
 
         layout = self.layout
 
-        if gaf_props.ShowProgress:
-            layout.separator()
-            split = layout.split(percentage=gaf_props.Progress, align=True)
-            b = split.box()
-            r = b.row()
-            r.alignment='CENTER'
-            r.label(gaf_props.ProgressText if gaf_props.Progress >= 0.5 else "")
-            r = split.row()
-            r.alignment='CENTER'
-            c = r.column(align=True)
-            c.separator()
-            c.label(gaf_props.ProgressText if gaf_props.Progress < 0.5 else "")
-            layout.separator()
+        draw_progress_bar(gaf_props, layout)
 
         if gaf_props.hdri_handler_enabled:
             col = layout.column()
@@ -917,6 +905,16 @@ class GafferPanelHDRIs (bpy.types.Panel):
                                       gaf_props.hdri_use_separate_contrast,
                                       gaf_props.hdri_use_separate_saturation])
                     sub.prop(gaf_props, 'hdri_use_bg_reflections')
+
+                if gaf_props.ShowHDRIHaven:
+                    icons = get_icons()
+                    layout.separator()
+                    row = layout.row(align=True)
+                    row.alignment='CENTER'
+                    row.scale_y = 1.5
+                    row.scale_x = 1.5
+                    row.operator('gaffer.get_hdri_haven', icon_value=icons['hdri_haven'].icon_id)
+                    row.operator('gaffer.hide_hdri_haven', text="", icon='X')
         else:
             col = layout.column()
             row = col.row()
