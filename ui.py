@@ -821,8 +821,6 @@ class GafferPanelHDRIs (bpy.types.Panel):
             c.separator()
             c.label(gaf_props.ProgressText if gaf_props.Progress < 0.5 else "")
             layout.separator()
-        
-
 
         if gaf_props.hdri_handler_enabled:
             col = layout.column()
