@@ -108,23 +108,33 @@ class GafferPreferences(bpy.types.AddonPreferences):
         col = layout.column()
         col.prop(self, 'hdri_path')
 
-        hdris = functions.get_hdri_list()
-        if hdris:
-            hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
-            num_hdris = len(hdris)
+        if self.hdri_path:
+            if os.path.exists(self.hdri_path):
+                hdris = functions.get_hdri_list()
+                if hdris:
+                    hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
+                    num_hdris = len(hdris)
+                    row = col.row()
+                    row.alignment = 'RIGHT'
+                    row.label("Found " + str(num_hdris) + " HDRIs")
+                    if num_hdris > 0:
+                        row.prop(self, 'show_hdri_list', toggle=True)
+                    row.operator('gaffer.detect_hdris', "Refresh", icon="FILE_REFRESH")
+
+                    if self.show_hdri_list:
+                        col = layout.column(align=True)
+                        for name in hdris:
+                            col.label(name)
+                            for v in hdris[name]:
+                                col.label('    '+v)
+            else:
+                row = col.row()
+                row.alignment = 'RIGHT'
+                row.label("Cannot find HDRI folder :(")
+        else:
             row = col.row()
             row.alignment = 'RIGHT'
-            row.label("Found " + str(num_hdris) + " HDRIs")
-            if num_hdris > 0:
-                row.prop(self, 'show_hdri_list', toggle=True)
-            row.operator('gaffer.detect_hdris', "Refresh", icon="FILE_REFRESH")
-
-            if self.show_hdri_list:
-                col = layout.column(align=True)
-                for name in hdris:
-                    col.label(name)
-                    for v in hdris[name]:
-                        col.label('    '+v)
+            row.label("Select the folder that contains all your HDRIs. Subfolders will be included.")
 
         addon_updater_ops.update_settings_ui(self,context)
 
