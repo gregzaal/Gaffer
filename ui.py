@@ -793,10 +793,12 @@ class GafferPanelHDRIs (bpy.types.Panel):
 
     def draw_header(self, context):
         gaf_props = context.scene.gaf_props
+        prefs = context.user_preferences.addons[__package__].preferences
 
         layout = self.layout
         row = layout.row(align=True)
-        row.prop(gaf_props, 'hdri_handler_enabled', text="")
+        if prefs.hdri_path and os.path.exists(prefs.hdri_path):
+            row.prop(gaf_props, 'hdri_handler_enabled', text="")
         if gaf_props.hdri and gaf_props.hdri_handler_enabled:
             row.label("HDRI: " + nice_hdri_name(gaf_props.hdri))
         else:
@@ -809,7 +811,6 @@ class GafferPanelHDRIs (bpy.types.Panel):
         layout = self.layout
 
         draw_progress_bar(gaf_props, layout)
-
 
         col = layout.column()
         if not os.path.exists(prefs.hdri_path):
