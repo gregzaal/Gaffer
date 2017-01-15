@@ -1220,35 +1220,66 @@ class GafGetHDRIHaven(bpy.types.Operator):
         row.alignment='CENTER'
         row.label("If you already have some of them, those will be skipped")
 
+    def download_file(self, context, i, hh, h_list, num_hdris):
+        from urllib.request import urlretrieve
+
+        prefs = bpy.context.user_preferences.addons[__package__].preferences
+        filename = hh+'_1k.hdr'
+        out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
+        if not os.path.exists(out_folder):
+            os.makedirs(out_folder)
+        if hh not in h_list:
+            filepath = os.path.join(out_folder, filename)
+            print (str(i+1)+'/'+str(num_hdris), "Downloading:", filename)
+            try:
+                urlretrieve('https://hdrihaven.com/hdris/hdris/'+filename, filepath)
+                success = True
+            except:
+                import sys
+                print ("    Failed to download " + filename + " ("+sys.exc_info()[0]+")")
+        else:
+            print ("Skipping " + filename + ", you already have it")
+                    
     def execute(self, context):
         hdrihaven_hdris = get_hdri_haven_list()
         num_hdris = len(hdrihaven_hdris)
         success = False
         if hdrihaven_hdris:
-            from urllib.request import urlretrieve
-            prefs = bpy.context.user_preferences.addons[__package__].preferences
             hdri_list = get_hdri_list()
+
+            progress_begin(context)
+
+            from concurrent.futures import ThreadPoolExecutor
+            executor = ThreadPoolExecutor(max_workers=12)
+            threads = []
             for i, hh in enumerate(hdrihaven_hdris):
-                progress_begin(context)
-                filename = hh+'_1k.hdr'
-                out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
-                if not os.path.exists(out_folder):
-                    os.makedirs(out_folder)
-                if hh not in hdri_list:
-                    filepath = os.path.join(out_folder, filename)
-                    print (str(i+1)+'/'+str(num_hdris), "Downloading:", filename)
-                    progress_update(context, i/num_hdris, "Downloading: "+str(i+1)+'/'+str(num_hdris))
-                    try:
-                        urlretrieve('https://hdrihaven.com/hdris/hdris/'+filename, filepath)
-                        success = True
-                    except:
-                        print ("    Failed to download: " + filename)
-                else:
-                    print ("Skipping " + filename + ", you already have it")
-                progress_end(context)
+                t = executor.submit(self.download_file, context, i, hh, hdri_list, num_hdris)
+                threads.append(t)
+
+            from time import sleep
+            errors = []
+            while (any(t._state!="FINISHED" for t in threads)):
+                num_finished = 0
+                for tt in threads:
+                    if tt._state == "FINISHED":
+                        num_finished += 1
+                        if tt.result() != None:
+                            errors.append(tt.result())
+                progress_update(context, num_finished/num_hdris, "Downloading: "+str(num_finished+1)+'/'+str(num_hdris))
+                sleep (2)
+
+            if errors:
+                for e in errors:
+                    print (e)
+            else:
+                success = True
+
+            progress_end(context)
 
         if success:
             context.scene.gaf_props.ShowHDRIHaven = False
+
+        detect_hdris(self, context)
         return {'FINISHED'}
 
     def invoke(self, context, event):

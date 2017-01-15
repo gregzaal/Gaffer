@@ -807,6 +807,7 @@ class GafferPanelHDRIs (bpy.types.Panel):
     def draw(self, context):
         gaf_props = context.scene.gaf_props
         prefs = context.user_preferences.addons[__package__].preferences
+        icons = get_icons()
 
         layout = self.layout
 
@@ -842,9 +843,9 @@ class GafferPanelHDRIs (bpy.types.Panel):
                     row = col.row(align=True)
                     row.prop(gaf_props, "hdri_variation", text="")
                     if hdri_haven_list and hdri_list:
-                        if gaf_props.hdri in hdri_haven_list:
+                        if gaf_props.hdri in hdri_haven_list and gaf_props.hdri in hdri_list:
                             if not any(("_16k" in h or "_8k" in h or "_4k" in h) for h in hdri_list[gaf_props.hdri]):
-                                row.operator('gaffer.buy_hdri_haven', text="", icon='WORLD').url="https://hdrihaven.com/hdri.php?hdri="+gaf_props.hdri
+                                row.operator('gaffer.buy_hdri_haven', text="", icon_value=icons['hdri_haven'].icon_id).url="https://hdrihaven.com/hdri.php?hdri="+gaf_props.hdri+"&ref=gaffer"
 
                     col.separator()
                     col.prop(gaf_props, 'hdri_rotation')
@@ -918,7 +919,6 @@ class GafferPanelHDRIs (bpy.types.Panel):
                         sub.prop(gaf_props, 'hdri_use_bg_reflections')
 
                     if gaf_props.ShowHDRIHaven:
-                        icons = get_icons()
                         layout.separator()
                         row = layout.row(align=True)
                         row.alignment='CENTER'
