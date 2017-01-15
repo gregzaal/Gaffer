@@ -487,45 +487,46 @@ def detect_hdris(self, context):
     hdris = {}
 
     def check_folder_for_HDRIs(path):
-        allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
-        files = []
-        for f in os.listdir(path):
-            if os.path.isfile(os.path.join(path, f)):
-                if os.path.splitext(f)[1] in allowed_file_types:
-                    files.append(f)
-            else:
-                check_folder_for_HDRIs(os.path.join(path, f))
+        if os.path.exists(path):
+            allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
+            files = []
+            for f in os.listdir(path):
+                if os.path.isfile(os.path.join(path, f)):
+                    if os.path.splitext(f)[1] in allowed_file_types:
+                        files.append(f)
+                else:
+                    check_folder_for_HDRIs(os.path.join(path, f))
 
-        prefs = bpy.context.user_preferences.addons[__package__].preferences
-        sub_path = path.replace(prefs.hdri_path, "")
-        if sub_path.startswith('\\') or sub_path.startswith('/'):
-            sub_path = sub_path[1:]
+            prefs = bpy.context.user_preferences.addons[__package__].preferences
+            sub_path = path.replace(prefs.hdri_path, "")
+            if sub_path.startswith('\\') or sub_path.startswith('/'):
+                sub_path = sub_path[1:]
 
-        files = sorted(files, key=lambda x: os.path.getsize(os.path.join(path, x)))
+            files = sorted(files, key=lambda x: os.path.getsize(os.path.join(path, x)))
 
-        hdri_file_pairs = []
-        separators = ['_', '-', '.', ' ']
-        for f in files:
-            fn, ext = os.path.splitext(f)
-            sep = ''
-            for c in fn[::-1]:  # Reversed filename to see which separator is last
-                if c in separators:
-                    sep = c
-                    break
-            if sep != '':
-                # Remove all character after the separator - what's left is the hdri name without resolution etc.
-                hdri_name = sep.join(fn.split(sep)[:-1])
-            else:
-                hdri_name = fn
+            hdri_file_pairs = []
+            separators = ['_', '-', '.', ' ']
+            for f in files:
+                fn, ext = os.path.splitext(f)
+                sep = ''
+                for c in fn[::-1]:  # Reversed filename to see which separator is last
+                    if c in separators:
+                        sep = c
+                        break
+                if sep != '':
+                    # Remove all character after the separator - what's left is the hdri name without resolution etc.
+                    hdri_name = sep.join(fn.split(sep)[:-1])
+                else:
+                    hdri_name = fn
 
-            # hdri_file_pairs.append([hdri_name, f])
-            hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
+                # hdri_file_pairs.append([hdri_name, f])
+                hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
 
-        for h in hdri_file_pairs:
-            if h[0] in hdris:
-                hdris[h[0]].append(h[1])
-            else:
-                hdris[h[0]] = [h[1]]
+            for h in hdri_file_pairs:
+                if h[0] in hdris:
+                    hdris[h[0]].append(h[1])
+                else:
+                    hdris[h[0]] = [h[1]]
 
     prefs = bpy.context.user_preferences.addons[__package__].preferences
     if (prefs.hdri_path):

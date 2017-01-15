@@ -1187,23 +1187,38 @@ class GafHDRIPaddles(bpy.types.Operator):
 
 class GafGetHDRIHaven(bpy.types.Operator):
 
-    "Download HDRIs from hdrihaven.com"
+    "Download Free CC-BY HDRIs from hdrihaven.com"
     bl_idname = 'gaffer.get_hdri_haven'
     bl_label = 'Get Free HDRIs'
     bl_options = {'INTERNAL'}
 
     def draw(self, context):
+        num_hdris = 100  # Assume 100, but check the actual number if possible
+        if hdri_haven_list:
+            num_hdris = len(hdri_haven_list)
+        download_size = 1.6 * num_hdris
+
         layout = self.layout
         col = layout.column(align=True)
         row = col.row()
         row.alignment='CENTER'
-        row.label("This will download ~100 1k HDRIs from hdrihaven.com")
+        row.label("This will download ~"+str(num_hdris)+" 1k HDRIs from hdrihaven.com")
+        row = col.row()
+        row.alignment='CENTER'
+        row.label("(~"+str(download_size)+" MB)")
+
+        col.separator()
+        row = col.row()
+        row.alignment='CENTER'
+        row.label("The HDRIs are licenced under a creative commons attribution license,")
+        row = col.row()
+        row.alignment='CENTER'
+        row.label("this means you can use them for any purpose as long as you credit hdrihaven.com")
+
+        col.separator()
         row = col.row()
         row.alignment='CENTER'
         row.label("If you already have some of them, those will be skipped")
-        row = col.row()
-        row.alignment='CENTER'
-        row.label("(~160 MB)")
 
     def execute(self, context):
         hdrihaven_hdris = get_hdri_haven_list()
@@ -1237,7 +1252,7 @@ class GafGetHDRIHaven(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return context.window_manager.invoke_props_dialog(self, width=500)
 
 class GafHideHDRIHaven(bpy.types.Operator):
 
