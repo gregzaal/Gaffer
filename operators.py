@@ -1187,7 +1187,7 @@ class GafHDRIPaddles(bpy.types.Operator):
 
 class GafGetHDRIHaven(bpy.types.Operator):
 
-    "Download Free CC-BY HDRIs from hdrihaven.com"
+    "Instantly download free CC-BY HDRIs from hdrihaven.com"
     bl_idname = 'gaffer.get_hdri_haven'
     bl_label = 'Get Free HDRIs'
     bl_options = {'INTERNAL'}

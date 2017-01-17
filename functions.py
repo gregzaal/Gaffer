@@ -544,8 +544,10 @@ def get_hdri_list():
     if os.path.exists(hdri_list_path):
         with open(hdri_list_path) as f:
             data = json.load(f)
-
-        return data
+        if data:
+            return OrderedDict(sorted(data.items(), key=lambda x: x[0].lower()))
+        else:
+            return data
     else:
         return None
 
@@ -869,6 +871,7 @@ def hdri_enable(self, context):
     if gaf_props.hdri_handler_enabled:
         prefs = context.user_preferences.addons[__package__].preferences
         if prefs.hdri_path != "" and os.path.exists(prefs.hdri_path):
+            detect_hdris(self, context)
             setup_hdri(self, context)
             if gaf_props.hdri:
                 if not os.path.exists(os.path.join(thumbnail_dir, gaf_props.hdri+"__thumb_preview.jpg")):
