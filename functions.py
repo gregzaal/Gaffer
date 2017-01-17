@@ -977,7 +977,7 @@ def update_warmth(self, context):
     if not gaf_props.hdri_handler_enabled:
         return None  # Don't do anything if handler is disabled
 
-    value = gaf_props.hdri_warmth
+    value = (gaf_props.hdri_warmth - 1) * 100
     n = handler_node(context, "Warmth")
     n.inputs[1].default_value = value
     n.mute = uses_default_values(n, "Warmth")
@@ -1055,7 +1055,7 @@ def update_background_warmth (self, context):
         update_warmth(self, context)
         return None
 
-    value = gaf_props.hdri_background_warmth
+    value = (gaf_props.hdri_background_warmth - 1) * 100
     n = handler_node(context, "Warmth", background=True)
     n.inputs[1].default_value = value
     n.mute = uses_default_values(n, "Warmth")
