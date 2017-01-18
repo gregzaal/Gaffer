@@ -762,10 +762,6 @@ def setup_hdri(self, context):
 
     w = context.scene.world
     w.use_nodes = True
-    
-    # MIS
-    w.cycles.sample_as_light = True
-    if w.cycles.sample_map_resolution < 2048: w.cycles.sample_map_resolution = 2048  # Only change res if it's too low
 
     # Create Nodes
     n_coord    = handler_node(context, "ShaderNodeTexCoord")

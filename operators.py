@@ -1185,6 +1185,18 @@ class GafHDRIPaddles(bpy.types.Operator):
             gaf_props.hdri = list_hdris[current_index+1] if self.do_next else list_hdris[current_index-1]
             return {'FINISHED'}
 
+class GafFixMIS(bpy.types.Operator):
+
+    "Set the Multiple Importance Map resolution to 1024"
+    bl_idname = 'gaffer.fix_mis'
+    bl_label = 'Fix'
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        context.scene.world.cycles.sample_map_resolution = 1024
+        return {'FINISHED'}
+
+
 class GafGetHDRIHaven(bpy.types.Operator):
 
     "Instantly download free CC-BY HDRIs from hdrihaven.com"
