@@ -859,10 +859,14 @@ class GafferPanelHDRIs (bpy.types.Panel):
                     col.separator()
                     col.prop(gaf_props, 'hdri_clamp', slider=True)
 
-                    if context.scene.world.cycles.sample_map_resolution < 1000:
+                    wc = context.scene.world.cycles
+                    if wc.sample_map_resolution < 1000 or not wc.sample_as_light:
                         col.separator()
                         col.separator()
-                        col.label("Multiple Importance resolution is low", icon="ERROR")
+                        if not wc.sample_as_light:
+                            col.label("Multiple Importance is disabled", icon="ERROR")
+                        else:
+                            col.label("Multiple Importance resolution is low", icon="ERROR")
                         row = col.row()
                         row.alignment="LEFT"
                         row.label("Your renders may be noisy")
