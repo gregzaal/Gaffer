@@ -275,6 +275,7 @@ def draw_cycles_UI(context, layout, lights):
     maincol = layout.column(align=False)
     scene = context.scene
     gaf_props = scene.gaf_props
+    icons = get_icons()
 
     lights_to_show = []
     # Check validity of list and make list of lights to display
@@ -436,10 +437,10 @@ def draw_cycles_UI(context, layout, lights):
                                 row.operator('gaffer.col_temp_hide', text='', icon='MOVE_UP_VEC')
                                 col = col.column(align=True)
                                 col.separator()
-                                col.label("Color Temperature Presets:")
+                                col.label("Color Temp. Presets:")
                                 ordered_col_temps = OrderedDict(sorted(col_temp.items()))
                                 for temp in ordered_col_temps:
-                                    op = col.operator('gaffer.col_temp_preset', text=temp[3:], icon='COLOR')  # temp[3:] removes number used for ordering
+                                    op = col.operator('gaffer.col_temp_preset', text=temp[3:], icon_value=icons[str(col_temp[temp])].icon_id)  # temp[3:] removes number used for ordering
                                     op.temperature = temp
                                     op.light = light.name
                                     if material:

@@ -40,9 +40,9 @@ def refresh_light_list(scene):
     if not hasattr(bpy.types.Object, "GafferFalloff"):
         bpy.types.Object.GafferFalloff = bpy.props.EnumProperty(
             name="Light Falloff",
-            items=(("constant","Constant","No light falloff"),
-                   ("linear","Linear","Fade light strength linearly over the distance it travels"),
-                   ("quadratic","Quadratic","(Realisic) Light strength is inversely proportional to the square of the distance it travels")),
+            items=(("constant","Constant","No light falloff","IPO_CONSTANT",1),
+                   ("linear","Linear","Fade light strength linearly over the distance it travels","IPO_LINEAR",2),
+                   ("quadratic","Quadratic","(Realisic) Light strength is inversely proportional to the square of the distance it travels","IPO_SINE",3)),
             default="quadratic",
             description="The rate at which the light loses intensity over distance",
             update=_update_falloff)
@@ -1062,7 +1062,7 @@ def update_background_warmth (self, context):
     return None
 
 def missing_thumb():
-    return os.path.join(icon_dir, 'missing_thumb.png')
+    return os.path.join(icon_dir, 'special', 'missing_thumb.png')
 
 def save_image(context, img, filepath, fileformat, exposure=0):
     # Saving using 'img.save_render' will apply all render color management
@@ -1117,8 +1117,9 @@ def previews_register():
     import bpy.utils.previews
     global custom_icons
     custom_icons = bpy.utils.previews.new()
-    custom_icons.load("hdri_haven", os.path.join(icon_dir, 'hdri_haven.png'), 'IMAGE')
-    custom_icons.load("random", os.path.join(icon_dir, 'random.png'), 'IMAGE')
+    for f in os.listdir(icon_dir):
+        if f.endswith(".png"):
+            custom_icons.load(os.path.splitext(os.path.basename(f))[0], os.path.join(icon_dir, f), 'IMAGE')
 
 def previews_unregister():
     for pcoll in preview_collections.values():
