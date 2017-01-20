@@ -1185,6 +1185,26 @@ class GafHDRIPaddles(bpy.types.Operator):
             gaf_props.hdri = list_hdris[current_index+1] if self.do_next else list_hdris[current_index-1]
             return {'FINISHED'}
 
+class GafHDRIRandom(bpy.types.Operator):
+
+    "Switch to a random HDRI"
+    bl_idname = 'gaffer.hdri_random'
+    bl_label = 'Random'
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        gaf_props = context.scene.gaf_props
+        hdris = get_hdri_list()
+
+        from random import choice
+        random_hdri = gaf_props.hdri
+        while random_hdri == gaf_props.hdri:  # ensure the same HDRI is not chosen twice in a row
+            random_hdri = choice(list(hdris))
+
+        gaf_props.hdri = random_hdri
+        
+        return {'FINISHED'}
+
 class GafFixMIS(bpy.types.Operator):
 
     "Set the Multiple Importance Map resolution to 1024"

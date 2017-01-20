@@ -833,9 +833,13 @@ class GafferPanelHDRIs (bpy.types.Panel):
                     tmpc = row.column()
                     tmpc.scale_y=1.5
                     tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
-                    tmpc = row.column()
-                    tmpc.scale_y=9
-                    tmpc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
+                    tmpc = row.column(align=True)
+                    tmpcc = tmpc.column(align=True)
+                    tmpcc.scale_y=8
+                    tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
+                    tmpr = tmpc.column(align=True)
+                    tmpr.scale_y=1
+                    tmpr.operator('gaffer.hdri_random', text='', icon_value=icons['random'].icon_id)
 
                     if context.scene.gaf_props.RequestThumbGen:
                         col.operator('gaffer.generate_hdri_thumbs')

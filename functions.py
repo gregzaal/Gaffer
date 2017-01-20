@@ -1118,6 +1118,7 @@ def previews_register():
     global custom_icons
     custom_icons = bpy.utils.previews.new()
     custom_icons.load("hdri_haven", os.path.join(icon_dir, 'hdri_haven.png'), 'IMAGE')
+    custom_icons.load("random", os.path.join(icon_dir, 'random.png'), 'IMAGE')
 
 def previews_unregister():
     for pcoll in preview_collections.values():
