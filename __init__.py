@@ -342,6 +342,8 @@ class GafferProperties(bpy.types.PropertyGroup):
         name="Rotation",
         description='Rotate the HDRI (in degrees) around the Z-axis',
         default=0,
+        soft_min=-180,
+        soft_max=180,
         update=functions.update_rotation
         )
     hdri_brightness = bpy.props.FloatProperty(

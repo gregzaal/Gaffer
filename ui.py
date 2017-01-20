@@ -848,7 +848,7 @@ class GafferPanelHDRIs (bpy.types.Panel):
                                 row.operator('gaffer.buy_hdri_haven', text="", icon_value=icons['hdri_haven'].icon_id).url="https://hdrihaven.com/hdri.php?hdri="+gaf_props.hdri+"&ref=gaffer"
 
                     col.separator()
-                    col.prop(gaf_props, 'hdri_rotation')
+                    col.prop(gaf_props, 'hdri_rotation', slider=True)
 
                     col = layout.column(align = True)
                     col.prop(gaf_props, 'hdri_brightness', slider=True)
