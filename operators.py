@@ -1287,6 +1287,9 @@ class GafGetHDRIHaven(bpy.types.Operator):
                 success = True
 
             progress_end(context)
+        else:
+            self.report({'ERROR'}, "Cannot connect to HDRI Haven website, check your internet connection or try again later")
+            return {'CANCELLED'}
 
         if success:
             context.scene.gaf_props.ShowHDRIHaven = False
