@@ -1249,7 +1249,6 @@ class GafGetHDRIHaven(bpy.types.Operator):
             print ("Skipping " + filename + ", you already have it")
                     
     def execute(self, context):
-        print ("Getting HDRI list from HDRI Haven...")
         hdrihaven_hdris = get_hdri_haven_list()
         num_hdris = len(hdrihaven_hdris)
         success = False

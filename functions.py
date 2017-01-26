@@ -1181,11 +1181,12 @@ def variation_enum_previews(self, context):
 
 def get_hdri_haven_list():
     from urllib.request import urlopen
+    print ("Getting HDRI list from HDRI Haven...")
     try:
         with urlopen('https://hdrihaven.com/php/json_list.php') as response:
             html = str(response.read())
     except:
-        print ("Can't fetch list from HDRI Haven")
+        print ("    Can't fetch list from HDRI Haven")
         return []
     else:
         hdrihaven_hdris = html.split('### list after this! ###')[1].split('<br>')[:-1]
