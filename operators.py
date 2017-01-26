@@ -1232,14 +1232,10 @@ class GafGetHDRIHaven(bpy.types.Operator):
         row.alignment='CENTER'
         row.label("If you already have some of them, those will be skipped")
 
-    def download_file(self, context, i, hh, h_list, num_hdris):
+    def download_file(self, context, i, hh, h_list, out_folder, num_hdris):
         from urllib.request import urlretrieve
 
-        prefs = bpy.context.user_preferences.addons[__package__].preferences
         filename = hh+'_1k.hdr'
-        out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
-        if not os.path.exists(out_folder):
-            os.makedirs(out_folder)
         if hh not in h_list:
             filepath = os.path.join(out_folder, filename)
             print (str(i+1)+'/'+str(num_hdris), "Downloading:", filename)
@@ -1262,11 +1258,16 @@ class GafGetHDRIHaven(bpy.types.Operator):
 
             progress_begin(context)
 
+            prefs = bpy.context.user_preferences.addons[__package__].preferences
+            out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
+            if not os.path.exists(out_folder):
+                os.makedirs(out_folder)
+
             from concurrent.futures import ThreadPoolExecutor
             executor = ThreadPoolExecutor(max_workers=12)
             threads = []
             for i, hh in enumerate(hdrihaven_hdris):
-                t = executor.submit(self.download_file, context, i, hh, hdri_list, num_hdris)
+                t = executor.submit(self.download_file, context, i, hh, hdri_list, out_folder, num_hdris)
                 threads.append(t)
 
             from time import sleep
