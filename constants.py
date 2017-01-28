@@ -28,13 +28,11 @@ supported_renderers = ['BLENDER_RENDER', 'CYCLES']
 
 col_temp = {"01_Flame (1700)": 1700,
             "02_Tungsten (3200)": 3200,
-            "03_Sunset (5000)": 5000,
-            "04_Daylight (5500)": 5500,
-            "05_Overcast (6500)": 6500,
-            "06_Monitor (7000)": 7000,
-            "07_Shade (8000)": 8000,
-            "08_LCD (10500)": 10500,
-            "09_Sky (12000)": 12000}
+            "03_Daylight (5500)": 5500,
+            "04_Overcast (6500)": 6500,
+            "05_Shade (8000)": 8000,
+            "06_LCD (10500)": 10500,
+            "07_Sky (12000)": 12000}
             
 # List of RGB values that correlate to the 380-780 wavelength range. Even though this
 # is the exact list from the Cycles code, for some reason it doesn't always match :(

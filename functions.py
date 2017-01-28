@@ -40,9 +40,9 @@ def refresh_light_list(scene):
     if not hasattr(bpy.types.Object, "GafferFalloff"):
         bpy.types.Object.GafferFalloff = bpy.props.EnumProperty(
             name="Light Falloff",
-            items=(("constant","Constant","No light falloff"),
-                   ("linear","Linear","Fade light strength linearly over the distance it travels"),
-                   ("quadratic","Quadratic","(Realisic) Light strength is inversely proportional to the square of the distance it travels")),
+            items=(("constant","Constant","No light falloff","IPO_CONSTANT",1),
+                   ("linear","Linear","Fade light strength linearly over the distance it travels","IPO_LINEAR",2),
+                   ("quadratic","Quadratic","(Realisic) Light strength is inversely proportional to the square of the distance it travels","IPO_SINE",3)),
             default="quadratic",
             description="The rate at which the light loses intensity over distance",
             update=_update_falloff)
@@ -764,10 +764,6 @@ def setup_hdri(self, context):
     w = context.scene.world
     w.use_nodes = True
 
-    # MIS
-    w.cycles.sample_as_light = True
-    if w.cycles.sample_map_resolution < 2048: w.cycles.sample_map_resolution = 2048  # Only change res if it's too low
-
     # Create Nodes
     n_coord    = handler_node(context, "ShaderNodeTexCoord")
     n_mapping  = handler_node(context, "ShaderNodeMapping")
@@ -1067,7 +1063,7 @@ def update_background_warmth (self, context):
     return None
 
 def missing_thumb():
-    return os.path.join(icon_dir, 'missing_thumb.png')
+    return os.path.join(icon_dir, 'special', 'missing_thumb.png')
 
 def save_image(context, img, filepath, fileformat, exposure=0):
     # Saving using 'img.save_render' will apply all render color management
@@ -1122,7 +1118,9 @@ def previews_register():
     import bpy.utils.previews
     global custom_icons
     custom_icons = bpy.utils.previews.new()
-    custom_icons.load("hdri_haven", os.path.join(icon_dir, 'hdri_haven.png'), 'IMAGE')
+    for f in os.listdir(icon_dir):
+        if f.endswith(".png"):
+            custom_icons.load(os.path.splitext(os.path.basename(f))[0], os.path.join(icon_dir, f), 'IMAGE')
 
 def previews_unregister():
     for pcoll in preview_collections.values():
@@ -1184,11 +1182,12 @@ def variation_enum_previews(self, context):
 
 def get_hdri_haven_list():
     from urllib.request import urlopen
+    print ("Getting HDRI list from HDRI Haven...")
     try:
         with urlopen('https://hdrihaven.com/php/json_list.php') as response:
             html = str(response.read())
     except:
-        print ("Can't fetch list from HDRI Haven")
+        print ("    Can't fetch list from HDRI Haven")
         return []
     else:
         hdrihaven_hdris = html.split('### list after this! ###')[1].split('<br>')[:-1]

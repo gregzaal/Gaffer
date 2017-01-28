@@ -275,6 +275,7 @@ def draw_cycles_UI(context, layout, lights):
     maincol = layout.column(align=False)
     scene = context.scene
     gaf_props = scene.gaf_props
+    icons = get_icons()
 
     lights_to_show = []
     # Check validity of list and make list of lights to display
@@ -436,10 +437,10 @@ def draw_cycles_UI(context, layout, lights):
                                 row.operator('gaffer.col_temp_hide', text='', icon='MOVE_UP_VEC')
                                 col = col.column(align=True)
                                 col.separator()
-                                col.label("Color Temperature Presets:")
+                                col.label("Color Temp. Presets:")
                                 ordered_col_temps = OrderedDict(sorted(col_temp.items()))
                                 for temp in ordered_col_temps:
-                                    op = col.operator('gaffer.col_temp_preset', text=temp[3:], icon='COLOR')  # temp[3:] removes number used for ordering
+                                    op = col.operator('gaffer.col_temp_preset', text=temp[3:], icon_value=icons[str(col_temp[temp])].icon_id)  # temp[3:] removes number used for ordering
                                     op.temperature = temp
                                     op.light = light.name
                                     if material:
@@ -826,6 +827,7 @@ class GafferPanelHDRIs (bpy.types.Panel):
             row.label("Remember to click 'Save User Settings'")
         else:
             if gaf_props.hdri_handler_enabled:
+                if gaf_props.hdri:
                     row = col.row(align=True)
                     tmpc = row.column()
                     tmpc.scale_y=9
@@ -833,9 +835,13 @@ class GafferPanelHDRIs (bpy.types.Panel):
                     tmpc = row.column()
                     tmpc.scale_y=1.5
                     tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
-                    tmpc = row.column()
-                    tmpc.scale_y=9
-                    tmpc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
+                    tmpc = row.column(align=True)
+                    tmpcc = tmpc.column(align=True)
+                    tmpcc.scale_y=8
+                    tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
+                    tmpr = tmpc.column(align=True)
+                    tmpr.scale_y=1
+                    tmpr.operator('gaffer.hdri_random', text='', icon_value=icons['random'].icon_id)
 
                     if context.scene.gaf_props.RequestThumbGen:
                         col.operator('gaffer.generate_hdri_thumbs')
@@ -848,7 +854,7 @@ class GafferPanelHDRIs (bpy.types.Panel):
                                 row.operator('gaffer.buy_hdri_haven', text="", icon_value=icons['hdri_haven'].icon_id).url="https://hdrihaven.com/hdri.php?hdri="+gaf_props.hdri+"&ref=gaffer"
 
                     col.separator()
-                    col.prop(gaf_props, 'hdri_rotation')
+                    col.prop(gaf_props, 'hdri_rotation', slider=True)
 
                     col = layout.column(align = True)
                     col.prop(gaf_props, 'hdri_brightness', slider=True)
@@ -858,6 +864,20 @@ class GafferPanelHDRIs (bpy.types.Panel):
                     col.prop(gaf_props, 'hdri_warmth', slider=True)
                     col.separator()
                     col.prop(gaf_props, 'hdri_clamp', slider=True)
+
+                    wc = context.scene.world.cycles
+                    if wc.sample_map_resolution < 1000 or not wc.sample_as_light:
+                        col.separator()
+                        col.separator()
+                        if not wc.sample_as_light:
+                            col.label("Multiple Importance is disabled", icon="ERROR")
+                        else:
+                            col.label("Multiple Importance resolution is low", icon="ERROR")
+                        row = col.row()
+                        row.alignment="LEFT"
+                        row.label("Your renders may be noisy")
+                        row.operator('gaffer.fix_mis')
+                        col.separator()
 
                     col.separator()
 
@@ -917,15 +937,25 @@ class GafferPanelHDRIs (bpy.types.Panel):
                                           gaf_props.hdri_use_separate_saturation,
                                           gaf_props.hdri_use_separate_warmth])
                         sub.prop(gaf_props, 'hdri_use_bg_reflections')
+                else:
+                    row = col.row()
+                    row.alignment='CENTER'
+                    row.label("No HDRIs found")
+                    row = col.row()
+                    row.alignment='CENTER'
+                    row.label("Please put some in the HDRI folder:")
+                    row = col.row()
+                    row.alignment='CENTER'
+                    row.label(prefs.hdri_path)
 
-                    if gaf_props.ShowHDRIHaven:
-                        layout.separator()
-                        row = layout.row(align=True)
-                        row.alignment='CENTER'
-                        row.scale_y = 1.5
-                        row.scale_x = 1.5
-                        row.operator('gaffer.get_hdri_haven', icon_value=icons['hdri_haven'].icon_id)
-                        row.operator('gaffer.hide_hdri_haven', text="", icon='X')
+                if gaf_props.ShowHDRIHaven:
+                    layout.separator()
+                    row = layout.row(align=True)
+                    row.alignment='CENTER'
+                    row.scale_y = 1.5
+                    row.scale_x = 1.5
+                    row.operator('gaffer.get_hdri_haven', icon_value=icons['hdri_haven'].icon_id)
+                    row.operator('gaffer.hide_hdri_haven', text="", icon='X')
             else:
                 col = layout.column()
                 row = col.row()

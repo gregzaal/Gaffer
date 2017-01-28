@@ -46,8 +46,8 @@ def load_handler(dummy):
         bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
     bpy.context.scene.gaf_props.IsShowingRadius = False
     bpy.context.scene.gaf_props.IsShowingLabel = False
-    
 
+    
 class GafRename(bpy.types.Operator):
 
     'Rename this light'
@@ -78,7 +78,6 @@ class GafRename(bpy.types.Operator):
         refresh_light_list(context.scene)
         return {'FINISHED'}
 
-
 class GafSetTemp(bpy.types.Operator):
 
     'Set the color temperature to a preset'
@@ -98,7 +97,6 @@ class GafSetTemp(bpy.types.Operator):
         node.inputs[0].links[0].from_node.inputs[0].default_value = col_temp[self.temperature]
         return {'FINISHED'}
 
-
 class GafTempShowList(bpy.types.Operator):
 
     'Set the color temperature to a preset'
@@ -111,7 +109,6 @@ class GafTempShowList(bpy.types.Operator):
         context.scene.gaf_props.LightUIIndex = self.l_index
         return {'FINISHED'}
 
-
 class GafTempHideList(bpy.types.Operator):
 
     'Hide color temperature presets'
@@ -121,7 +118,6 @@ class GafTempHideList(bpy.types.Operator):
     def execute(self, context):
         context.scene.gaf_props.ColTempExpand = False
         return {'FINISHED'}
-
 
 class GafShowMore(bpy.types.Operator):
 
@@ -138,7 +134,6 @@ class GafShowMore(bpy.types.Operator):
         context.scene.gaf_props.MoreExpand = exp_list
         return {'FINISHED'}
 
-
 class GafHideMore(bpy.types.Operator):
 
     'Hide settings such as MIS, falloff, ray visibility...'
@@ -149,7 +144,6 @@ class GafHideMore(bpy.types.Operator):
     def execute(self, context):
         context.scene.gaf_props.MoreExpand = context.scene.gaf_props.MoreExpand.replace("_Light:_(" + self.light + ")_", "")
         return {'FINISHED'}
-
 
 class GafHideShowLight(bpy.types.Operator):
 
@@ -182,7 +176,6 @@ class GafHideShowLight(bpy.types.Operator):
                                 obj.hide = self.hide
                                 obj.hide_render = self.hide
         return {'FINISHED'}
-
 
 class GafSelectLight(bpy.types.Operator):
 
@@ -220,7 +213,6 @@ class GafSelectLight(bpy.types.Operator):
             context.scene.objects.active = bpy.data.objects[self.light]
 
         return {'FINISHED'}
-
 
 class GafSolo(bpy.types.Operator):
 
@@ -314,7 +306,6 @@ class GafSolo(bpy.types.Operator):
 
         return {'FINISHED'}
 
-
 class GafLampUseNodes(bpy.types.Operator):
 
     'Make this lamp use nodes'
@@ -328,7 +319,6 @@ class GafLampUseNodes(bpy.types.Operator):
             obj.data.use_nodes = True
         bpy.ops.gaffer.refresh_lights()
         return {'FINISHED'}
-
 
 class GafNodeSetStrength(bpy.types.Operator):
 
@@ -347,7 +337,6 @@ class GafNodeSetStrength(bpy.types.Operator):
         setGafferNode(context, 'STRENGTH')
         return {'FINISHED'}
 
-
 class GafRefreshLightList(bpy.types.Operator):
 
     'Refresh the list of lights'
@@ -364,7 +353,6 @@ class GafRefreshLightList(bpy.types.Operator):
             getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
         refresh_bgl()  # update the radius/label as well
         return {'FINISHED'}
-
 
 class GafCreateEnviroWidget(bpy.types.Operator):
 
@@ -457,7 +445,6 @@ class GafCreateEnviroWidget(bpy.types.Operator):
 
         return {'FINISHED'}
 
-
 class GafLinkSkyToSun(bpy.types.Operator):
     bl_idname = "gaffer.link_sky_to_sun"
     bl_label = "Link Sky Texture:"
@@ -516,6 +503,84 @@ class GafLinkSkyToSun(bpy.types.Operator):
         var.targets[0].data_path = 'matrix_world[2][2]'
 
         return {'FINISHED'}
+
+class GafAimLight(bpy.types.Operator):
+
+    "Point the selected lights at a target"
+    bl_idname = 'gaffer.aim'
+    bl_label = 'Aim'
+    target_type = bpy.props.StringProperty()
+
+    def aim (self, context, obj, target=[0,0,0]):
+        # Thanks to @kilbee for cleaning my crap up here :) See: https://github.com/gregzaal/Gaffer/commit/b920092
+        obj_loc = obj.matrix_world.to_translation()
+        direction = target - obj_loc
+        # point obj '-Z' and use its 'Y' as up
+        rot_quat = direction.to_track_quat('-Z', 'Y')
+        obj.rotation_euler = rot_quat.to_euler()
+
+    def execute(self, context):
+        if self.target_type == 'CURSOR':
+            # Aim all selected objects at cursor
+            objects = context.selected_editable_objects
+            if not objects:
+                self.report({'ERROR'}, "No selected objects!")
+                return {'CANCELLED'}
+            for obj in context.selected_editable_objects:
+                self.aim(context, obj, context.scene.cursor_location)
+
+            return {'FINISHED'}
+
+        elif self.target_type == 'SELECTED':
+            # Aim the active object at the average location of all other selected objects
+            active = context.scene.objects.active
+            objects = [obj for obj in context.selected_objects if obj != active]
+            num_objects = len(objects)
+
+            if not active:
+                self.report({'ERROR'}, "You need an active object!")
+                return {'CANCELLED'}
+            elif num_objects == 0:
+                if active.select:
+                    self.report({'ERROR'}, "Select more than one object!")
+                else:
+                    self.report({'ERROR'}, "No selected objects!")
+                return {'CANCELLED'}
+
+            total_x = 0
+            total_y = 0
+            total_z = 0
+
+            for obj in objects:
+                total_x += obj.location.x
+                total_y += obj.location.y
+                total_z += obj.location.z
+
+            avg_x = total_x / num_objects
+            avg_y = total_y / num_objects
+            avg_z = total_z / num_objects
+
+            self.aim(context, active, Vector((avg_x, avg_y, avg_z)))
+
+            return {'FINISHED'}
+
+        elif self.target_type == 'ACTIVE':
+            # Aim the selected objects at the active object
+            active = context.scene.objects.active
+            objects = [obj for obj in context.selected_objects if obj != active]
+            if not active:
+                self.report({'ERROR'}, "No active object!")
+                return {'CANCELLED'}
+            elif not objects:
+                self.report({'ERROR'}, "No selected objects!")
+                return {'CANCELLED'}
+
+            for obj in objects:
+                self.aim(context, obj, active.location)
+
+            return {'FINISHED'}
+
+        return {'CANCELLED'}
 
 
 class GafShowLightRadius(bpy.types.Operator):
@@ -666,7 +731,6 @@ class GafShowLightRadius(bpy.types.Operator):
         else:
             self.report({'WARNING'}, "View3D not found, cannot run operator")
             return {'CANCELLED'}
-
 
 class GafShowLightLabel(bpy.types.Operator):
 
@@ -855,7 +919,6 @@ class GafShowLightLabel(bpy.types.Operator):
             self.report({'WARNING'}, "View3D not found, cannot run operator")
             return {'CANCELLED'}
 
-
 class GafRefreshBGL(bpy.types.Operator):
 
     "Update the radius and label display to account for undetected changes"
@@ -869,7 +932,6 @@ class GafRefreshBGL(bpy.types.Operator):
     def execute(self, context):
         refresh_bgl()
         return {'FINISHED'}
-
 
 class GafAddBlacklisted(bpy.types.Operator):
 
@@ -892,7 +954,6 @@ class GafAddBlacklisted(bpy.types.Operator):
         context.scene.gaf_props.BlacklistIndex = len(context.scene.gaf_props.Blacklist) - 1
         return {'FINISHED'}
 
-
 class GafRemoveBlacklisted(bpy.types.Operator):
 
     "Remove the active list item from the blacklist"
@@ -913,85 +974,6 @@ class GafRemoveBlacklisted(bpy.types.Operator):
             context.scene.gaf_props.BlacklistIndex = len(blist) - 1
 
         return {'FINISHED'}
-
-
-class GafAimLight(bpy.types.Operator):
-
-    "Point the selected lights at a target"
-    bl_idname = 'gaffer.aim'
-    bl_label = 'Aim'
-    target_type = bpy.props.StringProperty()
-
-    def aim (self, context, obj, target=[0,0,0]):
-        # Thanks to @kilbee for cleaning my crap up here :) See: https://github.com/gregzaal/Gaffer/commit/b920092
-        obj_loc = obj.matrix_world.to_translation()
-        direction = target - obj_loc
-        # point obj '-Z' and use its 'Y' as up
-        rot_quat = direction.to_track_quat('-Z', 'Y')
-        obj.rotation_euler = rot_quat.to_euler()
-
-    def execute(self, context):
-        if self.target_type == 'CURSOR':
-            # Aim all selected objects at cursor
-            objects = context.selected_editable_objects
-            if not objects:
-                self.report({'ERROR'}, "No selected objects!")
-                return {'CANCELLED'}
-            for obj in context.selected_editable_objects:
-                self.aim(context, obj, context.scene.cursor_location)
-
-            return {'FINISHED'}
-
-        elif self.target_type == 'SELECTED':
-            # Aim the active object at the average location of all other selected objects
-            active = context.scene.objects.active
-            objects = [obj for obj in context.selected_objects if obj != active]
-            num_objects = len(objects)
-
-            if not active:
-                self.report({'ERROR'}, "You need an active object!")
-                return {'CANCELLED'}
-            elif num_objects == 0:
-                if active.select:
-                    self.report({'ERROR'}, "Select more than one object!")
-                else:
-                    self.report({'ERROR'}, "No selected objects!")
-                return {'CANCELLED'}
-
-            total_x = 0
-            total_y = 0
-            total_z = 0
-
-            for obj in objects:
-                total_x += obj.location.x
-                total_y += obj.location.y
-                total_z += obj.location.z
-
-            avg_x = total_x / num_objects
-            avg_y = total_y / num_objects
-            avg_z = total_z / num_objects
-
-            self.aim(context, active, Vector((avg_x, avg_y, avg_z)))
-
-            return {'FINISHED'}
-
-        elif self.target_type == 'ACTIVE':
-            # Aim the selected objects at the active object
-            active = context.scene.objects.active
-            objects = [obj for obj in context.selected_objects if obj != active]
-            if not active:
-                self.report({'ERROR'}, "No active object!")
-                return {'CANCELLED'}
-            elif not objects:
-                self.report({'ERROR'}, "No selected objects!")
-                return {'CANCELLED'}
-
-            for obj in objects:
-                self.aim(context, obj, active.location)
-
-            return {'FINISHED'}
-
-        return {'CANCELLED'}
 
 
 class GafDetectHDRIs(bpy.types.Operator):
@@ -1114,8 +1096,6 @@ class GafHDRIJPGGen(bpy.types.Operator):
     bl_label = 'Generate JPGs'
     bl_options = {'INTERNAL'}
 
-    # TODO show progess
-
     def generate_jpgs(self, context, name):
         import numpy
         gaf_props = context.scene.gaf_props
@@ -1185,6 +1165,38 @@ class GafHDRIPaddles(bpy.types.Operator):
             gaf_props.hdri = list_hdris[current_index+1] if self.do_next else list_hdris[current_index-1]
             return {'FINISHED'}
 
+class GafHDRIRandom(bpy.types.Operator):
+
+    "Switch to a random HDRI"
+    bl_idname = 'gaffer.hdri_random'
+    bl_label = 'Random'
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        gaf_props = context.scene.gaf_props
+        hdris = get_hdri_list()
+
+        from random import choice
+        random_hdri = gaf_props.hdri
+        while random_hdri == gaf_props.hdri:  # ensure the same HDRI is not chosen twice in a row
+            random_hdri = choice(list(hdris))
+
+        gaf_props.hdri = random_hdri
+        
+        return {'FINISHED'}
+
+class GafFixMIS(bpy.types.Operator):
+
+    "Set the Multiple Importance Map resolution to 1024"
+    bl_idname = 'gaffer.fix_mis'
+    bl_label = 'Fix'
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        context.scene.world.cycles.sample_as_light = True
+        context.scene.world.cycles.sample_map_resolution = 1024
+        return {'FINISHED'}
+
 class GafGetHDRIHaven(bpy.types.Operator):
 
     "Instantly download free CC-BY HDRIs from hdrihaven.com"
@@ -1220,14 +1232,10 @@ class GafGetHDRIHaven(bpy.types.Operator):
         row.alignment='CENTER'
         row.label("If you already have some of them, those will be skipped")
 
-    def download_file(self, context, i, hh, h_list, num_hdris):
+    def download_file(self, context, i, hh, h_list, out_folder, num_hdris):
         from urllib.request import urlretrieve
 
-        prefs = bpy.context.user_preferences.addons[__package__].preferences
         filename = hh+'_1k.hdr'
-        out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
-        if not os.path.exists(out_folder):
-            os.makedirs(out_folder)
         if hh not in h_list:
             filepath = os.path.join(out_folder, filename)
             print (str(i+1)+'/'+str(num_hdris), "Downloading:", filename)
@@ -1249,11 +1257,16 @@ class GafGetHDRIHaven(bpy.types.Operator):
 
             progress_begin(context)
 
+            prefs = bpy.context.user_preferences.addons[__package__].preferences
+            out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
+            if not os.path.exists(out_folder):
+                os.makedirs(out_folder)
+
             from concurrent.futures import ThreadPoolExecutor
             executor = ThreadPoolExecutor(max_workers=12)
             threads = []
             for i, hh in enumerate(hdrihaven_hdris):
-                t = executor.submit(self.download_file, context, i, hh, hdri_list, num_hdris)
+                t = executor.submit(self.download_file, context, i, hh, hdri_list, out_folder, num_hdris)
                 threads.append(t)
 
             from time import sleep
@@ -1275,6 +1288,9 @@ class GafGetHDRIHaven(bpy.types.Operator):
                 success = True
 
             progress_end(context)
+        else:
+            self.report({'ERROR'}, "Cannot connect to HDRI Haven website, check your internet connection or try again later")
+            return {'CANCELLED'}
 
         if success:
             context.scene.gaf_props.ShowHDRIHaven = False
