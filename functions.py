@@ -224,9 +224,9 @@ def convert_temp_to_RGB(colour_temperature):
         colour_temperature = 1
     elif colour_temperature > 12000:
         colour_temperature = 12000
-    
+
     tmp_internal = colour_temperature / 100.0
-    
+
     # red
     if tmp_internal <= 66:
         red = 255
@@ -238,7 +238,7 @@ def convert_temp_to_RGB(colour_temperature):
             red = 255
         else:
             red = tmp_red
-    
+
     # green
     if tmp_internal <=66:
         tmp_green = 99.4708025861 * log(tmp_internal) - 161.1195681661
@@ -256,7 +256,7 @@ def convert_temp_to_RGB(colour_temperature):
             green = 255
         else:
             green = tmp_green
-    
+
     # blue
     if tmp_internal >=66:
         blue = 255
@@ -270,7 +270,7 @@ def convert_temp_to_RGB(colour_temperature):
             blue = 255
         else:
             blue = tmp_blue
-    
+
     return [red/255, green/255, blue/255]  # return RGB in a 0-1 range
 
 
@@ -469,7 +469,7 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
     draw_rect(x2, y1, x2+r, y2)  # Right edge
     draw_rect(x1, y2, x2, y2+r)  # Top edge
     draw_rect(x1, y1-r, x2, y1)  # Bottom edge
-    
+
     draw_corner(x1, y1, r, 'BL')  # Bottom left
     draw_corner(x1, y2, r, 'TL')  # Top left
     draw_corner(x2, y2, r, 'TR')  # Top right
@@ -539,6 +539,7 @@ def detect_hdris(self, context):
 
         hdri_list = hdris
         refresh_previews()
+        set_persistent_setting('hdri_path', prefs.hdri_path)
 
 def get_hdri_list():
     if os.path.exists(hdri_list_path):
@@ -722,7 +723,7 @@ def uses_default_values(node, node_type):
         if d.startswith("_"):
             node_value = node.inputs[int(d[-1])].default_value
         else:
-            node_value = getattr(node, d) 
+            node_value = getattr(node, d)
         if defaults[d] != node_value:
             return False
 
@@ -731,10 +732,10 @@ def uses_default_values(node, node_type):
 def new_link(links, from_socket, to_socket, force=False):
     if not to_socket.is_linked or force: links.new(from_socket, to_socket)
 
-def switch_hdri(self, context):    
+def switch_hdri(self, context):
     gaf_props = context.scene.gaf_props
     default_var = get_variation(gaf_props.hdri, mode='smallest')  # Default to smallest
-    
+
     # But prefer 1k if there is one
     for v in hdri_list[gaf_props.hdri]:
         if '1k' in v:
@@ -753,16 +754,16 @@ def setup_hdri(self, context):
         return None  # Don't do anything if handler is disabled
 
     extra_nodes = any([
-        gaf_props.hdri_use_jpg_background, 
-        gaf_props.hdri_use_separate_brightness, 
-        gaf_props.hdri_use_separate_contrast, 
+        gaf_props.hdri_use_jpg_background,
+        gaf_props.hdri_use_separate_brightness,
+        gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth
         ])
 
     w = context.scene.world
     w.use_nodes = True
-    
+
     # MIS
     w.cycles.sample_as_light = True
     if w.cycles.sample_map_resolution < 2048: w.cycles.sample_map_resolution = 2048  # Only change res if it's too low
@@ -913,9 +914,9 @@ def update_brightness(self, context):
     n.inputs[1].default_value = value
 
     extra_nodes = any([
-        gaf_props.hdri_use_jpg_background, 
-        gaf_props.hdri_use_separate_brightness, 
-        gaf_props.hdri_use_separate_contrast, 
+        gaf_props.hdri_use_jpg_background,
+        gaf_props.hdri_use_separate_brightness,
+        gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth
         ])
@@ -938,9 +939,9 @@ def update_contrast(self, context):
     n.mute = uses_default_values(n, "ShaderNodeBrightContrast")
 
     extra_nodes = any([
-        gaf_props.hdri_use_jpg_background, 
-        gaf_props.hdri_use_separate_brightness, 
-        gaf_props.hdri_use_separate_contrast, 
+        gaf_props.hdri_use_jpg_background,
+        gaf_props.hdri_use_separate_brightness,
+        gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth
         ])
@@ -962,9 +963,9 @@ def update_saturation(self, context):
     n.mute = uses_default_values(n, "ShaderNodeHueSaturation")
 
     extra_nodes = any([
-        gaf_props.hdri_use_jpg_background, 
-        gaf_props.hdri_use_separate_brightness, 
-        gaf_props.hdri_use_separate_contrast, 
+        gaf_props.hdri_use_jpg_background,
+        gaf_props.hdri_use_separate_brightness,
+        gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth
         ])
@@ -986,9 +987,9 @@ def update_warmth(self, context):
     n.mute = uses_default_values(n, "Warmth")
 
     extra_nodes = any([
-        gaf_props.hdri_use_jpg_background, 
-        gaf_props.hdri_use_separate_brightness, 
-        gaf_props.hdri_use_separate_contrast, 
+        gaf_props.hdri_use_jpg_background,
+        gaf_props.hdri_use_separate_brightness,
+        gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth
         ])
@@ -1231,7 +1232,7 @@ def progress_end(context):
 def init_persistent_settings(set_name=None, set_value=None):
     ''' Initialize persistent settings file with option to change a default value'''
 
-    settings = {'show_hdri_haven': True}
+    settings = {'show_hdri_haven': True, 'hdri_path': ''}
 
     if set_name is not None:
         settings[set_name] = set_value
