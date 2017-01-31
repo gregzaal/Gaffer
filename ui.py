@@ -792,6 +792,10 @@ class GafferPanelHDRIs (bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = 'world'
 
+    @classmethod
+    def poll(cls, context):
+        return context.scene.render.engine == 'CYCLES'
+
     def draw_header(self, context):
         gaf_props = context.scene.gaf_props
         prefs = context.user_preferences.addons[__package__].preferences
