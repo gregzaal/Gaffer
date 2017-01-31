@@ -849,7 +849,7 @@ class GafferPanelHDRIs (bpy.types.Panel):
 
                     if context.scene.gaf_props.RequestThumbGen:
                         col.operator('gaffer.generate_hdri_thumbs')
-                    
+
                     row = col.row(align=True)
                     row.prop(gaf_props, "hdri_variation", text="")
                     if hdri_haven_list and hdri_list:
@@ -974,7 +974,7 @@ class OBJECT_UL_object_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         obj = item
         layout.prop(obj, 'name', text="", emboss=False)
-        
+
 
 def gaffer_node_menu_func(self, context):
     if context.space_data.node_tree.type == 'SHADER' and context.space_data.shader_type == 'OBJECT':
