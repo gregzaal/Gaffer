@@ -863,8 +863,40 @@ def setup_hdri(self, context):
     return None
 
 def hdri_enable(self, context):
+
+    def store_old_world_settings(context):
+        gaf_props = context.scene.gaf_props
+        w = context.scene.world
+        if w.use_nodes:
+            for n in w.node_tree.nodes:
+                if hasattr(n, "is_active_output"):
+                    if n.is_active_output:
+                        gaf_props.OldWorldSettings = n.name
+                        break
+            else:
+                # No active world output node found
+                gaf_props.OldWorldSettings = "__not use_nodes__"
+        else:
+            gaf_props.OldWorldSettings = "__not use_nodes__"
+
+    def restore_old_world_settings(context):
+        ow = context.scene.gaf_props.OldWorldSettings
+        w = context.scene.world
+        if ow == "__not use_nodes__":
+            w.use_nodes = False
+        else:
+            try:
+                w.node_tree.nodes[ow].is_active_output = True
+                for n in w.node_tree.nodes:
+                    if n.name != ow:
+                        if hasattr(n, 'is_active_output'):
+                            n.is_active_output = False
+            except:
+                print ("Failed to reset active world output (node may not exist anymore?)")
+
     gaf_props = context.scene.gaf_props
     if gaf_props.hdri_handler_enabled:
+        store_old_world_settings(context)
         prefs = context.user_preferences.addons[__package__].preferences
         if prefs.hdri_path != "" and os.path.exists(prefs.hdri_path):
             detect_hdris(self, context)
@@ -874,6 +906,8 @@ def hdri_enable(self, context):
                     context.scene.gaf_props.RequestThumbGen = True
         else:
             gaf_props.hdri_handler_enabled = False
+    else:
+        restore_old_world_settings(context)
 
 def update_variation(self, context):
     gaf_props = context.scene.gaf_props
