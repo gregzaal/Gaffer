@@ -75,4 +75,5 @@ preview_collections = {}
 icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
 hdri_list = {}
 hdri_haven_list = []
+hdri_haven_list_path = os.path.join(data_dir, 'hdri_haven_hdris.json')
 custom_icons = None

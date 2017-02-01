@@ -1215,16 +1215,31 @@ def variation_enum_previews(self, context):
     return enum_items
 
 def get_hdri_haven_list():
+    ''' Get HDRI Haven list from web once per week, otherwise fetch from file'''
+
+    if os.path.exists(hdri_haven_list_path):
+        import time
+        age = time.time() - os.stat(hdri_haven_list_path).st_mtime  # seconds since last modified
+        if age/60/60/24 < 7:
+            with open(hdri_haven_list_path) as f:
+                data = json.load(f)
+            if data:
+                return data
+
     from urllib.request import urlopen
     print ("Getting HDRI list from HDRI Haven...")
     try:
-        with urlopen('https://hdrihaven.com/php/json_list.php') as response:
+        with urlopen('https://hdrihaven.com/php/json_list.php', timeout=10) as response:
             html = str(response.read())
     except:
         print ("    Can't fetch list from HDRI Haven")
         return []
     else:
         hdrihaven_hdris = html.split('### list after this! ###')[1].split('<br>')[:-1]
+
+        with open(hdri_haven_list_path, 'w') as f:
+            f.write(json.dumps(hdrihaven_hdris, indent=4))
+
         return hdrihaven_hdris
 
 if len(hdri_haven_list) < 1:
