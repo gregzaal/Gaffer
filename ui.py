@@ -959,9 +959,6 @@ class GafferPanelHDRIs (bpy.types.Panel):
             row = col.row()
             row.alignment = 'CENTER'
             row.label("Ctrl-Alt-U > Add-ons > Gaffer > HDRI Folder")
-            row = col.row()
-            row.alignment = 'CENTER'
-            row.label("Remember to click 'Save User Settings'")
         else:
             if gaf_props.hdri_handler_enabled:
                 draw_hdri_handler(context, col, gaf_props, prefs, icons)
