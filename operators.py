@@ -607,6 +607,9 @@ class GafShowLightRadius(bpy.types.Operator):
         scene = context.scene
         region = context.region
 
+        if context.space_data.viewport_shade == 'RENDERED':
+            return
+
         for item in self.objects:
             obj = item[0]
             if not scene.gaf_props.LightRadiusSelectedOnly or obj.select:
@@ -773,6 +776,9 @@ class GafShowLightLabel(bpy.types.Operator):
 
     def draw_callback_label(self, context):
         scene = context.scene
+
+        if context.space_data.viewport_shade == 'RENDERED':
+            return
 
         # font_size_factor is used to scale the rectangles based on the font size and DPI, measured against a font size of 62
         font_size_factor = (scene.gaf_props.LabelFontSize/62) * (context.user_preferences.system.dpi/72)
