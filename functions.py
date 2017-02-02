@@ -409,6 +409,41 @@ def _update_falloff(self, context):
     do_update_falloff(self)
 
 
+def do_set_world_refl_only(context):
+    scene = context.scene
+    if scene.gaf_props.WorldReflOnly and not scene.gaf_props.WorldVis:
+        scene.gaf_props.WorldVis = True
+        scene.gaf_props.WorldReflOnly = True
+    if scene.gaf_props.WorldVis:
+        world = scene.world
+        world.cycles_visibility.glossy = True
+        world.cycles_visibility.camera = not scene.gaf_props.WorldReflOnly
+        world.cycles_visibility.diffuse = not scene.gaf_props.WorldReflOnly
+        world.cycles_visibility.transmission = not scene.gaf_props.WorldReflOnly
+        world.cycles_visibility.scatter = not scene.gaf_props.WorldReflOnly
+        world.update_tag()
+
+def _update_world_refl_only(self, context):
+    do_set_world_refl_only(context)
+
+def do_set_world_vis(context):
+    scene = context.scene
+    if scene.gaf_props.WorldVis:
+        scene.gaf_props.WorldReflOnly = False
+    elif scene.gaf_props.WorldReflOnly:
+        scene.gaf_props.WorldReflOnly = False
+    world = scene.world
+    world.cycles_visibility.glossy = scene.gaf_props.WorldVis
+    world.cycles_visibility.camera = scene.gaf_props.WorldVis
+    world.cycles_visibility.diffuse = scene.gaf_props.WorldVis
+    world.cycles_visibility.transmission = scene.gaf_props.WorldVis
+    world.cycles_visibility.scatter = scene.gaf_props.WorldVis
+    world.update_tag()
+
+def _update_world_vis(self, context):
+    do_set_world_vis(context)
+
+
 def refresh_bgl():
     print ("refreshed bgl")
 

@@ -139,44 +139,6 @@ class GafferPreferences(bpy.types.AddonPreferences):
         addon_updater_ops.update_settings_ui(self,context)
 
 
-def do_set_world_refl_only(context):
-    scene = context.scene
-    if scene.gaf_props.WorldReflOnly and not scene.gaf_props.WorldVis:
-        scene.gaf_props.WorldVis = True
-        scene.gaf_props.WorldReflOnly = True
-    if scene.gaf_props.WorldVis:
-        world = scene.world
-        world.cycles_visibility.glossy = True
-        world.cycles_visibility.camera = not scene.gaf_props.WorldReflOnly
-        world.cycles_visibility.diffuse = not scene.gaf_props.WorldReflOnly
-        world.cycles_visibility.transmission = not scene.gaf_props.WorldReflOnly
-        world.cycles_visibility.scatter = not scene.gaf_props.WorldReflOnly
-        world.update_tag()
-
-
-def _update_world_refl_only(self, context):
-    do_set_world_refl_only(context)
-
-
-def do_set_world_vis(context):
-    scene = context.scene
-    if scene.gaf_props.WorldVis:
-        scene.gaf_props.WorldReflOnly = False
-    elif scene.gaf_props.WorldReflOnly:
-        scene.gaf_props.WorldReflOnly = False
-    world = scene.world
-    world.cycles_visibility.glossy = scene.gaf_props.WorldVis
-    world.cycles_visibility.camera = scene.gaf_props.WorldVis
-    world.cycles_visibility.diffuse = scene.gaf_props.WorldVis
-    world.cycles_visibility.transmission = scene.gaf_props.WorldVis
-    world.cycles_visibility.scatter = scene.gaf_props.WorldVis
-    world.update_tag()
-
-
-def _update_world_vis(self, context):
-    do_set_world_vis(context)
-
-
 class BlacklistedObject(bpy.types.PropertyGroup):
     name = bpy.props.StringProperty(default = "")
 
@@ -223,12 +185,12 @@ class GafferProperties(bpy.types.PropertyGroup):
         name = "Hide World lighting",
         default = True,
         description = "Don't display (or render) the environment lighting",
-        update = _update_world_vis)
+        update = functions._update_world_vis)
     WorldReflOnly = bpy.props.BoolProperty(
         name = "Reflection Only",
         default = False,
         description = "Only show the World lighting in reflections",
-        update = _update_world_refl_only)
+        update = functions._update_world_refl_only)
     LightRadiusAlpha = bpy.props.FloatProperty(
         name = "Alpha",
         default = 0.6,
