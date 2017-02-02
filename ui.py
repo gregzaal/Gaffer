@@ -795,6 +795,13 @@ class GafferPanelTools(bpy.types.Panel):
 def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
     if gaf_props.hdri:
         col = layout.column(align=True)
+
+        row = col.row(align=True)
+        row.prop(gaf_props, 'hdri_search', text="", icon='VIEWZOOM')
+        if gaf_props.hdri_search:
+            row.operator('gaffer.clear_search', text="", icon='X')
+        col.separator()
+
         row = col.row(align=True)
         tmpc = row.column()
         tmpc.scale_y=9
@@ -907,14 +914,19 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                                   gaf_props.hdri_use_separate_saturation,
                                   gaf_props.hdri_use_separate_warmth])
                 sub.prop(gaf_props, 'hdri_use_bg_reflections')
+    elif gaf_props.hdri_search:
+        row = layout.row(align=True)
+        row.prop(gaf_props, 'hdri_search', text="", icon='VIEWZOOM')
+        row.operator('gaffer.clear_search', text="", icon='X')
+        layout.label("No HDRIs match this search")
     else:
-        row = col.row()
+        row = layout.row()
         row.alignment='CENTER'
         row.label("No HDRIs found")
-        row = col.row()
+        row = layout.row()
         row.alignment='CENTER'
         row.label("Please put some in the HDRI folder:")
-        row = col.row()
+        row = layout.row()
         row.alignment='CENTER'
         row.label(prefs.hdri_path)
 

@@ -934,6 +934,9 @@ def hdri_enable(self, context):
     else:
         restore_old_world_settings(context)
 
+def update_search(self, context):
+    context.scene.gaf_props.hdri = context.scene.gaf_props.hdri
+
 def update_variation(self, context):
     gaf_props = context.scene.gaf_props
     prefs = context.user_preferences.addons[__package__].preferences
@@ -1201,24 +1204,41 @@ def hdri_enum_previews(self, context):
     if context is None:
         return enum_items
 
+    gaf_props = context.scene.gaf_props
+
     # Get the preview collection (defined in register func).
     pcoll = preview_collections["main"]
 
+    search_string = gaf_props.hdri_search.replace(',', ' ').replace(';', ' ')
     for i, name in enumerate(hdri_list):
-        thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
-        if not os.path.exists(thumb_file):
-            thumb_file = missing_thumb()
-            try:
-                # Blender won't allow us to edit a scene prop sometimes (during registration?)
-                context.scene.gaf_props.RequestThumbGen = True
-            except:
-                pass
+        search_terms = search_string.split(' ')
 
-        if name in pcoll:
-            thumb = pcoll[name]
-        else:
-            thumb = pcoll.load(name, thumb_file, 'IMAGE')
-        enum_items.append((name, name, "", thumb.icon_id, i))
+        matchables = [name]
+        sub_folder = hdri_list[name][0].split(name)[0]
+        matchables += sub_folder.split('\\' if '\\' in sub_folder else '/')
+
+        num_matched = 0
+        for s in search_terms:
+            for m in matchables:
+                if s.lower().strip() in m.lower():
+                    num_matched += 1
+                    break
+
+        if num_matched == len(search_terms) or not search_terms:
+            thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
+            if not os.path.exists(thumb_file):
+                thumb_file = missing_thumb()
+                try:
+                    # Blender won't allow us to edit a scene prop sometimes (during registration?)
+                    gaf_props.RequestThumbGen = True
+                except:
+                    pass
+
+            if name in pcoll:
+                thumb = pcoll[name]
+            else:
+                thumb = pcoll.load(name, thumb_file, 'IMAGE')
+            enum_items.append((name, name, "", thumb.icon_id, i))
 
     pcoll.previews = enum_items
     return pcoll.previews

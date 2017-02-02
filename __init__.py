@@ -300,6 +300,12 @@ class GafferProperties(bpy.types.PropertyGroup):
         items=functions.variation_enum_previews,
         update=functions.update_variation
         )
+    hdri_search = bpy.props.StringProperty(
+        name="Search",
+        description="Show only HDRIs matching this text - name, subfolder and tags will match",
+        default="",
+        update=functions.update_search
+        )
     hdri_rotation = bpy.props.FloatProperty(
         name="Rotation",
         description='Rotate the HDRI (in degrees) around the Z-axis',

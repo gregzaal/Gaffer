@@ -1143,6 +1143,18 @@ class GafHDRIJPGGen(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class GafHDRIClearSearch(bpy.types.Operator):
+
+    "Clear the search, show all HDRIs"
+    bl_idname = 'gaffer.clear_search'
+    bl_label = 'Clear'
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        context.scene.gaf_props.hdri_search = ""
+        
+        return {'FINISHED'}
+
 class GafHDRIPaddles(bpy.types.Operator):
 
     "Switch to the next/previous HDRI"
