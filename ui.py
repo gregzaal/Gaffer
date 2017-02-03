@@ -954,11 +954,13 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                                   gaf_props.hdri_use_separate_warmth])
                 sub.prop(gaf_props, 'hdri_use_bg_reflections')
     elif gaf_props.hdri_search:
+        prefs.ForcePreviewsRefresh = True
         row = layout.row(align=True)
         row.prop(gaf_props, 'hdri_search', text="", icon='VIEWZOOM')
         row.operator('gaffer.clear_search', text="", icon='X')
         layout.label("No HDRIs match this search")
     else:
+        prefs.ForcePreviewsRefresh = True
         row = layout.row()
         row.alignment='CENTER'
         row.label("No HDRIs found")

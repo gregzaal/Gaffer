@@ -937,8 +937,10 @@ def hdri_enable(self, context):
         restore_old_world_settings(context)
 
 def update_search(self, context):
-    context.scene.gaf_props.hdri = context.scene.gaf_props.hdri
     bpy.context.user_preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
+    if context.scene.gaf_props.hdri:
+        # Force update of currently shown thumbnail
+        context.scene.gaf_props.hdri = context.scene.gaf_props.hdri
 
 def update_variation(self, context):
     gaf_props = context.scene.gaf_props
