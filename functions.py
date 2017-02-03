@@ -1216,6 +1216,9 @@ def hdri_enum_previews(self, context):
         matchables = [name]
         sub_folder = hdri_list[name][0].split(name)[0]
         matchables += sub_folder.split('\\' if '\\' in sub_folder else '/')
+        tags = get_tags()
+        if name in tags:
+            matchables += get_tags()[name]
 
         num_matched = 0
         for s in search_terms:
