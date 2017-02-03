@@ -1270,19 +1270,31 @@ def get_hdri_haven_list():
             if data:
                 return data
 
-    from urllib.request import urlopen
+    from requests import get as requests_get
     print ("Getting HDRI list from HDRI Haven...")
     try:
-        with urlopen('https://hdrihaven.com/php/json_list.php', timeout=10) as response:
-            html = str(response.read())
+        hdrihaven_hdris = requests_get('https://hdrihaven.com/php/json_list.php', timeout=10).json()
     except:
         print ("    Can't fetch list from HDRI Haven")
-        return []
+        return {}
     else:
-        hdrihaven_hdris = html.split('### list after this! ###')[1].split('<br>')[:-1]
-
+        for h in hdrihaven_hdris:
+            # Convert comma separated list into actual list
+            hdrihaven_hdris[h] = hdrihaven_hdris[h].replace(';', ',').split(',')
         with open(hdri_haven_list_path, 'w') as f:
             f.write(json.dumps(hdrihaven_hdris, indent=4))
+
+        # Add HDRI Haven tags to tag list
+        tag_list = get_tags()
+        for h in hdrihaven_hdris:
+            if h in tag_list:
+                for t in hdrihaven_hdris[h]:
+                    if t not in tag_list[h]:
+                        tag_list[h].append(t)
+            else:
+                tag_list[h] = hdrihaven_hdris[h]
+        with open(tags_path, 'w') as f:
+            f.write(json.dumps(tag_list, indent=4))
 
         return hdrihaven_hdris
 
@@ -1338,7 +1350,7 @@ def get_possible_tags_list():
     actual_tags = []
     for h in tags_list:
         for t in tags_list[h]:
-            if t not in possible_tags:
+            if t not in possible_tags and t not in actual_tags:
                 actual_tags.append(t)
     possible_tags += sorted(actual_tags)
     return possible_tags
