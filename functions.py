@@ -564,6 +564,7 @@ def detect_hdris(self, context):
         hdri_list = hdris
         refresh_previews()
         set_persistent_setting('hdri_path', prefs.hdri_path)
+        prefs.ForcePreviewsRefresh = True
 
 def get_hdri_list():
     if os.path.exists(hdri_list_path):
@@ -926,6 +927,7 @@ def hdri_enable(self, context):
         if prefs.hdri_path != "" and os.path.exists(prefs.hdri_path):
             detect_hdris(self, context)
             setup_hdri(self, context)
+            prefs.ForcePreviewsRefresh = True
             if gaf_props.hdri:
                 if not os.path.exists(os.path.join(thumbnail_dir, gaf_props.hdri+"__thumb_preview.jpg")):
                     context.scene.gaf_props.RequestThumbGen = True
@@ -936,6 +938,7 @@ def hdri_enable(self, context):
 
 def update_search(self, context):
     context.scene.gaf_props.hdri = context.scene.gaf_props.hdri
+    bpy.context.user_preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
 
 def update_variation(self, context):
     gaf_props = context.scene.gaf_props
@@ -1197,6 +1200,7 @@ def get_icons():
 def refresh_previews():
     previews_unregister()
     previews_register()
+    bpy.context.user_preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
 
 def hdri_enum_previews(self, context):
     enum_items = []
@@ -1208,6 +1212,12 @@ def hdri_enum_previews(self, context):
 
     # Get the preview collection (defined in register func).
     pcoll = preview_collections["main"]
+
+    prefs = bpy.context.user_preferences.addons[__package__].preferences
+    if not prefs.ForcePreviewsRefresh:
+        return pcoll.previews
+    else:
+        prefs.ForcePreviewsRefresh = False
 
     search_string = gaf_props.hdri_search.replace(',', ' ').replace(';', ' ')
     for i, name in enumerate(hdri_list):

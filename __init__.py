@@ -101,6 +101,8 @@ class GafferPreferences(bpy.types.AddonPreferences):
         default=False
         )
 
+    ForcePreviewsRefresh = bpy.props.BoolProperty(default = True, options={'HIDDEN'})
+
 
     def draw(self, context):
         layout = self.layout
