@@ -1288,14 +1288,17 @@ def get_hdri_haven_list():
             f.write(json.dumps(hdrihaven_hdris, indent=4))
 
         # Add HDRI Haven tags to tag list
+        standard_colors = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'brown', 'black', 'gray', 'white']
         tag_list = get_tags()
         for h in hdrihaven_hdris:
-            if h in tag_list:
-                for t in hdrihaven_hdris[h]:
-                    if t not in tag_list[h]:
-                        tag_list[h].append(t)
-            else:
-                tag_list[h] = hdrihaven_hdris[h]
+            if h in hdri_list:
+                if h in tag_list:
+                    for t in hdrihaven_hdris[h]:
+                        if t not in tag_list[h]:
+                            if t not in standard_colors:
+                                tag_list[h].append(t)
+                else:
+                    tag_list[h] = [t for t in hdrihaven_hdris[h] if t not in standard_colors]
         with open(tags_path, 'w') as f:
             f.write(json.dumps(tag_list, indent=4))
 
