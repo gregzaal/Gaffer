@@ -831,16 +831,18 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             tags_col = box.column(align=True)
             tags_col.label("Choose some tags:")
             tags_col.separator()
+
+            current_tags = get_tags()
+            if gaf_props.hdri in current_tags:
+                current_tags = current_tags[gaf_props.hdri]
+            else:
+                current_tags = []
+
             i = 0
             for t in possible_tags:
                 if i % 4 == 0 or t == '##split##':  # Split tags into columns
                     row = tags_col.row(align=True)
                 if t != '##split##':
-                    current_tags = get_tags()
-                    if gaf_props.hdri in current_tags:
-                        current_tags = current_tags[gaf_props.hdri]
-                    else:
-                        current_tags = []
 
                     op = row.operator('gaffer.add_tag', t.title(), icon='FILE_TICK' if t in current_tags else 'NONE')
                     op.hdri = gaf_props.hdri
