@@ -438,6 +438,17 @@ class GafferProperties(bpy.types.PropertyGroup):
         description = "Generate the JPG and darkened JPG for all HDRIs that you have. This will probably take a while",
         default = False
         )
+    hdri_show_tags_ui = bpy.props.BoolProperty(
+        name="Tags",
+        description = "Choose some tags for this HDRI to help you search for it later",
+        default = False
+        )
+    hdri_custom_tags = bpy.props.StringProperty(
+        name="New Tag(s)",
+        description = "Add some of your own tags to this HDRI - separate by commas or semi-colons",
+        default = "",
+        update = functions.set_custom_tags
+        )
 
     # Internal vars (not shown in UI)
     IsShowingRadius = bpy.props.BoolProperty(default = False, options={'HIDDEN'})

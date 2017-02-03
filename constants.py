@@ -70,6 +70,7 @@ if not os.path.exists(thumbnail_dir): os.makedirs(thumbnail_dir)
 jpg_dir = os.path.join(data_dir, 'hdri_jpgs')
 if not os.path.exists(jpg_dir): os.makedirs(jpg_dir)
 hdri_list_path = os.path.join(data_dir, 'gaffer_hdris.json')
+tags_path = os.path.join(data_dir, 'tags.json')
 settings_file = os.path.join(data_dir, 'settings.json')
 preview_collections = {}
 icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
@@ -77,3 +78,27 @@ hdri_list = {}
 hdri_haven_list = []
 hdri_haven_list_path = os.path.join(data_dir, 'hdri_haven_hdris.json')
 custom_icons = None
+default_tags = ['outdoor',
+                'indoor',
+                '##split##',
+                'rural',
+                'urban',
+                '##split##',
+                'clear',
+                'partly cloudy',
+                'overcast',
+                'sun',
+                '##split##',
+                'early morning',
+                'midday',
+                'late afternoon',
+                'night',
+                '##split##',
+                'low contrast',
+                'medium contrast',
+                'high contrast',
+                '##split##',
+                'natural light',
+                'artificial light',
+                '##split##']
+possible_tags = []

@@ -802,13 +802,21 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             row.operator('gaffer.clear_search', text="", icon='X')
         col.separator()
 
+
         row = col.row(align=True)
-        tmpc = row.column()
-        tmpc.scale_y=9
-        tmpc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
+
+        tmpc = row.column(align=True)
+        tmpcc = tmpc.column(align=True)
+        tmpcc.scale_y=8
+        tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
+        tmpr = tmpc.column(align=True)
+        tmpr.scale_y=1
+        tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon="PMARKER_ACT")  # TODO icon
+
         tmpc = row.column()
         tmpc.scale_y=1.5
         tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
+
         tmpc = row.column(align=True)
         tmpcc = tmpc.column(align=True)
         tmpcc.scale_y=8
@@ -816,6 +824,35 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         tmpr = tmpc.column(align=True)
         tmpr.scale_y=1
         tmpr.operator('gaffer.hdri_random', text='', icon_value=icons['random'].icon_id)
+
+        if gaf_props.hdri_show_tags_ui:
+            col.separator()
+            box = col.box()
+            tags_col = box.column(align=True)
+            tags_col.label("Choose some tags:")
+            tags_col.separator()
+            i = 0
+            for t in possible_tags:
+                if i % 4 == 0 or t == '##split##':  # Split tags into columns
+                    row = tags_col.row(align=True)
+                if t != '##split##':
+                    current_tags = get_tags()
+                    if gaf_props.hdri in current_tags:
+                        current_tags = current_tags[gaf_props.hdri]
+                    else:
+                        current_tags = []
+
+                    op = row.operator('gaffer.add_tag', t.title(), icon='FILE_TICK' if t in current_tags else 'NONE')
+                    op.hdri = gaf_props.hdri
+                    op.tag = t
+                    i += 1
+                else:
+                    i = 0
+            tags_col.prop(gaf_props, 'hdri_custom_tags', icon='GREASEPENCIL')  # TODO icon
+            tags_col.separator()
+            tags_col.prop(gaf_props, 'hdri_show_tags_ui', text="Done", toggle=True)
+            col.separator()
+
 
         if context.scene.gaf_props.RequestThumbGen:
             col.operator('gaffer.generate_hdri_thumbs')

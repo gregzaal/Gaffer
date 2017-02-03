@@ -1183,6 +1183,20 @@ class GafHDRIPaddles(bpy.types.Operator):
             gaf_props.hdri = list_hdris[current_index+1] if self.do_next else list_hdris[current_index-1]
             return {'FINISHED'}
 
+class GafHDRIAddTag(bpy.types.Operator):
+
+    "Add this tag to the current HDRI"
+    bl_idname = 'gaffer.add_tag'
+    bl_label = 'Add Tag'
+    bl_options = {'INTERNAL'}
+    hdri = bpy.props.StringProperty()
+    tag = bpy.props.StringProperty()
+
+    def execute(self, context):
+        set_tag(self.hdri, self.tag)
+        
+        return {'FINISHED'}
+
 class GafHDRIRandom(bpy.types.Operator):
 
     "Switch to a random HDRI"
