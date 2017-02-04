@@ -566,14 +566,49 @@ def detect_hdris(self, context):
         set_persistent_setting('hdri_path', prefs.hdri_path)
         prefs.ForcePreviewsRefresh = True
 
-def get_hdri_list():
+def get_hdri_list(use_search=False):
     if os.path.exists(hdri_list_path):
         with open(hdri_list_path) as f:
             data = json.load(f)
         if data:
-            return OrderedDict(sorted(data.items(), key=lambda x: x[0].lower()))
+            data = OrderedDict(sorted(data.items(), key=lambda x: x[0].lower()))
+
+            if use_search:
+                search_string = bpy.context.scene.gaf_props.hdri_search
+                if search_string:
+                    search_string = search_string.replace(',', ' ').replace(';', ' ')
+                    search_terms = search_string.split(' ')
+                    tags = get_tags()
+
+                    matched_data = {}
+
+                    for name in data:
+                        matchables = [name]
+                        sub_folder = data[name][0].split(name)[0]
+                        matchables += sub_folder.split('\\' if '\\' in sub_folder else '/')
+                        if name in tags:
+                            matchables += tags[name]
+
+                        num_matched = 0
+                        for s in search_terms:
+                            for m in matchables:
+                                if s.lower().strip() in m.lower():
+                                    num_matched += 1
+                                    break
+
+                        if num_matched == len(search_terms) or not search_terms:
+                            matched_data[name] = data[name]
+
+                    return OrderedDict(sorted(matched_data.items(), key=lambda x: x[0].lower()))
+                else:
+                    return data
+            else:
+                return data
+
+
+
         else:
-            return data
+            return None
     else:
         return None
 
@@ -1221,39 +1256,22 @@ def hdri_enum_previews(self, context):
     else:
         prefs.ForcePreviewsRefresh = False
 
-    search_string = gaf_props.hdri_search.replace(',', ' ').replace(';', ' ')
-    for i, name in enumerate(hdri_list):
-        search_terms = search_string.split(' ')
+    for i, name in enumerate(get_hdri_list(use_search=True)):
+        
+        thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
+        if not os.path.exists(thumb_file):
+            thumb_file = missing_thumb()
+            try:
+                # Blender won't allow us to edit a scene prop sometimes (during registration?)
+                gaf_props.RequestThumbGen = True
+            except:
+                pass
 
-        matchables = [name]
-        sub_folder = hdri_list[name][0].split(name)[0]
-        matchables += sub_folder.split('\\' if '\\' in sub_folder else '/')
-        tags = get_tags()
-        if name in tags:
-            matchables += get_tags()[name]
-
-        num_matched = 0
-        for s in search_terms:
-            for m in matchables:
-                if s.lower().strip() in m.lower():
-                    num_matched += 1
-                    break
-
-        if num_matched == len(search_terms) or not search_terms:
-            thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
-            if not os.path.exists(thumb_file):
-                thumb_file = missing_thumb()
-                try:
-                    # Blender won't allow us to edit a scene prop sometimes (during registration?)
-                    gaf_props.RequestThumbGen = True
-                except:
-                    pass
-
-            if name in pcoll:
-                thumb = pcoll[name]
-            else:
-                thumb = pcoll.load(name, thumb_file, 'IMAGE')
-            enum_items.append((name, name, "", thumb.icon_id, i))
+        if name in pcoll:
+            thumb = pcoll[name]
+        else:
+            thumb = pcoll.load(name, thumb_file, 'IMAGE')
+        enum_items.append((name, name, "", thumb.icon_id, i))
 
     pcoll.previews = enum_items
     return pcoll.previews

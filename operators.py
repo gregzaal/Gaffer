@@ -1165,7 +1165,7 @@ class GafHDRIPaddles(bpy.types.Operator):
 
     def execute(self, context):
         gaf_props = context.scene.gaf_props
-        hdris = get_hdri_list()
+        hdris = get_hdri_list(use_search=True)
         current_hdri = gaf_props.hdri
         current_index = -1
         list_hdris = list(hdris)
@@ -1206,7 +1206,7 @@ class GafHDRIRandom(bpy.types.Operator):
 
     def execute(self, context):
         gaf_props = context.scene.gaf_props
-        hdris = get_hdri_list()
+        hdris = get_hdri_list(use_search=True)
 
         from random import choice
         random_hdri = gaf_props.hdri
