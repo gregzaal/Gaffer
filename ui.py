@@ -800,7 +800,9 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             row = col.row(align=True)
             row.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
             row.operator('gaffer.clear_search', text="", icon='X')
-            row.label('Matches: ' + str(len(hdri_enum_previews(gaf_props, context))))
+            subrow = row.row(align=True)
+            subrow.alignment = 'RIGHT'
+            subrow.label(str(len(hdri_enum_previews(gaf_props, context))) + ' matches')
         else:
             col.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
 
@@ -962,7 +964,9 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         row = layout.row(align=True)
         row.prop(gaf_props, 'hdri_search', text="", icon='VIEWZOOM')
         row.operator('gaffer.clear_search', text="", icon='X')
-        row.label("No matches")
+        subrow = row.row(align=True)
+        subrow.alignment = 'RIGHT'
+        subrow.label("No matches")
     else:
         prefs.ForcePreviewsRefresh = True
         row = layout.row()
