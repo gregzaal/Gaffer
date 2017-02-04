@@ -21,7 +21,7 @@ bl_info = {
     "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
     "author": "Greg Zaal",
     "version": (2, 6, 1),
-    "blender": (2, 77, 0),
+    "blender": (2, 78, 0),
     "location": "3D View > Tools",
     "warning": "",
     "wiki_url": "https://blendermarket.com/products/gaffer-light-manager",
