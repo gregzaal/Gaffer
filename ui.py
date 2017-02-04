@@ -814,7 +814,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
         tmpr = tmpc.column(align=True)
         tmpr.scale_y=1
-        tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)  # TODO icon
+        tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
 
         tmpc = row.column()
         tmpc.scale_y=1.5
@@ -853,7 +853,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                     i += 1
                 else:
                     i = 0
-            tags_col.prop(gaf_props, 'hdri_custom_tags', icon='GREASEPENCIL')  # TODO icon
+            tags_col.prop(gaf_props, 'hdri_custom_tags', icon_value=icons['text-cursor'].icon_id)
             tags_col.separator()
             tags_col.prop(gaf_props, 'hdri_show_tags_ui', text="Done", toggle=True)
             col.separator()
