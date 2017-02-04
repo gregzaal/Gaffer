@@ -527,7 +527,6 @@ def detect_hdris(self, context):
                 sub_path = sub_path[1:]
 
             files = sorted(files, key=lambda x: os.path.getsize(os.path.join(path, x)))
-
             hdri_file_pairs = []
             separators = ['_', '-', '.', ' ']
             for f in files:
@@ -1291,6 +1290,57 @@ def variation_enum_previews(self, context):
 
     return enum_items
 
+def get_tags():
+    if os.path.exists(tags_path):
+        with open(tags_path) as f:
+            data = json.load(f)
+        return data
+    else:
+        return {}
+
+def set_tag(name, tag, toggle=True):
+    tag = tag.strip().lower()
+    tag_list = get_tags()
+    if name in tag_list:
+        current_tags = tag_list[name]
+        if tag not in current_tags:
+            tag_list[name].append(tag)
+        elif toggle:
+            i = tag_list[name].index(tag)
+            del(tag_list[name][i])
+    else:
+        tag_list[name] = [tag]
+
+    with open(tags_path, 'w') as f:
+        f.write(json.dumps(tag_list, indent=4))
+
+def set_custom_tags(self, context):
+    gaf_props = context.scene.gaf_props
+    if gaf_props.hdri_custom_tags != "":
+        tags = gaf_props.hdri_custom_tags.replace(';', ',').split(',')
+
+        for t in tags:
+            t = t.strip().lower()
+            set_tag(gaf_props.hdri, t, toggle=False)
+            if t not in possible_tags:
+                possible_tags.append(t)
+
+        gaf_props.hdri_custom_tags = ""
+
+def get_possible_tags_list():
+    tags_list = get_tags()
+    possible_tags = default_tags
+    actual_tags = []
+    for h in tags_list:
+        for t in tags_list[h]:
+            if t not in possible_tags and t not in actual_tags:
+                actual_tags.append(t)
+    possible_tags += sorted(actual_tags)
+    return possible_tags
+
+if len(possible_tags) < 1:
+    possible_tags = get_possible_tags_list()
+
 def get_hdri_haven_list():
     ''' Get HDRI Haven list from web once per week, otherwise fetch from file'''
 
@@ -1342,57 +1392,6 @@ def show_hdrihaven():
     if not os.path.exists(os.path.join(prefs.hdri_path, 'HDRI Haven')):
         if get_persistent_setting('show_hdri_haven'):
             bpy.context.scene.gaf_props.ShowHDRIHaven = True
-
-def get_tags():
-    if os.path.exists(tags_path):
-        with open(tags_path) as f:
-            data = json.load(f)
-        return data
-    else:
-        return {}
-
-def set_tag(name, tag, toggle=True):
-    tag = tag.strip().lower()
-    tag_list = get_tags()
-    if name in tag_list:
-        current_tags = tag_list[name]
-        if tag not in current_tags:
-            tag_list[name].append(tag)
-        elif toggle:
-            i = tag_list[name].index(tag)
-            del(tag_list[name][i])
-    else:
-        tag_list[name] = [tag]
-
-    with open(tags_path, 'w') as f:
-        f.write(json.dumps(tag_list, indent=4))
-
-def set_custom_tags(self, context):
-    gaf_props = context.scene.gaf_props
-    if gaf_props.hdri_custom_tags != "":
-        tags = gaf_props.hdri_custom_tags.replace(';', ',').split(',')
-
-        for t in tags:
-            t = t.strip().lower()
-            set_tag(gaf_props.hdri, t, toggle=False)
-            if t not in possible_tags:
-                possible_tags.append(t)
-
-        gaf_props.hdri_custom_tags = ""
-
-def get_possible_tags_list():
-    tags_list = get_tags()
-    possible_tags = default_tags
-    actual_tags = []
-    for h in tags_list:
-        for t in tags_list[h]:
-            if t not in possible_tags and t not in actual_tags:
-                actual_tags.append(t)
-    possible_tags += sorted(actual_tags)
-    return possible_tags
-
-if len(possible_tags) < 1:
-    possible_tags = get_possible_tags_list()
 
 def draw_progress_bar(gaf_props, layout):
     if gaf_props.ShowProgress:
