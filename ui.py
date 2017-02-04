@@ -796,12 +796,15 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
     if gaf_props.hdri:
         col = layout.column(align=True)
 
-        row = col.row(align=True)
-        row.prop(gaf_props, 'hdri_search', text="", icon='VIEWZOOM')
         if gaf_props.hdri_search:
+            row = col.row(align=True)
+            row.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
             row.operator('gaffer.clear_search', text="", icon='X')
-        col.separator()
+            row.label('Matches: ' + str(len(hdri_enum_previews(gaf_props, context))))
+        else:
+            col.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
 
+        col = layout.column(align=True)
 
         row = col.row(align=True)
 
@@ -855,6 +858,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             tags_col.prop(gaf_props, 'hdri_show_tags_ui', text="Done", toggle=True)
             col.separator()
 
+        col = layout.column(align=True)
 
         if context.scene.gaf_props.RequestThumbGen:
             col.operator('gaffer.generate_hdri_thumbs')
@@ -958,7 +962,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         row = layout.row(align=True)
         row.prop(gaf_props, 'hdri_search', text="", icon='VIEWZOOM')
         row.operator('gaffer.clear_search', text="", icon='X')
-        layout.label("No HDRIs match this search")
+        row.label("No matches")
     else:
         prefs.ForcePreviewsRefresh = True
         row = layout.row()
