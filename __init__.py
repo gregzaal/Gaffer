@@ -102,6 +102,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         )
 
     ForcePreviewsRefresh = bpy.props.BoolProperty(default = True, options={'HIDDEN'})
+    RequestThumbGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
 
 
     def draw(self, context):
@@ -458,7 +459,6 @@ class GafferProperties(bpy.types.PropertyGroup):
     BlacklistIndex = bpy.props.IntProperty(default = 0, options={'HIDDEN'})
     VarNameCounter = bpy.props.IntProperty(default = 0, options={'HIDDEN'})
     HDRIList = bpy.props.StringProperty(default = "", options={'HIDDEN'})
-    RequestThumbGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     RequestJPGGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     ShowProgress = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     Progress = bpy.props.FloatProperty(default = 0.0, options={'HIDDEN'})

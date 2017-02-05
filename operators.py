@@ -1081,7 +1081,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
             bpy.data.images.remove(out_img)
 
     def execute(self, context):
-        context.scene.gaf_props.RequestThumbGen = False
+        context.user_preferences.addons[__package__].preferences.RequestThumbGen = False
         hdris = get_hdri_list()
 
         progress_begin(context)

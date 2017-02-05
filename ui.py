@@ -862,7 +862,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
 
         col = layout.column(align=True)
 
-        if context.scene.gaf_props.RequestThumbGen:
+        if prefs.RequestThumbGen:
             col.operator('gaffer.generate_hdri_thumbs')
 
         row = col.row(align=True)

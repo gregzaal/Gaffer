@@ -964,7 +964,7 @@ def hdri_enable(self, context):
             prefs.ForcePreviewsRefresh = True
             if gaf_props.hdri:
                 if not os.path.exists(os.path.join(thumbnail_dir, gaf_props.hdri+"__thumb_preview.jpg")):
-                    context.scene.gaf_props.RequestThumbGen = True
+                    prefs.RequestThumbGen = True
         else:
             gaf_props.hdri_handler_enabled = False
     else:
@@ -1260,11 +1260,7 @@ def hdri_enum_previews(self, context):
         thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
             thumb_file = missing_thumb()
-            try:
-                # Blender won't allow us to edit a scene prop sometimes (during registration?)
-                gaf_props.RequestThumbGen = True
-            except:
-                pass
+            prefs.RequestThumbGen = True
 
         if name in pcoll:
             thumb = pcoll[name]
