@@ -618,9 +618,9 @@ def get_hdri_list(use_search=False):
 
 
         else:
-            return None
+            return {}
     else:
-        return None
+        return {}
 
 if len(hdri_list) < 1:
     hdri_list = get_hdri_list()

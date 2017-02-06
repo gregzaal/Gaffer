@@ -1101,7 +1101,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
         progress_begin(context)
         num_hdris = len(hdris)
         for i, h in enumerate(hdris):
-            progress_update(context, i/num_hdris, "Generating thumbnail "+str(i+1)+' of '+str(num_hdris))
+            progress_update(context, i/num_hdris, "Generating thumbnail "+str(i+1)+' of '+str(num_hdris)+' ('+h+')')
             self.generate_thumb(h, hdris[h])
         progress_end(context)
 
