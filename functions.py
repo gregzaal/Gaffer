@@ -503,6 +503,17 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
 
 # HDRI stuffs
 
+def update_hdri_path(self, context):
+    prefs = bpy.context.user_preferences.addons[__package__].preferences
+    if prefs.hdri_path.startswith('//'):
+        prefs.hdri_path = os.path.abspath(bpy.path.abspath(prefs.hdri_path))
+        # For some reason bpy.path.abspath often still includes some
+        # relativeness, such as "C:/path/../real_path/to/file.jpg"
+        # So running os.path.abspath(bpy.path.abspath) should resolve
+        # to "C:/real_path/to/file.jpg"
+
+    detect_hdris(self, context)
+
 def detect_hdris(self, context):
 
     show_hdrihaven()

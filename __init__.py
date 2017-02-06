@@ -93,7 +93,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         subtype='DIR_PATH',
         description='The folder where all your HDRIs are stored',
         default=functions.get_persistent_setting('hdri_path'),
-        update=functions.detect_hdris
+        update=functions.update_hdri_path
         )
     show_hdri_list = bpy.props.BoolProperty(
         name="Show",
