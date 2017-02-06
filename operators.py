@@ -1004,24 +1004,49 @@ class GafHDRIThumbGen(bpy.types.Operator):
 
     def downsample(self, img):
         # TODO linear interoplation
+        print ("")
+        print ("")
+        print ("Starting downsample")
 
+        print ("    Get image size")
         import numpy
-        out_x = 256
-        out_y = 128
         in_x = img.size[0]
         in_y = img.size[1]
+        out_x = 256
+        out_y = round(out_x * (in_y/in_x))  # Same aspect ratio as original
 
-        if in_x < 256 or in_y < 128:
+        if in_x < out_x or in_y < out_y:
             return numpy.array(img.pixels)
     
-        p = numpy.split(numpy.array(img.pixels), len(img.pixels)/4)  # Group by RGBA
-        rows = numpy.split(numpy.array(p), in_y)
+        # --------------------------------------------------------------
+        import time
+        st = time.time()
         
-        new_cols = []
-        for r in [r[0] for r in numpy.array_split(rows,out_y)]:
-            new_cols.append([p[0] for p in numpy.array_split(r, out_x)])
-            
-        return numpy.array(new_cols).ravel()
+        p = numpy.array(img.pixels)
+        new_p = numpy.empty(out_x*out_y*4)
+        i = 0
+        ni = 0
+        r_x = in_x / out_x
+        r_y = in_y / out_y
+        inc = (r_x)*4
+        for y in range(out_y):
+            i = y * ((in_x - (in_x%out_x)) * ((r_y))) * 4
+            for x in range(out_x):
+                i = int(i)
+                try:
+                    new_p[ni] = p[i]
+                except:
+                    break
+                new_p[ni+1] = p[i+1]
+                new_p[ni+2] = p[i+2]
+                new_p[ni+3] = p[i+3]
+                i += inc
+                ni += 4
+        
+        duration = time.time() - st
+        print ("Duration:", duration)
+        return new_p
+        # --------------------------------------------------------------
 
     def generate_thumb(self, name, files):
         import numpy
