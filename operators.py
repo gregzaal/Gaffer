@@ -1002,35 +1002,22 @@ class GafHDRIThumbGen(bpy.types.Operator):
     # TODO render diffuse/gloss/plastic spheres instead of just the normal preview
     # TODO option to try to download sphere renders instead of rendering locally, as well as a separate option to upload local renders to help others skip rendering locally again
 
-    def downsample(self, img):
-        # TODO linear interoplation
-        print ("")
-        print ("")
-        print ("Starting downsample")
-
-        print ("    Get image size")
+    def downsample(self, img, in_x, in_y, out_x, out_y):
         import numpy
-        in_x = img.size[0]
-        in_y = img.size[1]
-        out_x = 256
-        out_y = round(out_x * (in_y/in_x))  # Same aspect ratio as original
 
         if in_x < out_x or in_y < out_y:
             return numpy.array(img.pixels)
-    
-        # --------------------------------------------------------------
-        import time
-        st = time.time()
         
         p = numpy.array(img.pixels)
         new_p = numpy.empty(out_x*out_y*4)
         i = 0
         ni = 0
-        r_x = in_x / out_x
         r_y = in_y / out_y
-        inc = (r_x)*4
+        inc = int(r_y)*4
+        v_jump = in_x * int(r_y)
+
         for y in range(out_y):
-            i = y * ((in_x - (in_x%out_x)) * ((r_y))) * 4
+            i = y * v_jump * 4
             for x in range(out_x):
                 i = int(i)
                 try:
@@ -1042,11 +1029,8 @@ class GafHDRIThumbGen(bpy.types.Operator):
                 new_p[ni+3] = p[i+3]
                 i += inc
                 ni += 4
-        
-        duration = time.time() - st
-        print ("Duration:", duration)
+
         return new_p
-        # --------------------------------------------------------------
 
     def generate_thumb(self, name, files):
         import numpy
@@ -1087,17 +1071,22 @@ class GafHDRIThumbGen(bpy.types.Operator):
         thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
             img = bpy.data.images.load(fp, check_existing=False)
-            out_img = bpy.data.images.new("tmp_"+name+"__thumb", 256, 128, alpha=True)
+
+            in_x = img.size[0]
+            in_y = img.size[1]
+            out_x = 200
+            out_y = round(out_x * (in_y/in_x))  # Same aspect ratio as original
 
             pixels = []
             if downsample:
-                pixels = self.downsample(img)
+                pixels = self.downsample(img, in_x, in_y, out_x, out_y)
             else:
                 pixels = numpy.array(img.pixels)
 
             if img.colorspace_settings.name == 'Linear':
                 pixels = numpy.power(pixels, 1/2.2)
 
+            out_img = bpy.data.images.new("tmp_"+name+"__thumb", out_x, out_y, alpha=True)
             out_img.pixels = pixels
 
             save_image(context, out_img, thumb_file, 'JPEG')
