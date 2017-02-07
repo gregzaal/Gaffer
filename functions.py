@@ -513,6 +513,7 @@ def update_hdri_path(self, context):
         # to "C:/real_path/to/file.jpg"
 
     detect_hdris(self, context)
+    get_hdri_haven_list(force_update=True)
 
 def detect_hdris(self, context):
 
@@ -1348,17 +1349,18 @@ def get_possible_tags_list():
 if len(possible_tags) < 1:
     possible_tags = get_possible_tags_list()
 
-def get_hdri_haven_list():
+def get_hdri_haven_list(force_update=False):
     ''' Get HDRI Haven list from web once per week, otherwise fetch from file'''
 
-    if os.path.exists(hdri_haven_list_path):
-        import time
-        age = time.time() - os.stat(hdri_haven_list_path).st_mtime  # seconds since last modified
-        if age/60/60/24 < 7:
-            with open(hdri_haven_list_path) as f:
-                data = json.load(f)
-            if data:
-                return data
+    if not force_update:
+        if os.path.exists(hdri_haven_list_path):
+            import time
+            age = time.time() - os.stat(hdri_haven_list_path).st_mtime  # seconds since last modified
+            if age/60/60/24 < 7:
+                with open(hdri_haven_list_path) as f:
+                    data = json.load(f)
+                if data:
+                    return data
 
     from requests import get as requests_get
     print ("Getting HDRI list from HDRI Haven...")
