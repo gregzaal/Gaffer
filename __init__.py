@@ -319,10 +319,10 @@ class GafferProperties(bpy.types.PropertyGroup):
         )
     hdri_brightness = bpy.props.FloatProperty(
         name="Brightness",
-        description='Change the exposure of the HDRI to emit more or less light',
-        default=1,
-        min=0,
-        soft_max=2,
+        description='Change the exposure of the HDRI to emit more or less light (measured in EVs)',
+        default=0,
+        soft_min=-10,
+        soft_max=10,
         update=functions.update_brightness
         )
     hdri_contrast = bpy.props.FloatProperty(

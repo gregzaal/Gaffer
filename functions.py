@@ -1017,7 +1017,7 @@ def update_brightness(self, context):
     if not gaf_props.hdri_handler_enabled:
         return None  # Don't do anything if handler is disabled
 
-    value = gaf_props.hdri_brightness
+    value = pow(2, gaf_props.hdri_brightness)
     n = handler_node(context, "ShaderNodeBackground")
     n.inputs[1].default_value = value
 
