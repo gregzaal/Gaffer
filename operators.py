@@ -1045,24 +1045,22 @@ class GafHDRIThumbGen(bpy.types.Operator):
             chosen_file = files[0]
         else:
             # First check if there are really small versions
+            small_sizes = ['256p', '512p']
             for f in files:
-                if '256p' in f:
-                    chosen_file = f
-                    downsample = False  # Final thumb size is 256p, so no need to downsample
-                    break
-            if not chosen_file:
-                for f in files:
-                    if '512p' in f:
+                for s in small_sizes:
+                    if s in f:
                         chosen_file = f
                         break
-                if not chosen_file:
-                    # Otherwise pick smallest file, but not one that has 'env' at the end,
-                    # since those are usually blurred
-                    file_sizes = {}
-                    for f in files:
-                        if not os.path.splitext(f)[0].lower().endswith('env'):
-                            file_sizes[f] = os.path.getsize(os.path.join(prefs.hdri_path, f))
-                    chosen_file = min(file_sizes, key=file_sizes.get)
+                if chosen_file:
+                    break
+
+            # Otherwise pick smallest file
+            if not chosen_file:
+                file_sizes = {}
+                for f in files:
+                    if not os.path.splitext(f)[0].lower().endswith('env'):
+                        file_sizes[f] = os.path.getsize(os.path.join(prefs.hdri_path, f))
+                chosen_file = min(file_sizes, key=file_sizes.get)
         if not chosen_file:
             chosen_file = files[0]  # Safety fallback
 
@@ -1295,7 +1293,7 @@ class GafGetHDRIHaven(bpy.types.Operator):
             print ("Skipping " + filename + ", you already have it")
                     
     def execute(self, context):
-        hdrihaven_hdris = get_hdri_haven_list()
+        hdrihaven_hdris = get_hdri_haven_list(force_update=True)
         num_hdris = len(hdrihaven_hdris)
         success = False
         if hdrihaven_hdris:
