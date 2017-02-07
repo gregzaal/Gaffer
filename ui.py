@@ -863,7 +863,10 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         col = layout.column(align=True)
 
         if prefs.RequestThumbGen:
-            col.operator('gaffer.generate_hdri_thumbs')
+            row = col.row(align=True)
+            row.alignment = 'CENTER'
+            row.operator('gaffer.generate_hdri_thumbs', icon='IMAGE_COL')
+            col.separator()
 
         row = col.row(align=True)
         row.prop(gaf_props, "hdri_variation", text="")

@@ -1014,10 +1014,10 @@ class GafHDRIThumbGen(bpy.types.Operator):
         ni = 0
         r_y = in_y / out_y
         inc = int(r_y)*4
-        v_jump = in_x * int(r_y)
 
         for y in range(out_y):
-            i = y * v_jump * 4
+            v_jump = int(r_y * y)
+            i = in_x * v_jump * 4
             for x in range(out_x):
                 i = int(i)
                 try:
