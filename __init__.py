@@ -359,7 +359,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         update=functions.update_warmth
         )
     hdri_use_jpg_background = bpy.props.BoolProperty(
-        name = "Use high-res JPG background",
+        name = "High-res JPG background",
         default = False,
         description = "Use a higher-res JPG image for the background, keeping the HDR just for lighting - enable this and set the main resolution to a low option to save memory",
         update=functions.setup_hdri
