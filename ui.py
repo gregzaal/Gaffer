@@ -912,27 +912,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             row.alignment = 'LEFT'
             row.prop(gaf_props, 'hdri_advanced', icon="TRIA_DOWN" if gaf_props.hdri_advanced else "TRIA_RIGHT", emboss=False, toggle=True)
             if gaf_props.hdri_advanced:
-                col.separator()
-                row = col.row(align=True)
-                row.prop(gaf_props, 'hdri_use_jpg_background')
-                sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_jpg_background
-                sub.prop(gaf_props, 'hdri_use_darkened_jpg')
-                if gaf_props.RequestJPGGen and gaf_props.hdri_use_jpg_background:
-                    col.separator()
-                    col.separator()
-                    col.label("No JPGs have been created yet,", icon='ERROR')
-                    col.label("please click 'Generate JPGs' below.")
-                    col.label("Note: This may take a while for high-res images")
-                    col.operator('gaffer.generate_jpgs')
-                    col.prop(gaf_props, 'hdri_jpg_gen_all')
-                    if gaf_props.hdri_jpg_gen_all:
-                        col.label("This is REALLY going to take a while.")
-                        col.label("See the console for progress.")
-                    col.separator()
-
-                col.separator()
-                col.label("Control background separately from lighting:")
+                col.label("Control background separately:")
                 row = col.row(align=True)
                 row.prop(gaf_props, 'hdri_use_separate_brightness', toggle=True)
                 sub = row.row(align=True)
@@ -962,6 +942,28 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                                   gaf_props.hdri_use_separate_saturation,
                                   gaf_props.hdri_use_separate_warmth])
                 sub.prop(gaf_props, 'hdri_use_bg_reflections')
+
+                col.separator()
+                row = col.row(align=True)
+                row.prop(gaf_props, 'hdri_use_jpg_background')
+                sub = row.row(align=True)
+                sub.active = gaf_props.hdri_use_jpg_background
+                sub.prop(gaf_props, 'hdri_use_darkened_jpg')
+                if (gaf_props.hdri_use_jpg_background and gaf_props.hdri_use_bg_reflections) and not gaf_props.hdri_use_darkened_jpg:
+                    col.label("Enabling 'Pre-Darkened' is recommended to")
+                    col.label("get more accurate reflections.")
+                if gaf_props.RequestJPGGen and gaf_props.hdri_use_jpg_background:
+                    col.separator()
+                    col.separator()
+                    col.label("No JPGs have been created yet,", icon='ERROR')
+                    col.label("please click 'Generate JPGs' below.")
+                    col.label("Note: This may take a while for high-res images")
+                    col.operator('gaffer.generate_jpgs')
+                    col.prop(gaf_props, 'hdri_jpg_gen_all')
+                    if gaf_props.hdri_jpg_gen_all:
+                        col.label("This is REALLY going to take a while.")
+                        col.label("See the console for progress.")
+                    col.separator()
     elif gaf_props.hdri_search:
         prefs.ForcePreviewsRefresh = True
         row = layout.row(align=True)
