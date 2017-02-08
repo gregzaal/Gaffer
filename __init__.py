@@ -128,7 +128,16 @@ class GafferPreferences(bpy.types.AddonPreferences):
                         col = layout.column(align=True)
                         for name in hdris:
                             col.label(name)
-                            for v in hdris[name]:
+                            variations = hdris[name]
+                            if len(variations) >= 10:
+                                row = col.row()
+                                row.alignment = 'CENTER'
+                                row.label('There are quite a few varations of this HDRI, maybe they were wrongly detected?', icon='QUESTION')
+                                row = col.row()
+                                row.alignment = 'CENTER'
+                                op = row.operator('wm.url_open', "Click here to learn how to fix this", icon='WORLD')
+                                op.url = "https://github.com/gregzaal/Gaffer/wiki/HDRI-Detection-and-Grouping"
+                            for v in variations:
                                 col.label('    '+v)
             else:
                 row = col.row()
