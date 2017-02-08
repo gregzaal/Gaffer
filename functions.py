@@ -1414,6 +1414,10 @@ def draw_progress_bar(gaf_props, layout):
         r.prop(gaf_props, 'ProgressBarText', "")
         r = split.row()
         r.label("")
+        b.separator()
+        b.label("This progress might not update :(")
+        b.label("if Blender is not responding")
+        b.label("Large HDRI files may take a while")
         layout.separator()
 def progress_begin(context):
     context.scene.gaf_props.ShowProgress = True
