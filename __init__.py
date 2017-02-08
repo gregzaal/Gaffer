@@ -385,9 +385,9 @@ class GafferProperties(bpy.types.PropertyGroup):
     hdri_background_brightness = bpy.props.FloatProperty(
         name="Value",
         description='Make the background image brighter or darker without affecting the lighting',
-        default=1,
-        min=0,
-        soft_max=2,
+        default=0,
+        soft_min=-10,
+        soft_max=10,
         update=functions.update_background_brightness
         )
     hdri_use_separate_contrast = bpy.props.BoolProperty(

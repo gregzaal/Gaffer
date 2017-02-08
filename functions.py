@@ -1127,7 +1127,7 @@ def update_background_brightness (self, context):
         update_brightness(self, context)
         return None
 
-    value = gaf_props.hdri_background_brightness
+    value = pow(2, gaf_props.hdri_background_brightness)
     if gaf_props.hdri_use_darkened_jpg:
         value *= 20  # Increase exposure by ~4 EVs
     n = handler_node(context, "ShaderNodeBackground", background=True)
