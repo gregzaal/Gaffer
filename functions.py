@@ -737,7 +737,7 @@ def handler_node(context, t, background=False):
         "ShaderNodeTexCoord": (-1021.785, 118.4),
         "ShaderNodeMapping": (-831.785, 138.4),
         "ShaderNodeTexEnvironment": (-461.785, 90.465 - y_offset),
-        "ShaderNodeBrightContrast": (-71.785, 59.522 - y_offset),
+        "ShaderNodeGamma": (-71.785, 59.522 - y_offset),
         "ShaderNodeHueSaturation": (118.214, 81.406 - y_offset),
         "Warmth": (-262.389, 72.821 - y_offset),
         "ShaderNodeBackground": (318.214, 48.494 - y_offset),
@@ -773,9 +773,8 @@ def uses_default_values(node, node_type):
             "use_min": False,
             "use_max": False,
         },
-        "ShaderNodeBrightContrast": {
-            "_socket_1": 0,
-            "_socket_2": 0,
+        "ShaderNodeGamma": {
+            "_socket_1": 1,
         },
         "ShaderNodeHueSaturation": {
             "_socket_0": 0.5,
@@ -840,7 +839,7 @@ def setup_hdri(self, context):
     n_mapping  = handler_node(context, "ShaderNodeMapping")
     n_img      = handler_node(context, "ShaderNodeTexEnvironment")
     n_warm     = handler_node(context, "Warmth")
-    n_cont     = handler_node(context, "ShaderNodeBrightContrast")
+    n_cont     = handler_node(context, "ShaderNodeGamma")
     n_sat      = handler_node(context, "ShaderNodeHueSaturation")
     n_shader   = handler_node(context, "ShaderNodeBackground")
     n_out      = handler_node(context, "ShaderNodeOutputWorld")
@@ -850,7 +849,7 @@ def setup_hdri(self, context):
 
     if extra_nodes:
         n_img_b    = handler_node(context, "ShaderNodeTexEnvironment", background=gaf_props.hdri_use_jpg_background)
-        n_cont_b   = handler_node(context, "ShaderNodeBrightContrast", background=True)
+        n_cont_b   = handler_node(context, "ShaderNodeGamma", background=True)
         n_sat_b    = handler_node(context, "ShaderNodeHueSaturation", background=True)
         n_warm_b   = handler_node(context, "Warmth", background=True)
         n_shader_b = handler_node(context, "ShaderNodeBackground", background=True)
@@ -1042,9 +1041,9 @@ def update_contrast(self, context):
         return None  # Don't do anything if handler is disabled
 
     value = gaf_props.hdri_contrast
-    n = handler_node(context, "ShaderNodeBrightContrast")
-    n.inputs[2].default_value = value - 1
-    n.mute = uses_default_values(n, "ShaderNodeBrightContrast")
+    n = handler_node(context, "ShaderNodeGamma")
+    n.inputs[1].default_value = value
+    n.mute = uses_default_values(n, "ShaderNodeGamma")
 
     extra_nodes = any([
         gaf_props.hdri_use_jpg_background,
@@ -1054,9 +1053,9 @@ def update_contrast(self, context):
         gaf_props.hdri_use_separate_warmth
         ])
     if not gaf_props.hdri_use_separate_contrast and extra_nodes:
-        n = handler_node(context, "ShaderNodeBrightContrast", background=True)
-        n.inputs[2].default_value = value - 1
-        n.mute = uses_default_values(n, "ShaderNodeBrightContrast")
+        n = handler_node(context, "ShaderNodeGamma", background=True)
+        n.inputs[1].default_value = value
+        n.mute = uses_default_values(n, "ShaderNodeGamma")
 
     return None
 
@@ -1142,9 +1141,9 @@ def update_background_contrast (self, context):
         return None
 
     value = gaf_props.hdri_background_contrast
-    n = handler_node(context, "ShaderNodeBrightContrast", background=True)
-    n.inputs[2].default_value = value - 1
-    n.mute = uses_default_values(n, "ShaderNodeBrightContrast")
+    n = handler_node(context, "ShaderNodeGamma", background=True)
+    n.inputs[1].default_value = value
+    n.mute = uses_default_values(n, "ShaderNodeGamma")
 
     return None
 
