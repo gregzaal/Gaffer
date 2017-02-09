@@ -420,7 +420,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         )
     hdri_background_saturation = bpy.props.FloatProperty(
         name="Value",
-        description='Change the saturation of background image without affecting the lighting',
+        description='Change the saturation of the background image without affecting the lighting',
         default=1,
         min=0,
         soft_max=2,
@@ -434,7 +434,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         )
     hdri_background_warmth = bpy.props.FloatProperty(
         name="Value",
-        description='Change the warmth of background image without affecting the lighting',
+        description='Change the warmth of the background image without affecting the lighting',
         default=1,
         soft_min=0,
         soft_max=2,
@@ -448,7 +448,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         )
     hdri_background_tint = bpy.props.FloatProperty(
         name="Value",
-        description='Change the tint of background image without affecting the lighting',
+        description='Change the tint of the background image without affecting the lighting',
         default=1,
         soft_min=0,
         soft_max=2,

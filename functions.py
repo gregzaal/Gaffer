@@ -1311,18 +1311,22 @@ def hdri_enum_previews(self, context):
     else:
         prefs.ForcePreviewsRefresh = False
 
+    all_thumbs_exist = True
     for i, name in enumerate(get_hdri_list(use_search=True)):
         
         thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
+            print ("Missing thumb", name)
+            all_thumbs_exist = False
             thumb_file = missing_thumb()
-            prefs.RequestThumbGen = True
 
         if name in pcoll:
             thumb = pcoll[name]
         else:
             thumb = pcoll.load(name, thumb_file, 'IMAGE')
         enum_items.append((name, name, "", thumb.icon_id, i))
+
+    prefs.RequestThumbGen = not all_thumbs_exist        
 
     pcoll.previews = enum_items
     return pcoll.previews
