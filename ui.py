@@ -896,14 +896,13 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         col.separator()
         col.prop(gaf_props, 'hdri_rotation', slider=True)
         col.separator()
-        col.prop(gaf_props, 'hdri_brightness', slider=True)
+        row = col.row(align = True)
+        row.prop(gaf_props, 'hdri_brightness', slider=True)
         if not toolbar or "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
+            row.prop(gaf_props, 'hdri_saturation', slider=True)
             row = col.row(align = True)
             row.prop(gaf_props, 'hdri_contrast', slider=True)
-            row.prop(gaf_props, 'hdri_saturation', slider=True)
-            col.prop(gaf_props, 'hdri_warmth', slider=True)
-            col.separator()
-            col.prop(gaf_props, 'hdri_clamp', slider=True)
+            row.prop(gaf_props, 'hdri_warmth', slider=True)
 
         wc = context.scene.world.cycles
         if wc.sample_map_resolution < 1000 or not wc.sample_as_light:
@@ -929,6 +928,10 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             row.alignment = 'LEFT'
             row.prop(gaf_props, 'hdri_advanced', icon="TRIA_DOWN" if gaf_props.hdri_advanced else "TRIA_RIGHT", emboss=False, toggle=True)
             if gaf_props.hdri_advanced:
+                col = box.column(align = True)
+                col.prop(gaf_props, 'hdri_clamp', slider=True)
+                col.separator()
+
                 col.label("Control background separately:")
                 row = col.row(align=True)
                 row.prop(gaf_props, 'hdri_use_separate_brightness', toggle=True)
