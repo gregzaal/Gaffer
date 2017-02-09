@@ -828,7 +828,8 @@ def setup_hdri(self, context):
         gaf_props.hdri_use_separate_brightness,
         gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
-        gaf_props.hdri_use_separate_warmth
+        gaf_props.hdri_use_separate_warmth,
+        gaf_props.hdri_use_separate_tint
         ])
 
     w = context.scene.world
@@ -926,10 +927,12 @@ def setup_hdri(self, context):
     update_contrast(self, context)
     update_saturation(self, context)
     update_warmth(self, context)
+    update_tint(self, context)
     update_background_brightness(self, context)
     update_background_contrast(self, context)
     update_background_saturation(self, context)
     update_background_warmth(self, context)
+    update_background_tint(self, context)
 
     return None
 
@@ -1025,7 +1028,8 @@ def update_brightness(self, context):
         gaf_props.hdri_use_separate_brightness,
         gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
-        gaf_props.hdri_use_separate_warmth
+        gaf_props.hdri_use_separate_warmth,
+        gaf_props.hdri_use_separate_tint
         ])
     if not gaf_props.hdri_use_separate_brightness and extra_nodes:
         if gaf_props.hdri_use_darkened_jpg:
@@ -1050,7 +1054,8 @@ def update_contrast(self, context):
         gaf_props.hdri_use_separate_brightness,
         gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
-        gaf_props.hdri_use_separate_warmth
+        gaf_props.hdri_use_separate_warmth,
+        gaf_props.hdri_use_separate_tint
         ])
     if not gaf_props.hdri_use_separate_contrast and extra_nodes:
         n = handler_node(context, "ShaderNodeGamma", background=True)
@@ -1074,7 +1079,8 @@ def update_saturation(self, context):
         gaf_props.hdri_use_separate_brightness,
         gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
-        gaf_props.hdri_use_separate_warmth
+        gaf_props.hdri_use_separate_warmth,
+        gaf_props.hdri_use_separate_tint
         ])
     if not gaf_props.hdri_use_separate_saturation and extra_nodes:
         n = handler_node(context, "ShaderNodeHueSaturation", background=True)
@@ -1098,11 +1104,37 @@ def update_warmth(self, context):
         gaf_props.hdri_use_separate_brightness,
         gaf_props.hdri_use_separate_contrast,
         gaf_props.hdri_use_separate_saturation,
-        gaf_props.hdri_use_separate_warmth
+        gaf_props.hdri_use_separate_warmth,
+        gaf_props.hdri_use_separate_tint
         ])
     if not gaf_props.hdri_use_separate_warmth and extra_nodes:
         n = handler_node(context, "Warmth", background=True)
         n.inputs[1].default_value = value
+        n.mute = uses_default_values(n, "Warmth")
+
+    return None
+
+def update_tint(self, context):
+    gaf_props = context.scene.gaf_props
+    if not gaf_props.hdri_handler_enabled:
+        return None  # Don't do anything if handler is disabled
+
+    value = (gaf_props.hdri_tint - 1) * 100
+    n = handler_node(context, "Warmth")
+    n.inputs[2].default_value = value
+    n.mute = uses_default_values(n, "Warmth")
+
+    extra_nodes = any([
+        gaf_props.hdri_use_jpg_background,
+        gaf_props.hdri_use_separate_brightness,
+        gaf_props.hdri_use_separate_contrast,
+        gaf_props.hdri_use_separate_saturation,
+        gaf_props.hdri_use_separate_warmth,
+        gaf_props.hdri_use_separate_tint
+        ])
+    if not gaf_props.hdri_use_separate_tint and extra_nodes:
+        n = handler_node(context, "Warmth", background=True)
+        n.inputs[2].default_value = value
         n.mute = uses_default_values(n, "Warmth")
 
     return None
@@ -1169,6 +1201,19 @@ def update_background_warmth (self, context):
     value = (gaf_props.hdri_background_warmth - 1) * 100
     n = handler_node(context, "Warmth", background=True)
     n.inputs[1].default_value = value
+    n.mute = uses_default_values(n, "Warmth")
+
+    return None
+
+def update_background_tint (self, context):
+    gaf_props = context.scene.gaf_props
+    if not gaf_props.hdri_handler_enabled or not gaf_props.hdri_use_separate_tint:
+        update_warmth(self, context)
+        return None
+
+    value = (gaf_props.hdri_background_tint - 1) * 100
+    n = handler_node(context, "Warmth", background=True)
+    n.inputs[2].default_value = value
     n.mute = uses_default_values(n, "Warmth")
 
     return None

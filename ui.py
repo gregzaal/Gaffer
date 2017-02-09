@@ -929,6 +929,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             row.prop(gaf_props, 'hdri_advanced', icon="TRIA_DOWN" if gaf_props.hdri_advanced else "TRIA_RIGHT", emboss=False, toggle=True)
             if gaf_props.hdri_advanced:
                 col = box.column(align = True)
+                col.prop(gaf_props, 'hdri_tint', slider=True)
                 col.prop(gaf_props, 'hdri_clamp', slider=True)
                 col.separator()
 
@@ -953,6 +954,11 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 sub = row.row(align=True)
                 sub.active = gaf_props.hdri_use_separate_warmth
                 sub.prop(gaf_props, 'hdri_background_warmth', slider=True)
+                row = col.row(align=True)
+                row.prop(gaf_props, 'hdri_use_separate_tint', toggle=True)
+                sub = row.row(align=True)
+                sub.active = gaf_props.hdri_use_separate_tint
+                sub.prop(gaf_props, 'hdri_background_tint', slider=True)
 
                 col.separator()
                 sub = col.row(align=True)
