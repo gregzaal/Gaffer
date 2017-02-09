@@ -1402,23 +1402,6 @@ def show_hdrihaven():
         if get_persistent_setting('show_hdri_haven'):
             bpy.context.scene.gaf_props.ShowHDRIHaven = True
 
-def draw_progress_bar(gaf_props, layout):
-    if gaf_props.ShowProgress:
-        layout.separator()
-        b = layout.box()
-        col = b.column(align=True)
-        col.label(gaf_props.ProgressText)
-        split = col.split(percentage=max(0.01, gaf_props.Progress), align=True)
-        r = split.row()
-        r.alert=True
-        r.prop(gaf_props, 'ProgressBarText', "")
-        r = split.row()
-        r.label("")
-        b.separator()
-        b.label("This progress might not update :(")
-        b.label("if Blender is not responding")
-        b.label("Large HDRI files may take a while")
-        layout.separator()
 def progress_begin(context):
     context.scene.gaf_props.ShowProgress = True
     _force_redraw_hack()
