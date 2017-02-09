@@ -336,7 +336,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         )
     hdri_contrast = bpy.props.FloatProperty(
         name="Contrast",
-        description='Change how much light is emitted by only the brightest parts of the HDRI (use to make shadows more or less noticable)',
+        description='Adjust the Gamma, making light sources stonger or weaker compared to darker parts of the HDRI',
         default=1,
         min=0,
         soft_max=2,
