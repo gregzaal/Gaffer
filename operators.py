@@ -1220,6 +1220,10 @@ class GafHDRIRandom(bpy.types.Operator):
         gaf_props = context.scene.gaf_props
         hdris = get_hdri_list(use_search=True)
 
+        if len(hdris) <= 1:
+            self.report({'WARNING'}, "No more HDRIs found")
+            return {'FINISHED'}
+
         from random import choice
         random_hdri = gaf_props.hdri
         while random_hdri == gaf_props.hdri:  # ensure the same HDRI is not chosen twice in a row
