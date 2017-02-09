@@ -1002,6 +1002,30 @@ class GafHDRIThumbGen(bpy.types.Operator):
     # TODO render diffuse/gloss/plastic spheres instead of just the normal preview
     # TODO option to try to download sphere renders instead of rendering locally, as well as a separate option to upload local renders to help others skip rendering locally again
 
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column(align=True)
+        r = col.row(align=True)
+        r.alignment = 'CENTER'
+        r.label("This may take a while if you have large HDRIs and no", icon='ERROR')
+        r = col.row(align=True)
+        r.alignment = 'CENTER'
+        r.label("smaller resolution version for each one.")
+
+        col = layout.column(align=True)
+        r = col.row(align=True)
+        r.alignment = 'CENTER'
+        r.label("The only way to stop this process once you start it")
+        r = col.row(align=True)
+        r.alignment = 'CENTER'
+        r.label("is to forcibly close Blender.")
+
+        col = layout.column(align=True)
+        r = col.row(align=True)
+        r.alignment = 'CENTER'
+        r.label("This only has to be done once.")
+
     def downsample(self, img, in_x, in_y, out_x, out_y):
         import numpy
 
@@ -1106,6 +1130,9 @@ class GafHDRIThumbGen(bpy.types.Operator):
         refresh_previews()
 
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=300)
 
 class GafHDRIJPGGen(bpy.types.Operator):
 
