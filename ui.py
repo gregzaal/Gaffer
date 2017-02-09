@@ -804,10 +804,9 @@ def draw_progress_bar(gaf_props, layout):
         r.prop(gaf_props, 'ProgressBarText', "")
         r = split.row()
         r.label("")
-        b.separator()
-        b.label("This progress might not update :(")
-        b.label("if Blender is not responding")
-        b.label("Large HDRI files may take a while")
+        c = b.column(align=True)
+        c.label("Large HDRI files may take a while")
+        c.label("You can stop this any time by closing Blender")
         layout.separator()
 
 def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
