@@ -1398,3 +1398,25 @@ class GafOpenHDRIHaven(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.wm.url_open(url=self.url)
         return {'FINISHED'}
+
+class GafHDRIOpenDataFolder(bpy.types.Operator):
+
+    "Open Gaffer's data folder in your system file explorer"
+    bl_idname = 'gaffer.open_data_folder'
+    bl_label = 'Open Gaffer\'s Data Folder'
+
+    def execute(self, context):
+        import subprocess
+        import sys
+
+        try:
+            if sys.platform == 'darwin':
+                subprocess.check_call(['open', '--', data_dir])
+            elif sys.platform == 'linux2':
+                subprocess.check_call(['xdg-open', '--', data_dir])
+            elif sys.platform == 'win32':
+                subprocess.check_call(['explorer', data_dir])
+        except:
+            self.report({'WARNING'}, "This might not have worked :( Navigate to the path manually: "+data_dir)
+        
+        return {'FINISHED'}
