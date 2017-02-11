@@ -322,8 +322,9 @@ class GafferProperties(bpy.types.PropertyGroup):
         name="Rotation",
         description='Rotate the HDRI (in degrees) around the Z-axis',
         default=0,
-        soft_min=-180,
-        soft_max=180,
+        subtype='ANGLE',
+        soft_min=0,
+        soft_max=360*pi/180,
         update=functions.update_rotation
         )
     hdri_brightness = bpy.props.FloatProperty(
@@ -509,6 +510,7 @@ def register():
     bpy.utils.register_module(__name__)
     bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
     bpy.app.handlers.load_post.append(operators.load_handler)
+    bpy.app.handlers.frame_change_pre.append(animate_props)
 
 def unregister():
     bpy.app.handlers.load_post.remove(operators.load_handler)
@@ -527,6 +529,20 @@ def unregister():
     bpy.types.NODE_PT_active_node_generic.remove(ui.gaffer_node_menu_func)
 
     bpy.utils.unregister_module(__name__)
+
+def animate_props(scene):
+    prop_list = ["hdri_rotation",
+                 "hdri_brightness",
+                 "hdri_contrast",
+                 ]
+
+    for prop in prop_list:
+        update_props(prop)
+
+def update_props(prop):
+    props = bpy.context.scene.gaf_props
+    exec("v = props."+str(prop))
+    exec("props."+str(prop)+" = v")
 
 if __name__ == "__main__":
     register()

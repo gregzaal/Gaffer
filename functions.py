@@ -1007,7 +1007,7 @@ def update_rotation(self, context):
     if not gaf_props.hdri_handler_enabled:
         return None  # Don't do anything if handler is disabled
 
-    value = gaf_props.hdri_rotation
+    value = gaf_props.hdri_rotation*180/pi
     n = handler_node(context, "ShaderNodeMapping")
     n.rotation.z = radians(value)
     n.mute = uses_default_values(n, "ShaderNodeMapping")
@@ -1313,7 +1313,7 @@ def hdri_enum_previews(self, context):
 
     all_thumbs_exist = True
     for i, name in enumerate(get_hdri_list(use_search=True)):
-        
+
         thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
             print ("Missing thumb", name)
@@ -1326,7 +1326,7 @@ def hdri_enum_previews(self, context):
             thumb = pcoll.load(name, thumb_file, 'IMAGE')
         enum_items.append((name, name, "", thumb.icon_id, i))
 
-    prefs.RequestThumbGen = not all_thumbs_exist        
+    prefs.RequestThumbGen = not all_thumbs_exist
 
     pcoll.previews = enum_items
     return pcoll.previews
