@@ -528,7 +528,7 @@ def detect_hdris(self, context):
             files = []
             for f in os.listdir(path):
                 if os.path.isfile(os.path.join(path, f)):
-                    if os.path.splitext(f)[1] in allowed_file_types:
+                    if os.path.splitext(f)[1].lower() in allowed_file_types:
                         files.append(f)
                 else:
                     check_folder_for_HDRIs(os.path.join(path, f))
