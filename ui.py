@@ -435,7 +435,7 @@ def draw_cycles_UI(context, layout, lights):
                         elif from_node.type == 'BLACKBODY':
                             row.prop(from_node.inputs[0], 'default_value', text='Temperature')
                             if gaf_props.ColTempExpand and gaf_props.LightUIIndex == i:
-                                row.operator('gaffer.col_temp_hide', text='', icon='MOVE_UP_VEC')
+                                row.operator('gaffer.col_temp_hide', text='', icon='TRIA_UP')
                                 col = col.column(align=True)
                                 col.separator()
                                 col.label("Color Temp. Presets:")
