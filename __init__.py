@@ -115,11 +115,12 @@ class GafferPreferences(bpy.types.AddonPreferences):
             if os.path.exists(self.hdri_path):
                 hdris = functions.get_hdri_list()
                 if hdris:
+                    num_files = sum(len(x) for x in hdris.values())
                     hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
                     num_hdris = len(hdris)
                     row = col.row()
                     row.alignment = 'RIGHT'
-                    row.label("Found " + str(num_hdris) + " HDRIs")
+                    row.label("Found {} HDRIs ({} files)".format(num_hdris, num_files))
                     if num_hdris > 0:
                         row.prop(self, 'show_hdri_list', toggle=True)
                     row.operator('gaffer.detect_hdris', "Refresh", icon="FILE_REFRESH")
