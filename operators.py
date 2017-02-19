@@ -1132,7 +1132,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=300)
+        return context.window_manager.invoke_props_dialog(self, width=320*dpifac())
 
 class GafHDRIJPGGen(bpy.types.Operator):
 
@@ -1374,7 +1374,7 @@ class GafGetHDRIHaven(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=500)
+        return context.window_manager.invoke_props_dialog(self, width=500*dpifac())
 
 class GafHideHDRIHaven(bpy.types.Operator):
 

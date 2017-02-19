@@ -33,6 +33,14 @@ def _force_redraw_hack():  # Taken from Campbell's Cell Fracture addon
 _force_redraw_hack.opr = bpy.ops.wm.redraw_timer
 _force_redraw_hack.arg = dict(type='DRAW_WIN_SWAP', iterations=1)
 
+def dpifac():
+    prefs = bpy.context.user_preferences.system
+    if hasattr(prefs, 'pixel_size'):  # python access to this was only added recently, assume non-retina display is used if using older blender
+        retinafac = bpy.context.user_preferences.system.pixel_size
+    else:
+        retinafac = 1
+    return bpy.context.user_preferences.system.dpi/(72/retinafac)
+
 
 def refresh_light_list(scene):
     m = []

@@ -837,7 +837,8 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
 
         tmpc = row.column()
         tmpc.scale_y=1.5
-        tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8)
+        window_size_multiplier = (context.window.width/1920)/dpifac()
+        tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8*window_size_multiplier)
 
         tmpc = row.column(align=True)
         tmpcc = tmpc.column(align=True)
