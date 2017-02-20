@@ -18,13 +18,13 @@
 
 bl_info = {
     "name": "Gaffer",
-    "description": "Manage all your lights together quickly and efficiently from the 3D View toolbar",
+    "description": "Master your lighting workflow with easy access to lamp properties and other tools",
     "author": "Greg Zaal",
-    "version": (2, 9, 0),
+    "version": (3, 0, 0),
     "blender": (2, 78, 0),
-    "location": "3D View > Tools",
+    "location": "3D View > Tools  &  World Settings > HDRI",
     "warning": "",
-    "wiki_url": "https://blendermarket.com/products/gaffer-light-manager",
+    "wiki_url": "https://github.com/gregzaal/Gaffer/wiki",
     "tracker_url": "https://github.com/gregzaal/Gaffer/issues",
     "category": "Lighting"}
 
