@@ -68,7 +68,8 @@ data_dir = os.path.join(os.path.abspath(os.path.join(bpy.utils.resource_path('US
 thumbnail_dir = os.path.join(data_dir, 'thumbs')
 if not os.path.exists(thumbnail_dir): os.makedirs(thumbnail_dir)
 thumb_endings = ['preview', 'thumb', 'thumbnail']
-allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
+hdr_file_types = ['.tif', '.tiff', '.hdr', '.exr']
+allowed_file_types = hdr_file_types + ['.jpg', '.jpeg', '.png', '.tga']
 jpg_dir = os.path.join(data_dir, 'hdri_jpgs')
 if not os.path.exists(jpg_dir): os.makedirs(jpg_dir)
 hdri_list_path = os.path.join(data_dir, 'gaffer_hdris.json')

@@ -100,6 +100,12 @@ class GafferPreferences(bpy.types.AddonPreferences):
         description="List all the detected HDRIs and their variants/resolutions below",
         default=False
         )
+    include_8bit = bpy.props.BoolProperty(
+        name="Detect 8-bit images as HDRIs",
+        description="Include LDR images like JPGs and PNGs when searching for files in the HDRI folder. Sometimes example renders are put next to HDRI files which can confuse the HDRI detection process, so they are ignored by default. Enable this to include them",
+        default=False,
+        update = functions.update_hdri_path
+        )
 
     ForcePreviewsRefresh = bpy.props.BoolProperty(default = True, options={'HIDDEN'})
     RequestThumbGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
@@ -108,8 +114,8 @@ class GafferPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        col = layout.column()
-        col.prop(self, 'hdri_path')
+        main_col = layout.column()
+        main_col.prop(self, 'hdri_path')
 
         if self.hdri_path:
             if os.path.exists(self.hdri_path):
@@ -118,7 +124,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
                     num_files = sum(len(x) for x in hdris.values())
                     hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
                     num_hdris = len(hdris)
-                    row = col.row()
+                    row = main_col.row()
                     row.alignment = 'RIGHT'
                     row.label("Found {} HDRIs ({} files)".format(num_hdris, num_files))
                     if num_hdris > 0:
@@ -126,7 +132,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
                     row.operator('gaffer.detect_hdris', "Refresh", icon="FILE_REFRESH")
 
                     if self.show_hdri_list:
-                        col = layout.column(align=True)
+                        col = main_col.column(align=True)
                         for name in hdris:
                             col.label(name)
                             variations = hdris[name]
@@ -141,13 +147,18 @@ class GafferPreferences(bpy.types.AddonPreferences):
                             for v in variations:
                                 col.label('    '+v)
             else:
-                row = col.row()
+                row = main_col.row()
                 row.alignment = 'RIGHT'
                 row.label("Cannot find HDRI folder :(")
         else:
-            row = col.row()
+            row = main_col.row()
             row.alignment = 'RIGHT'
             row.label("Select the folder that contains all your HDRIs. Subfolders will be included.")
+
+        
+        row = main_col.row()
+        row.alignment = 'RIGHT'
+        row.prop(self, 'include_8bit')
 
         addon_updater_ops.update_settings_ui(self,context)
 
