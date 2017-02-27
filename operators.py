@@ -1031,17 +1031,19 @@ class GafHDRIThumbGen(bpy.types.Operator):
 
         if in_x < out_x or in_y < out_y:
             return numpy.array(img.pixels)
+
+        channels = img.channels
         
         p = numpy.array(img.pixels)
-        new_p = numpy.empty(out_x*out_y*4)
+        new_p = numpy.empty(out_x*out_y*channels)
         i = 0
         ni = 0
         r_y = in_y / out_y
-        inc = int(r_y)*4
+        inc = int(r_y)*channels
 
         for y in range(out_y):
             v_jump = int(r_y * y)
-            i = in_x * v_jump * 4
+            i = in_x * v_jump * channels
             for x in range(out_x):
                 i = int(i)
                 try:
@@ -1052,7 +1054,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
                 new_p[ni+2] = p[i+2]
                 new_p[ni+3] = p[i+3]
                 i += inc
-                ni += 4
+                ni += channels
 
         return new_p
 
