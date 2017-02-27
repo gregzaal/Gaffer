@@ -533,11 +533,14 @@ def detect_hdris(self, context):
     def check_folder_for_HDRIs(path):
         if os.path.exists(path):
             allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
+            ignored_endings = ['preview', 'thumb', 'thumbnail']
             files = []
             for f in os.listdir(path):
                 if os.path.isfile(os.path.join(path, f)):
-                    if os.path.splitext(f)[1].lower() in allowed_file_types:
-                        files.append(f)
+                    fn, ext = os.path.splitext(f)
+                    if not any([fn.lower().endswith(b) for b in ignored_endings]):
+                        if ext.lower() in allowed_file_types:
+                            files.append(f)
                 else:
                     print (f)
                     if f != "_MACOSX":
