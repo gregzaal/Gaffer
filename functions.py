@@ -532,7 +532,6 @@ def detect_hdris(self, context):
 
     def check_folder_for_HDRIs(path):
         if os.path.exists(path):
-            allowed_file_types = ['.tif', '.tiff', '.hdr', '.exr', '.jpg', '.jpeg', '.png', '.tga']
             files = []
             for f in os.listdir(path):
                 if os.path.isfile(os.path.join(path, f)):

@@ -1090,8 +1090,9 @@ class GafHDRIThumbGen(bpy.types.Operator):
                 if not chosen_file:
                     file_sizes = {}
                     for f in files:
-                        if not os.path.splitext(f)[0].lower().endswith('env'):
-                            file_sizes[f] = os.path.getsize(os.path.join(prefs.hdri_path, f))
+                        if os.path.splitext(f)[1].lower() in allowed_file_types:
+                            if not os.path.splitext(f)[0].lower().endswith('env'):
+                                file_sizes[f] = os.path.getsize(os.path.join(prefs.hdri_path, f))
                     chosen_file = min(file_sizes, key=file_sizes.get)
         if not chosen_file:
             chosen_file = files[0]  # Safety fallback
