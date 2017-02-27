@@ -67,6 +67,7 @@ wavelength_list = ((0.0014,0.0000,0.0065), (0.0022,0.0001,0.0105), (0.0042,0.000
 data_dir = os.path.join(os.path.abspath(os.path.join(bpy.utils.resource_path('USER'), '..')), 'data', 'gaffer')
 thumbnail_dir = os.path.join(data_dir, 'thumbs')
 if not os.path.exists(thumbnail_dir): os.makedirs(thumbnail_dir)
+thumb_endings = ['preview', 'thumb', 'thumbnail']
 jpg_dir = os.path.join(data_dir, 'hdri_jpgs')
 if not os.path.exists(jpg_dir): os.makedirs(jpg_dir)
 hdri_list_path = os.path.join(data_dir, 'gaffer_hdris.json')
