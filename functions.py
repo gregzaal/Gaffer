@@ -556,7 +556,7 @@ def detect_hdris(self, context):
             for f in files:
                 fn, ext = os.path.splitext(f)
                 sep = ''
-                for c in fn[::-1]:  # Reversed filename to see which separator is last
+                for c in fn[::-1][:-1]:  # Reversed filename to see which separator is last
                     if c in separators:
                         sep = c
                         break
@@ -1271,7 +1271,8 @@ def save_image(context, img, filepath, fileformat, exposure=0):
 
 def nice_hdri_name(name):
     dont_capitalize = ['a', 'an', 'the', 'for', 'and', 'by', 'at', 'of',' from', 'on', 'with']
-    name = name.replace('_', ' ').replace('-', ' ').replace('.', ' ')
+    name = name[0] + name[1:].replace('_', ' ').replace('-', ' ').replace('.', ' ')
+    #                      ^^  name = name[0] + name[1:] to ignore separator if first char
     name = ' '.join([w[0].upper() + w[1:] for w in name.split(' ')])  # Title case but only for first character
     for w in dont_capitalize:
         name.replace(' '+w.title(), ' '+w)
