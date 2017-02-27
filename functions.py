@@ -539,7 +539,9 @@ def detect_hdris(self, context):
                     if os.path.splitext(f)[1].lower() in allowed_file_types:
                         files.append(f)
                 else:
-                    check_folder_for_HDRIs(os.path.join(path, f))
+                    print (f)
+                    if f != "_MACOSX":
+                        check_folder_for_HDRIs(os.path.join(path, f))
 
             prefs = bpy.context.user_preferences.addons[__package__].preferences
             sub_path = path.replace(prefs.hdri_path, "")
