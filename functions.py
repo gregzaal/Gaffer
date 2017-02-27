@@ -540,7 +540,6 @@ def detect_hdris(self, context):
                         if ext.lower() in allowed_file_types:
                             files.append(f)
                 else:
-                    print (f)
                     if f != "_MACOSX":
                         check_folder_for_HDRIs(os.path.join(path, f))
 
