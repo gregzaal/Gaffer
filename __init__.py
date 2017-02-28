@@ -107,6 +107,12 @@ class GafferPreferences(bpy.types.AddonPreferences):
         update = functions.update_hdri_path
         )
 
+    show_debug = bpy.props.BoolProperty(
+        name="Show Debug Tools",
+        description="Expand this box to show various debugging tools",
+        default=False
+        )
+
     ForcePreviewsRefresh = bpy.props.BoolProperty(default = True, options={'HIDDEN'})
     RequestThumbGen = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
 
@@ -161,6 +167,17 @@ class GafferPreferences(bpy.types.AddonPreferences):
         row.prop(self, 'include_8bit')
 
         addon_updater_ops.update_settings_ui(self,context)
+
+        box = layout.box()
+        col = box.column()
+        row = col.row(align=True)
+        row.alignment = 'LEFT'
+        row.prop(self, 'show_debug', text="Debug Tools", emboss=False, icon="TRIA_DOWN" if self.show_debug else "TRIA_RIGHT")
+        if self.show_debug:
+            col = box.column()
+            col.operator('gaffer.dbg_delete_thumbs')
+            col.operator('gaffer.dbg_upload_hdri_list')
+            col.operator('gaffer.dbg_upload_logs')
 
 
 class BlacklistedObject(bpy.types.PropertyGroup):

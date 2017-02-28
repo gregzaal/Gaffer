@@ -1446,3 +1446,86 @@ class GafHDRIOpenDataFolder(bpy.types.Operator):
             self.report({'WARNING'}, "This might not have worked :( Navigate to the path manually: "+data_dir)
         
         return {'FINISHED'}
+
+class GafDebugDeleteThumbs(bpy.types.Operator):
+
+    "Delete all thumbnail images"
+    bl_idname = 'gaffer.dbg_delete_thumbs'
+    bl_label = 'Delete thumbnails'
+
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        row = col.row(align=True)
+        row.alignment = 'CENTER'
+        row.label("This will delete all thumbnail files that Gaffer has made.", icon="ERROR")
+        row = col.row(align=True)
+        row.alignment = 'CENTER'
+        row.label("You will need to generate them again.")
+
+    def execute(self, context):
+        if os.path.exists(thumbnail_dir):
+            files = os.listdir(thumbnail_dir)
+            for f in files:
+                p = os.path.join(thumbnail_dir, f)
+                os.remove(p)
+            self.report({'INFO'}, "Deleted %s files" % len(files))
+            return {'FINISHED'}
+        else:
+            self.report({'ERROR'}, "Folder does not exist")
+            return {'CANCELLED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=340*dpifac())
+
+class GafDebugUploadHDRIList(bpy.types.Operator):
+
+    "Open Gaffer's data folder in your system file explorer"
+    bl_idname = 'gaffer.dbg_upload_hdri_list'
+    bl_label = 'Upload HDRI List'
+
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        row = col.row(align=True)
+        row.alignment = 'CENTER'
+        row.label("This will upload Gaffer's HDRI list to the internet,", icon="ERROR")
+        row = col.row(align=True)
+        row.alignment = 'CENTER'
+        row.label("and then open the public URL in your browser.")
+
+    def execute(self, context):
+        if os.path.exists(hdri_list_path):
+            hastebin_file(hdri_list_path)
+            return {'FINISHED'}
+        else:
+            self.report({'ERROR'}, "File does not exist")
+            return {'CANCELLED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=300*dpifac())
+
+class GafDebugUploadLogs(bpy.types.Operator):
+
+    "Open Gaffer's data folder in your system file explorer"
+    bl_idname = 'gaffer.dbg_upload_logs'
+    bl_label = 'Upload Logs'
+
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        row = col.row(align=True)
+        row.alignment = 'CENTER'
+        row.label("This will upload Gaffer's logs to the internet,", icon="ERROR")
+        row = col.row(align=True)
+        row.alignment = 'CENTER'
+        row.label("and then open the public URL in your browser.")
+
+    def execute(self, context):
+        if os.path.exists(log_file):
+            hastebin_file(log_file)
+            return {'FINISHED'}
+        else:
+            self.report({'ERROR'}, "File does not exist")
+            return {'CANCELLED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=300*dpifac())
+

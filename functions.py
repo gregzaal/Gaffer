@@ -68,6 +68,15 @@ def cleanup_logs():
             with open(log_file, 'w') as f:
                 f.writelines(new_lines)
 
+def hastebin_file(filepath):
+    if os.path.exists(filepath):
+        with open(filepath, 'r') as f:
+            lines = f.read()
+        from requests import post as requests_post
+        r = requests_post("https://hastebin.com/documents", lines)
+        url = "https://hastebin.com/" + json.loads(r.content.decode())['key']
+        bpy.ops.wm.url_open(url=url)
+
 def dpifac():
     prefs = bpy.context.user_preferences.system
     if hasattr(prefs, 'pixel_size'):  # python access to this was only added recently, assume non-retina display is used if using older blender
