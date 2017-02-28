@@ -45,6 +45,29 @@ def log(text, timestamp=True, also_print = False):
         else:
             f.write(' '*len(ts) + "    " + text + '\n')
 
+def cleanup_logs():
+    ''' Delete log lines that are older than 1 week to keep the file size down '''
+    if os.path.exists(log_file):
+        with open(log_file, 'r') as f:
+            lines = f.readlines()
+
+        i = 0  # Where the most recent line is that's older than 7 days
+        for ln_no, l in enumerate(lines):
+            try:
+                d = datetime.datetime.strptime(l[:19], '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                pass
+            else:
+                age = time.time() - time.mktime(d.timetuple())
+                if age/60/60/24 > 7:
+                    i = ln_no
+                else:
+                    break
+        if i > 0:
+            new_lines = lines[i+1:]
+            with open(log_file, 'w') as f:
+                f.writelines(new_lines)
+
 def dpifac():
     prefs = bpy.context.user_preferences.system
     if hasattr(prefs, 'pixel_size'):  # python access to this was only added recently, assume non-retina display is used if using older blender

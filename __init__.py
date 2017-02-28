@@ -517,6 +517,7 @@ def register():
     addon_updater_ops.register(bl_info)
 
     functions.previews_register()
+    functions.cleanup_logs()
 
     bpy.types.NODE_PT_active_node_generic.append(ui.gaffer_node_menu_func)
     bpy.utils.register_module(__name__)
