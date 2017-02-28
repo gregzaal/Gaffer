@@ -19,7 +19,7 @@
 import bpy
 import json
 import bgl, blf
-from math import pi, cos, sin, log
+from math import pi, cos, sin, log, ceil
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
@@ -999,32 +999,32 @@ class GafHDRIThumbGen(bpy.types.Operator):
     bl_label = 'Generate Thumbnails'
     bl_options = {'INTERNAL'}
 
+    size_limit = 100
+
+    skip_huge_files = bpy.props.BoolProperty(
+        name = "Skip big files",
+        description = "If you have big HDRIs (>"+str(size_limit)+" MB) with no smaller resolution available, these will be skipped to save time. Disabling this will mean it may take an unreasonable amount of time to generate thumbnails. Instead, it would be better if you manually create the lower resolution version first in Photoshop/Krita, then click 'Refresh' in Gaffer's User Preferences",
+        default=True
+        )
+
     # TODO render diffuse/gloss/plastic spheres instead of just the normal preview
     # TODO option to try to download sphere renders instead of rendering locally, as well as a separate option to upload local renders to help others skip rendering locally again
 
     def draw(self, context):
         layout = self.layout
 
-        col = layout.column(align=True)
-        r = col.row(align=True)
-        r.alignment = 'CENTER'
-        r.label("This may take a while if you have large HDRIs and no", icon='ERROR')
-        r = col.row(align=True)
-        r.alignment = 'CENTER'
-        r.label("smaller resolution version for each one.")
+        col = layout.column()
+        col.label("This only has to be done once.")
+        col.label("The only way to stop this process once you start it is to forcibly close Blender.")
 
+        col.separator()
         col = layout.column(align=True)
-        r = col.row(align=True)
-        r.alignment = 'CENTER'
-        r.label("The only way to stop this process once you start it")
-        r = col.row(align=True)
-        r.alignment = 'CENTER'
-        r.label("is to forcibly close Blender.")
+        col.prop(self, 'skip_huge_files')
 
-        col = layout.column(align=True)
-        r = col.row(align=True)
-        r.alignment = 'CENTER'
-        r.label("This only has to be done once.")
+        if context.scene.gaf_props.ThumbnailsBigHDRIFound:
+            col.label("Large HDRI files were skipped last time.", icon='ERROR')
+            col.label("You may wish to disable 'Skip big files', but first read its tooltip.")
+
 
     def downsample(self, img, in_x, in_y, out_x, out_y):
         import numpy
@@ -1103,34 +1103,42 @@ class GafHDRIThumbGen(bpy.types.Operator):
         fp = os.path.join(prefs.hdri_path, chosen_file)
         thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
-            log('    ' + name + ": " + chosen_file + "  " + str(os.path.getsize(fp)/1024/1024)+" MB", also_print=True)
+            filesize = os.path.getsize(fp)/1024/1024
+            log('    ' + name + ": " + chosen_file + "  " + str(ceil(filesize))+" MB", also_print=True)
+            
+            if filesize < self.size_limit or not self.skip_huge_files:
+                img = bpy.data.images.load(fp, check_existing=False)
 
-            img = bpy.data.images.load(fp, check_existing=False)
+                in_x = img.size[0]
+                in_y = img.size[1]
+                out_x = 200
+                out_y = round(out_x * (in_y/in_x))  # Same aspect ratio as original
 
-            in_x = img.size[0]
-            in_y = img.size[1]
-            out_x = 200
-            out_y = round(out_x * (in_y/in_x))  # Same aspect ratio as original
+                pixels = []
+                if downsample:
+                    pixels = self.downsample(img, in_x, in_y, out_x, out_y)
+                else:
+                    pixels = numpy.array(img.pixels)
 
-            pixels = []
-            if downsample:
-                pixels = self.downsample(img, in_x, in_y, out_x, out_y)
+                if img.colorspace_settings.name == 'Linear':
+                    pixels = numpy.power(pixels, 1/2.2)
+
+                out_img = bpy.data.images.new("tmp_"+name+"__thumb", out_x, out_y, alpha=True)
+                out_img.pixels = pixels
+
+                save_image(context, out_img, thumb_file, 'JPEG')
+
+                bpy.data.images.remove(img)
+                bpy.data.images.remove(out_img)
             else:
-                pixels = numpy.array(img.pixels)
-
-            if img.colorspace_settings.name == 'Linear':
-                pixels = numpy.power(pixels, 1/2.2)
-
-            out_img = bpy.data.images.new("tmp_"+name+"__thumb", out_x, out_y, alpha=True)
-            out_img.pixels = pixels
-
-            save_image(context, out_img, thumb_file, 'JPEG')
-
-            bpy.data.images.remove(img)
-            bpy.data.images.remove(out_img)
+                log("    Too big", timestamp=False, also_print=True)
+                bpy.context.scene.gaf_props.ThumbnailsBigHDRIFound = True
 
     def execute(self, context):
         log("OP: Generate Thumbnails")
+        if not self.skip_huge_files:
+            log("Large files included", timestamp=False)
+
         context.user_preferences.addons[__package__].preferences.RequestThumbGen = False
         hdris = get_hdri_list()
 
@@ -1150,7 +1158,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=320*dpifac())
+        return context.window_manager.invoke_props_dialog(self, width=420*dpifac())
 
 class GafHDRIJPGGen(bpy.types.Operator):
 

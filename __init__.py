@@ -509,6 +509,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     ProgressBarText = bpy.props.StringProperty(default = "", options={'HIDDEN'})
     ShowHDRIHaven = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     OldWorldSettings = bpy.props.StringProperty(default = "", options={'HIDDEN'})
+    ThumbnailsBigHDRIFound = bpy.props.BoolProperty(default = False, options={'HIDDEN'})
     Blacklist = bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
 
