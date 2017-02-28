@@ -19,6 +19,7 @@
 import bpy
 import json
 import bgl, blf
+import time, datetime
 from collections import OrderedDict
 from math import pi, cos, sin, log, radians
 from mathutils import Vector, Matrix, Euler
@@ -32,6 +33,17 @@ def _force_redraw_hack():  # Taken from Campbell's Cell Fracture addon
     _force_redraw_hack.opr(**_force_redraw_hack.arg)
 _force_redraw_hack.opr = bpy.ops.wm.redraw_timer
 _force_redraw_hack.arg = dict(type='DRAW_WIN_SWAP', iterations=1)
+
+def log(text, timestamp=True, also_print = False):
+    ts = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+
+    with open(log_file, 'a') as f:
+        if also_print:
+            print (text)
+        if timestamp:
+            f.write(ts + "    " + text + '\n')
+        else:
+            f.write(' '*len(ts) + "    " + text + '\n')
 
 def dpifac():
     prefs = bpy.context.user_preferences.system
@@ -524,6 +536,8 @@ def update_hdri_path(self, context):
     get_hdri_haven_list(force_update=True)
 
 def detect_hdris(self, context):
+
+    log("FN: Detect HDRIs")
 
     show_hdrihaven()
 

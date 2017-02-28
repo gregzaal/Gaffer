@@ -65,6 +65,7 @@ wavelength_list = ((0.0014,0.0000,0.0065), (0.0022,0.0001,0.0105), (0.0042,0.000
                    (0.0001,0.0000,0.0000), (0.0001,0.0000,0.0000), (0.0000,0.0000,0.0000))
 
 data_dir = os.path.join(os.path.abspath(os.path.join(bpy.utils.resource_path('USER'), '..')), 'data', 'gaffer')
+log_file = os.path.join(data_dir, 'logs.txt')
 thumbnail_dir = os.path.join(data_dir, 'thumbs')
 if not os.path.exists(thumbnail_dir): os.makedirs(thumbnail_dir)
 thumb_endings = ['preview', 'thumb', 'thumbnail']

@@ -1103,6 +1103,8 @@ class GafHDRIThumbGen(bpy.types.Operator):
         fp = os.path.join(prefs.hdri_path, chosen_file)
         thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
+            log('    ' + name + ": " + chosen_file + "  " + str(os.path.getsize(fp)/1024/1024)+" MB", also_print=True)
+
             img = bpy.data.images.load(fp, check_existing=False)
 
             in_x = img.size[0]
@@ -1128,6 +1130,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
             bpy.data.images.remove(out_img)
 
     def execute(self, context):
+        log("OP: Generate Thumbnails")
         context.user_preferences.addons[__package__].preferences.RequestThumbGen = False
         hdris = get_hdri_list()
 
@@ -1135,7 +1138,11 @@ class GafHDRIThumbGen(bpy.types.Operator):
         num_hdris = len(hdris)
         for i, h in enumerate(hdris):
             progress_update(context, i/num_hdris, "Generating thumbnail "+str(i+1)+' of '+str(num_hdris)+' ('+h+')')
-            self.generate_thumb(h, hdris[h])
+            try:
+                self.generate_thumb(h, hdris[h])
+            except MemoryError as e:
+                log("Memory Error\n" + str(e))
+                self.report({'WARNING'}, "Ran out of memory generating thumbnail for " + h + ", please try again or create it manually")
         progress_end(context)
 
         refresh_previews()
