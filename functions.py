@@ -579,8 +579,9 @@ def detect_hdris(self, context):
     def check_folder_for_HDRIs(path):
         prefs = bpy.context.user_preferences.addons[__package__].preferences
         
+        l_allowed_file_types = allowed_file_types
         if not prefs.include_8bit:
-            allowed_file_types = hdr_file_types
+            l_allowed_file_types = hdr_file_types
 
         if os.path.exists(path):
             files = []
@@ -588,7 +589,7 @@ def detect_hdris(self, context):
                 if os.path.isfile(os.path.join(path, f)):
                     fn, ext = os.path.splitext(f)
                     if not any([fn.lower().endswith(b) for b in thumb_endings]):
-                        if ext.lower() in allowed_file_types:
+                        if ext.lower() in l_allowed_file_types:
                             files.append(f)
                 else:
                     if f != "_MACOSX":
