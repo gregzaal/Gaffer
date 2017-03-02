@@ -1035,7 +1035,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
         # Check if thumb file came with HDRI
         d = os.path.dirname(files[0])
         for f in os.listdir(os.path.join(prefs.hdri_path, d)):
-            if any(os.path.splitext(f)[0].lower().endswith(e) for e in thumb_endings):
+            if any(os.path.splitext(f)[0].lower().endswith(e) and name == get_hdri_basename(f) for e in thumb_endings):
                 chosen_file = os.path.join(d, f)
                 break
 

@@ -567,6 +567,21 @@ def update_hdri_path(self, context):
     detect_hdris(self, context)
     get_hdri_haven_list(force_update=True)
 
+def get_hdri_basename(f):
+    separators = ['_', '-', '.', ' ']
+    fn, ext = os.path.splitext(f)
+    sep = ''
+    for c in fn[::-1][:-1]:  # Reversed filename to see which separator is last
+        if c in separators:
+            sep = c
+            break
+    if sep != '':
+        # Remove all character after the separator - what's left is the hdri name without resolution etc.
+        hdri_name = sep.join(fn.split(sep)[:-1])
+    else:
+        hdri_name = fn
+    return hdri_name
+
 def detect_hdris(self, context):
 
     log("FN: Detect HDRIs")
@@ -601,21 +616,8 @@ def detect_hdris(self, context):
 
             files = sorted(files, key=lambda x: os.path.getsize(os.path.join(path, x)))
             hdri_file_pairs = []
-            separators = ['_', '-', '.', ' ']
             for f in files:
-                fn, ext = os.path.splitext(f)
-                sep = ''
-                for c in fn[::-1][:-1]:  # Reversed filename to see which separator is last
-                    if c in separators:
-                        sep = c
-                        break
-                if sep != '':
-                    # Remove all character after the separator - what's left is the hdri name without resolution etc.
-                    hdri_name = sep.join(fn.split(sep)[:-1])
-                else:
-                    hdri_name = fn
-
-                # hdri_file_pairs.append([hdri_name, f])
+                hdri_name = get_hdri_basename(f)
                 hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
 
             for h in hdri_file_pairs:
