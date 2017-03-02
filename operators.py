@@ -1026,47 +1026,11 @@ class GafHDRIThumbGen(bpy.types.Operator):
             col.label("Large HDRI files were skipped last time.", icon='ERROR')
             col.label("You may wish to disable 'Skip big files', but first read its tooltip.")
 
-
-    def downsample(self, img, in_x, in_y, out_x, out_y):
-        import numpy
-
-        if in_x < out_x or in_y < out_y:
-            return numpy.array(img.pixels)
-
-        channels = img.channels
-        
-        p = numpy.array(img.pixels)
-        new_p = numpy.empty(out_x*out_y*channels)
-        i = 0
-        ni = 0
-        r_y = in_y / out_y
-        inc = int(r_y)*channels
-
-        for y in range(out_y):
-            v_jump = int(r_y * y)
-            i = in_x * v_jump * channels
-            for x in range(out_x):
-                i = int(i)
-                try:
-                    new_p[ni] = p[i]
-                except:
-                    break
-                new_p[ni+1] = p[i+1]
-                new_p[ni+2] = p[i+2]
-                new_p[ni+3] = p[i+3]
-                i += inc
-                ni += channels
-
-        return new_p
-
     def generate_thumb(self, name, files):
-        import numpy
-
         context = bpy.context
         prefs = context.user_preferences.addons[__package__].preferences
 
         chosen_file = ''
-        downsample = True
 
         # Check if thumb file came with HDRI
         d = os.path.dirname(files[0])
@@ -1177,7 +1141,6 @@ class GafHDRIJPGGen(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def generate_jpgs(self, context, name):
-        import numpy
         gaf_props = context.scene.gaf_props
 
         hdri_path = get_variation(name, mode="biggest")
