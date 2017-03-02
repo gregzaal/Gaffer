@@ -68,12 +68,12 @@ def cleanup_logs():
             with open(log_file, 'w') as f:
                 f.writelines(new_lines)
 
-def hastebin_file(filepath):
+def hastebin_file(filepath, extra_string=""):
     if os.path.exists(filepath):
         with open(filepath, 'r') as f:
             lines = f.read()
         from requests import post as requests_post
-        r = requests_post("https://hastebin.com/documents", lines)
+        r = requests_post("https://hastebin.com/documents", lines + '\n'*4 + extra_string)
         url = "https://hastebin.com/" + json.loads(r.content.decode())['key']
         bpy.ops.wm.url_open(url=url)
 

@@ -1153,6 +1153,8 @@ class GafHDRIThumbGen(bpy.types.Operator):
                 self.report({'WARNING'}, "Ran out of memory generating thumbnail for " + h + ", please try again or create it manually")
         progress_end(context)
 
+        log("Successfully finished generating thumbnails")
+
         refresh_previews()
 
         return {'FINISHED'}
@@ -1479,7 +1481,7 @@ class GafDebugDeleteThumbs(bpy.types.Operator):
 
 class GafDebugUploadHDRIList(bpy.types.Operator):
 
-    "Open Gaffer's data folder in your system file explorer"
+    "Upload your list of HDRIs to the internet"
     bl_idname = 'gaffer.dbg_upload_hdri_list'
     bl_label = 'Upload HDRI List'
 
@@ -1493,8 +1495,19 @@ class GafDebugUploadHDRIList(bpy.types.Operator):
         row.label("and then open the public URL in your browser.")
 
     def execute(self, context):
+
+        file_list = []
+        def get_file_list(p):
+            for f in os.listdir(p):
+                if os.path.isfile(os.path.join(p, f)):
+                    file_list.append(f)
+                else:
+                    get_file_list(os.path.join(p, f))
+
         if os.path.exists(hdri_list_path):
-            hastebin_file(hdri_list_path)
+            get_file_list(bpy.context.user_preferences.addons[__package__].preferences.hdri_path)
+            file_list = sorted(file_list, key=lambda x: x.lower())
+            hastebin_file(hdri_list_path, extra_string = "    Actual files:\n" + '\n'.join(file_list))
             return {'FINISHED'}
         else:
             self.report({'ERROR'}, "File does not exist")
@@ -1505,7 +1518,7 @@ class GafDebugUploadHDRIList(bpy.types.Operator):
 
 class GafDebugUploadLogs(bpy.types.Operator):
 
-    "Open Gaffer's data folder in your system file explorer"
+    "Upload Gaffer's debugging logs to the internet"
     bl_idname = 'gaffer.dbg_upload_logs'
     bl_label = 'Upload Logs'
 
