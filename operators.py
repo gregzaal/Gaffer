@@ -1134,7 +1134,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
 
 
         from concurrent.futures import ThreadPoolExecutor
-        executor = ThreadPoolExecutor(max_workers=8)
+        executor = ThreadPoolExecutor(max_workers=8 if self.skip_huge_files else 4)
         threads = []
         for i, h in enumerate(hdris):
             t = executor.submit(self.generate_thumb, h, hdris[h])
