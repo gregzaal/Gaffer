@@ -1500,7 +1500,8 @@ class GafDebugUploadHDRIList(bpy.types.Operator):
         def get_file_list(p):
             for f in os.listdir(p):
                 if os.path.isfile(os.path.join(p, f)):
-                    file_list.append(f)
+                    if os.path.splitext(f)[1].lower() in allowed_file_types:
+                        file_list.append(f)
                 else:
                     get_file_list(os.path.join(p, f))
 
