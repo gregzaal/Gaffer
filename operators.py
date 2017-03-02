@@ -23,6 +23,7 @@ from math import pi, cos, sin, log, ceil
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
+from time import sleep
 
 from .constants import *
 from .functions import *
@@ -1107,29 +1108,14 @@ class GafHDRIThumbGen(bpy.types.Operator):
             log('    ' + name + ": " + chosen_file + "  " + str(ceil(filesize))+" MB", also_print=True)
             
             if filesize < self.size_limit or not self.skip_huge_files:
-                img = bpy.data.images.load(fp, check_existing=False)
-
-                in_x = img.size[0]
-                in_y = img.size[1]
-                out_x = 200
-                out_y = round(out_x * (in_y/in_x))  # Same aspect ratio as original
-
-                pixels = []
-                if downsample:
-                    pixels = self.downsample(img, in_x, in_y, out_x, out_y)
-                else:
-                    pixels = numpy.array(img.pixels)
-
-                if img.colorspace_settings.name == 'Linear':
-                    pixels = numpy.power(pixels, 1/2.2)
-
-                out_img = bpy.data.images.new("tmp_"+name+"__thumb", out_x, out_y, alpha=True)
-                out_img.pixels = pixels
-
-                save_image(context, out_img, thumb_file, 'JPEG')
-
-                bpy.data.images.remove(img)
-                bpy.data.images.remove(out_img)
+                cmd = [bpy.app.binary_path + " --background --factory-startup --python"]
+                cmd.append('"' + os.path.join(os.path.dirname(os.path.abspath(__file__)), "resize.py") + '"')
+                cmd.append('--')
+                cmd.append('"' + fp + '"')
+                cmd.append('200')
+                cmd.append('"' + thumb_file + '"')
+                cmd = ' '.join(cmd)
+                os.system(cmd)
             else:
                 log("    Too big", timestamp=False, also_print=True)
                 bpy.context.scene.gaf_props.ThumbnailsBigHDRIFound = True
@@ -1143,14 +1129,35 @@ class GafHDRIThumbGen(bpy.types.Operator):
         hdris = get_hdri_list()
 
         progress_begin(context)
+
         num_hdris = len(hdris)
+
+
+        from concurrent.futures import ThreadPoolExecutor
+        executor = ThreadPoolExecutor(max_workers=8)
+        threads = []
         for i, h in enumerate(hdris):
-            progress_update(context, i/num_hdris, "Generating thumbnail "+str(i+1)+' of '+str(num_hdris)+' ('+h+')')
-            try:
-                self.generate_thumb(h, hdris[h])
-            except MemoryError as e:
-                log("Memory Error\n" + str(e))
-                self.report({'WARNING'}, "Ran out of memory generating thumbnail for " + h + ", please try again or create it manually")
+            t = executor.submit(self.generate_thumb, h, hdris[h])
+            threads.append(t)
+
+        errors = []
+        while (any(t._state!="FINISHED" for t in threads)):
+            num_finished = 0
+            for tt in threads:
+                if tt._state == "FINISHED":
+                    num_finished += 1
+                    if tt.result() != None:
+                        errors.append(tt.result())
+            progress_update(context, num_finished/num_hdris, "Generating thumbnail: "+str(num_finished+1)+'/'+str(num_hdris))
+            sleep (2)
+
+        if errors:
+            for e in errors:
+                print (e)
+        else:
+            success = True
+
+
         progress_end(context)
 
         log("Successfully finished generating thumbnails")
@@ -1372,7 +1379,6 @@ class GafGetHDRIHaven(bpy.types.Operator):
                 t = executor.submit(self.download_file, context, i, hh, hdri_list, out_folder, num_hdris)
                 threads.append(t)
 
-            from time import sleep
             errors = []
             while (any(t._state!="FINISHED" for t in threads)):
                 num_finished = 0
