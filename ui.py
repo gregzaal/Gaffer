@@ -829,20 +829,20 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
 
         tmpc = row.column(align=True)
         tmpcc = tmpc.column(align=True)
-        tmpcc.scale_y=8
+        tmpcc.scale_y=8 if not toolbar else 3.5
         tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
         tmpr = tmpc.column(align=True)
         tmpr.scale_y=1
         tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
 
         tmpc = row.column()
-        tmpc.scale_y=1.5
+        tmpc.scale_y=1.5 / (2 if toolbar else 1)
         window_size_multiplier = (context.window.width/1920)/dpifac()
         tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8*window_size_multiplier)
 
         tmpc = row.column(align=True)
         tmpcc = tmpc.column(align=True)
-        tmpcc.scale_y=8
+        tmpcc.scale_y=8 if not toolbar else 3.5
         tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
         tmpr = tmpc.column(align=True)
         tmpr.scale_y=1
