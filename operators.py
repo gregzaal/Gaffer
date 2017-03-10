@@ -24,6 +24,7 @@ from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
 from time import sleep
+from subprocess import run
 
 from .constants import *
 from .functions import *
@@ -1072,14 +1073,16 @@ class GafHDRIThumbGen(bpy.types.Operator):
             log('    ' + name + ": " + chosen_file + "  " + str(ceil(filesize))+" MB", also_print=True)
             
             if filesize < self.size_limit or not self.skip_huge_files:
-                cmd = [bpy.app.binary_path + " --background --factory-startup --python"]
-                cmd.append('"' + os.path.join(os.path.dirname(os.path.abspath(__file__)), "resize.py") + '"')
+                cmd = [bpy.app.binary_path]
+                cmd.append("--background")
+                cmd.append("--factory-startup")
+                cmd.append("--python")
+                cmd.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "resize.py"))
                 cmd.append('--')
-                cmd.append('"' + fp + '"')
+                cmd.append(fp)
                 cmd.append('200')
-                cmd.append('"' + thumb_file + '"')
-                cmd = ' '.join(cmd)
-                os.system(cmd)
+                cmd.append(thumb_file)
+                run(cmd)
             else:
                 log("    Too big", timestamp=False, also_print=True)
                 bpy.context.scene.gaf_props.ThumbnailsBigHDRIFound = True
