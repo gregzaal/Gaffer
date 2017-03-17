@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gaffer",
     "description": "Master your lighting workflow with easy access to lamp properties and other tools",
     "author": "Greg Zaal",
-    "version": (3, 0, 1),
+    "version": (3, 0, 3),
     "blender": (2, 78, 0),
     "location": "3D View > Tools  &  World Settings > HDRI",
     "warning": "",
