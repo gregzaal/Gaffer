@@ -1,6 +1,6 @@
 This is the Git repository for [Gaffer], the Blender Add-on for speeding up your lighting workflow.
 
-You can download it here to try it out. If you like it, please consider [purchasing it from the Blender Market]. $15 isn't much, and every sale puts a smile on my face and motivates me to keep developing it :)
+You can download it here to try it out. If you like it, please consider [purchasing it from the Blender Market]. $20 isn't much, and every sale puts a smile on my face and motivates me to keep developing it :)
 
 A portion of every sale is donated to the [Blender Development Fund] too.
 
