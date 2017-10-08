@@ -1464,23 +1464,33 @@ if len(possible_tags) < 1:
 def get_hdri_haven_list(force_update=False):
     ''' Get HDRI Haven list from web once per week, otherwise fetch from file'''
 
+    offline_data = {}
+    if os.path.exists(hdri_haven_list_path):
+        with open(hdri_haven_list_path) as f:
+            offline_data = json.load(f)
+    
     if not force_update:
-        if os.path.exists(hdri_haven_list_path):
+        if offline_data:
             import time
             age = time.time() - os.stat(hdri_haven_list_path).st_mtime  # seconds since last modified
             if age/60/60/24 < 7:
-                with open(hdri_haven_list_path) as f:
-                    data = json.load(f)
-                if data:
-                    return data
+                return offline_data
 
     from requests import get as requests_get
     print ("Getting HDRI list from HDRI Haven...")
     try:
         hdrihaven_hdris = requests_get('https://hdrihaven.com/php/json_list.php', timeout=10).json()
     except:
-        print ("    Can't fetch list from HDRI Haven")
-        return {}
+        if force_update:
+            print ("    Can't fetch list from HDRI Haven")
+            return {}
+        else:
+            print ("    Can't fetch list from HDRI Haven, using old data")
+            if offline_data:
+                return offline_data
+            else:
+                print ("    No old data either!")
+                return {}
     else:
         for h in hdrihaven_hdris:
             # Convert comma separated list into actual list
