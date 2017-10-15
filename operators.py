@@ -1281,7 +1281,7 @@ class GafGetHDRIHaven(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def draw(self, context):
-        num_hdris = 100  # Assume 100, but check the actual number if possible
+        num_hdris = 50  # Assume 50, but check the actual number if possible
         if hdri_haven_list:
             num_hdris = len(hdri_haven_list)
         download_size = 1.6 * num_hdris
@@ -1308,19 +1308,18 @@ class GafGetHDRIHaven(bpy.types.Operator):
         row.alignment='CENTER'
         row.label("If you already have some of them, those will be skipped")
 
-    def download_file(self, context, i, hh, h_list, out_folder, num_hdris):
-        from urllib.request import urlretrieve
-
+    def download_file(self, context, req, i, hh, h_list, out_folder, num_hdris):
         filename = hh+'_1k.hdr'
         if hh not in h_list:
             filepath = os.path.join(out_folder, filename)
             print (str(i+1)+'/'+str(num_hdris), "Downloading:", filename)
             try:
-                urlretrieve('https://hdrihaven.com/files/hdris/'+filename, filepath)
+                url = 'https://hdrihaven.com/files/hdris/'+filename
+                req.urlretrieve(url, filepath)
                 success = True
             except:
                 import sys
-                print ("    Failed to download " + filename + " ("+sys.exc_info()[0]+")")
+                print ("    Failed to download " + filename + " ("+str(sys.exc_info()[0])+")")
         else:
             print ("Skipping " + filename + ", you already have it")
                     
@@ -1338,12 +1337,21 @@ class GafGetHDRIHaven(bpy.types.Operator):
             if not os.path.exists(out_folder):
                 os.makedirs(out_folder)
 
+            import urllib.request as req
+            # Spoof User-agent so server firewall doesn't block downloads
+            opener = req.build_opener()
+            opener.addheaders = [('User-agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0')]
+            req.install_opener(opener)
+
             from concurrent.futures import ThreadPoolExecutor
             executor = ThreadPoolExecutor(max_workers=12)
             threads = []
             for i, hh in enumerate(hdrihaven_hdris):
-                t = executor.submit(self.download_file, context, i, hh, hdri_list, out_folder, num_hdris)
+                t = executor.submit(self.download_file, context, req, i, hh, hdri_list, out_folder, num_hdris)
                 threads.append(t)
+            # Debug (single threaded)
+            # for i, hh in enumerate(hdrihaven_hdris):
+            #     self.download_file(context, req, i, hh, hdri_list, out_folder, num_hdris)
 
             errors = []
             while (any(t._state!="FINISHED" for t in threads)):
