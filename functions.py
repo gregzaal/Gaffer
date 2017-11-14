@@ -639,6 +639,7 @@ def detect_hdris(self, context):
         refresh_previews()
         set_persistent_setting('hdri_path', prefs.hdri_path)
         prefs.ForcePreviewsRefresh = True
+        switch_hdri(self, context)
 
 def get_hdri_list(use_search=False):
     if os.path.exists(hdri_list_path):
