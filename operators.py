@@ -1269,8 +1269,7 @@ class GafFixMIS(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        context.scene.world.cycles.sample_as_light = True
-        context.scene.world.cycles.sample_map_resolution = 1024
+        context.scene.world.cycles.sampling_method = 'AUTOMATIC'
         return {'FINISHED'}
 
 class GafGetHDRIHaven(bpy.types.Operator):

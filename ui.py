@@ -623,12 +623,13 @@ def draw_cycles_UI(context, layout, lights):
             worldcol.separator()
             col = worldcol.column()
             row = col.row()
-            row.prop(world.cycles, "sample_as_light", text="MIS", toggle=True)
+            row.prop(world.cycles, "sampling_method", text="")
             row.prop(gaf_props, "WorldReflOnly", text="Refl Only")
-            if world.cycles.sample_as_light:
+            if world.cycles.sampling_method != 'NONE':
                 col = worldcol.column()
                 row = col.row(align=True)
-                row.prop(world.cycles, "sample_map_resolution", text="MIS res")
+                if world.cycles.sampling_method == 'MANUAL':
+                    row.prop(world.cycles, "sample_map_resolution", text="MIS res")
                 if scene.cycles.progressive == 'BRANCHED_PATH':
                     row.prop(world.cycles, "samples", text="Samples")
             worldcol.separator()
@@ -906,13 +907,13 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             row.prop(gaf_props, 'hdri_warmth', slider=True)
 
         wc = context.scene.world.cycles
-        if wc.sample_map_resolution < 1000 or not wc.sample_as_light:
+        if wc.sampling_method == 'NONE' or (wc.sampling_method == 'MANUAL' and wc.sample_map_resolution < 1000):
             col.separator()
             col.separator()
-            if not wc.sample_as_light:
-                col.label("Multiple Importance is disabled", icon="ERROR")
+            if wc.sampling_method == 'NONE':
+                col.label("Importance sampling is disabled", icon="ERROR")
             else:
-                col.label("Multiple Importance resolution is low", icon="ERROR")
+                col.label("Sampling resolution is low", icon="ERROR")
             row = col.row()
             row.alignment="LEFT"
             row.label("Your renders may be noisy")
