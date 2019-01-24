@@ -78,12 +78,12 @@ def hastebin_file(filepath, extra_string=""):
         bpy.ops.wm.url_open(url=url)
 
 def dpifac():
-    prefs = bpy.context.user_preferences.system
+    prefs = bpy.context.preferences.system
     if hasattr(prefs, 'pixel_size'):  # python access to this was only added recently, assume non-retina display is used if using older blender
-        retinafac = bpy.context.user_preferences.system.pixel_size
+        retinafac = bpy.context.preferences.system.pixel_size
     else:
         retinafac = 1
-    return bpy.context.user_preferences.system.dpi/(72/retinafac)
+    return bpy.context.preferences.system.dpi/(72/retinafac)
 
 
 def refresh_light_list(scene):
@@ -556,7 +556,7 @@ def draw_rounded_rect(x1, y1, x2, y2, r):
 # HDRI stuffs
 
 def update_hdri_path(self, context):
-    prefs = bpy.context.user_preferences.addons[__package__].preferences
+    prefs = bpy.context.preferences.addons[__package__].preferences
     if prefs.hdri_path.startswith('//'):
         prefs.hdri_path = os.path.abspath(bpy.path.abspath(prefs.hdri_path))
         # For some reason bpy.path.abspath often still includes some
@@ -592,7 +592,7 @@ def detect_hdris(self, context):
     hdris = {}
 
     def check_folder_for_HDRIs(path):
-        prefs = bpy.context.user_preferences.addons[__package__].preferences
+        prefs = bpy.context.preferences.addons[__package__].preferences
         
         l_allowed_file_types = allowed_file_types
         if not prefs.include_8bit:
@@ -626,7 +626,7 @@ def detect_hdris(self, context):
                 else:
                     hdris[h[0]] = [h[1]]
 
-    prefs = bpy.context.user_preferences.addons[__package__].preferences
+    prefs = bpy.context.preferences.addons[__package__].preferences
     if (prefs.hdri_path):
         check_folder_for_HDRIs(prefs.hdri_path)
 
@@ -692,7 +692,7 @@ if len(hdri_list) < 1:
 
 def get_variation(hdri, mode=None, var=None):
     variations = hdri_list[hdri]
-    hdri_path = bpy.context.user_preferences.addons[__package__].preferences.hdri_path
+    hdri_path = bpy.context.preferences.addons[__package__].preferences.hdri_path
     if mode == 'smallest':
         return os.path.join(hdri_path, variations[0])
     elif mode == 'biggest':
@@ -882,7 +882,7 @@ def switch_hdri(self, context):
 
 def setup_hdri(self, context):
     gaf_props = context.scene.gaf_props
-    prefs = context.user_preferences.addons[__package__].preferences
+    prefs = context.preferences.addons[__package__].preferences
 
     if not gaf_props.hdri_handler_enabled:
         return None  # Don't do anything if handler is disabled
@@ -1035,7 +1035,7 @@ def hdri_enable(self, context):
     gaf_props = context.scene.gaf_props
     if gaf_props.hdri_handler_enabled:
         store_old_world_settings(context)
-        prefs = context.user_preferences.addons[__package__].preferences
+        prefs = context.preferences.addons[__package__].preferences
         if prefs.hdri_path != "" and os.path.exists(prefs.hdri_path):
             detect_hdris(self, context)
             setup_hdri(self, context)
@@ -1049,14 +1049,14 @@ def hdri_enable(self, context):
         restore_old_world_settings(context)
 
 def update_search(self, context):
-    bpy.context.user_preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
+    bpy.context.preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
     if context.scene.gaf_props.hdri:
         # Force update of currently shown thumbnail
         context.scene.gaf_props.hdri = context.scene.gaf_props.hdri
 
 def update_variation(self, context):
     gaf_props = context.scene.gaf_props
-    prefs = context.user_preferences.addons[__package__].preferences
+    prefs = context.preferences.addons[__package__].preferences
 
     if not gaf_props.hdri_handler_enabled:
         return None  # Don't do anything if handler is disabled
@@ -1357,7 +1357,7 @@ def get_icons():
 def refresh_previews():
     previews_unregister()
     previews_register()
-    bpy.context.user_preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
+    bpy.context.preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
 
 def hdri_enum_previews(self, context):
     enum_items = []
@@ -1370,7 +1370,7 @@ def hdri_enum_previews(self, context):
     # Get the preview collection (defined in register func).
     pcoll = preview_collections["main"]
 
-    prefs = bpy.context.user_preferences.addons[__package__].preferences
+    prefs = bpy.context.preferences.addons[__package__].preferences
     if not prefs.ForcePreviewsRefresh:
         return pcoll.previews
     else:
@@ -1405,9 +1405,9 @@ def variation_enum_previews(self, context):
 
     variations = hdri_list[gaf_props.hdri]
     for v in variations:
-        enum_items.append((os.path.join(context.user_preferences.addons[__package__].preferences.hdri_path, v),
+        enum_items.append((os.path.join(context.preferences.addons[__package__].preferences.hdri_path, v),
                            os.path.basename(v),
-                           os.path.join(context.user_preferences.addons[__package__].preferences.hdri_path, v)))
+                           os.path.join(context.preferences.addons[__package__].preferences.hdri_path, v)))
 
     return enum_items
 
@@ -1520,7 +1520,7 @@ if len(hdri_haven_list) < 1:
     hdri_haven_list = get_hdri_haven_list()
 
 def show_hdrihaven():
-    prefs = bpy.context.user_preferences.addons[__package__].preferences
+    prefs = bpy.context.preferences.addons[__package__].preferences
     if not os.path.exists(os.path.join(prefs.hdri_path, 'HDRI Haven')):
         if get_persistent_setting('show_hdri_haven'):
             bpy.context.scene.gaf_props.ShowHDRIHaven = True

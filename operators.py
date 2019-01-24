@@ -56,15 +56,15 @@ class GafRename(bpy.types.Operator):
     bl_idname = 'gaffer.rename'
     bl_label = 'Rename This Light'
     bl_options = {'REGISTER', 'UNDO'}
-    light = bpy.props.StringProperty(name="New name")
-    multiuser = bpy.props.StringProperty(default="")
+    light: bpy.props.StringProperty(name="New name")
+    multiuser: bpy.props.StringProperty(default="")
     oldname = ""
     users = []
 
     def draw(self, context):
         self.layout.prop(self, 'light')
         if self.multiuser:
-            self.layout.label("You are renaming the " + ("lamp data" if self.multiuser.startswith("LAMP") else "material") + ", which has multiple users")
+            self.layout.label(text="You are renaming the " + ("lamp data" if self.multiuser.startswith("LAMP") else "material") + ", which has multiple users")
 
     def invoke(self, context, event):
         self.oldname = self.light
@@ -85,10 +85,10 @@ class GafSetTemp(bpy.types.Operator):
     'Set the color temperature to a preset'
     bl_idname = 'gaffer.col_temp_preset'
     bl_label = 'Color Temperature Preset'
-    temperature = bpy.props.StringProperty()
-    light = bpy.props.StringProperty()
-    material = bpy.props.StringProperty()
-    node = bpy.props.StringProperty()
+    temperature: bpy.props.StringProperty()
+    light: bpy.props.StringProperty()
+    material: bpy.props.StringProperty()
+    node: bpy.props.StringProperty()
 
     def execute(self, context):
         light = context.scene.objects[self.light]
@@ -104,7 +104,7 @@ class GafTempShowList(bpy.types.Operator):
     'Set the color temperature to a preset'
     bl_idname = 'gaffer.col_temp_show'
     bl_label = 'Color Temperature Preset'
-    l_index = bpy.props.IntProperty()
+    l_index: bpy.props.IntProperty()
 
     def execute(self, context):
         context.scene.gaf_props.ColTempExpand = True
@@ -126,7 +126,7 @@ class GafShowMore(bpy.types.Operator):
     'Show settings such as MIS, falloff, ray visibility...'
     bl_idname = 'gaffer.more_options_show'
     bl_label = 'Show more options'
-    light = bpy.props.StringProperty()
+    light: bpy.props.StringProperty()
 
     def execute(self, context):
         exp_list = context.scene.gaf_props.MoreExpand
@@ -141,7 +141,7 @@ class GafHideMore(bpy.types.Operator):
     'Hide settings such as MIS, falloff, ray visibility...'
     bl_idname = 'gaffer.more_options_hide'
     bl_label = 'Hide more options'
-    light = bpy.props.StringProperty()
+    light: bpy.props.StringProperty()
 
     def execute(self, context):
         context.scene.gaf_props.MoreExpand = context.scene.gaf_props.MoreExpand.replace("_Light:_(" + self.light + ")_", "")
@@ -152,9 +152,9 @@ class GafHideShowLight(bpy.types.Operator):
     'Hide/Show this light (in viewport and in render)'
     bl_idname = 'gaffer.hide_light'
     bl_label = 'Hide Light'
-    light = bpy.props.StringProperty()
-    hide = bpy.props.BoolProperty()
-    dataname = bpy.props.StringProperty()
+    light: bpy.props.StringProperty()
+    hide: bpy.props.BoolProperty()
+    dataname: bpy.props.StringProperty()
 
     def execute(self, context):
         dataname = self.dataname
@@ -184,8 +184,8 @@ class GafSelectLight(bpy.types.Operator):
     'Select this light'
     bl_idname = 'gaffer.select_light'
     bl_label = 'Select'
-    light = bpy.props.StringProperty()
-    dataname = bpy.props.StringProperty()
+    light: bpy.props.StringProperty()
+    dataname: bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):
@@ -221,10 +221,10 @@ class GafSolo(bpy.types.Operator):
     'Hide all other lights but this one'
     bl_idname = 'gaffer.solo'
     bl_label = 'Solo Light'
-    light = bpy.props.StringProperty()
-    showhide = bpy.props.BoolProperty()
-    worldsolo = bpy.props.BoolProperty(default=False)
-    dataname = bpy.props.StringProperty(default="__EXIT_SOLO__")
+    light: bpy.props.StringProperty()
+    showhide: bpy.props.BoolProperty()
+    worldsolo: bpy.props.BoolProperty(default=False)
+    dataname: bpy.props.StringProperty(default="__EXIT_SOLO__")
 
     def execute(self, context):
         light = self.light
@@ -313,7 +313,7 @@ class GafLampUseNodes(bpy.types.Operator):
     'Make this lamp use nodes'
     bl_idname = 'gaffer.lamp_use_nodes'
     bl_label = 'Use Nodes'
-    light = bpy.props.StringProperty()
+    light: bpy.props.StringProperty()
 
     def execute(self, context):
         obj = bpy.data.objects[self.light]
@@ -361,7 +361,7 @@ class GafCreateEnviroWidget(bpy.types.Operator):
     'Create an Empty which drives the rotation of the background texture'
     bl_idname = 'gaffer.envwidget'
     bl_label = 'Create Enviro Rotation Widget (EXPERIMENTAL)'
-    radius = bpy.props.FloatProperty(default = 16.0,
+    radius: bpy.props.FloatProperty(default = 16.0,
                                      description = "How big the created empty should be (distance from center to edge)")
 
     # TODO add op to delete widget and drivers
@@ -451,7 +451,7 @@ class GafLinkSkyToSun(bpy.types.Operator):
     bl_idname = "gaffer.link_sky_to_sun"
     bl_label = "Link Sky Texture:"
     bl_options = {'REGISTER', 'UNDO'}
-    node_name = bpy.props.StringProperty(default = "")
+    node_name: bpy.props.StringProperty(default = "")
 
     # Thanks to oscurart for the original script off which this is based!
     # http://bit.ly/blsunsky
@@ -511,7 +511,7 @@ class GafAimLight(bpy.types.Operator):
     "Point the selected lights at a target"
     bl_idname = 'gaffer.aim'
     bl_label = 'Aim'
-    target_type = bpy.props.StringProperty()
+    target_type: bpy.props.StringProperty()
 
     def aim (self, context, obj, target=[0,0,0]):
         # Thanks to @kilbee for cleaning my crap up here :) See: https://github.com/gregzaal/Gaffer/commit/b920092
@@ -783,7 +783,7 @@ class GafShowLightLabel(bpy.types.Operator):
             return
 
         # font_size_factor is used to scale the rectangles based on the font size and DPI, measured against a font size of 62
-        font_size_factor = (scene.gaf_props.LabelFontSize/62) * (context.user_preferences.system.dpi/72)
+        font_size_factor = (scene.gaf_props.LabelFontSize/62) * (context.preferences.system.dpi/72)
         draw_type = scene.gaf_props.LabelDrawType
         background_color = scene.gaf_props.DefaultLabelBGColor
         text_color = scene.gaf_props.LabelTextColor
@@ -841,12 +841,12 @@ class GafShowLightLabel(bpy.types.Operator):
                         bgl.glColor4f(text_color[0], text_color[1], text_color[2], 1.0)
                     font_id = 1
                     blf.position(font_id, x, y, 0)
-                    blf.size(font_id, scene.gaf_props.LabelFontSize, context.user_preferences.system.dpi)
+                    blf.size(font_id, scene.gaf_props.LabelFontSize, context.preferences.system.dpi)
                     blf.draw(font_id, obj.name)
 
                     if item[2]:
                         blf.position(font_id, x, y_sub, 0)
-                        blf.size(font_id, int(scene.gaf_props.LabelFontSize*0.8), context.user_preferences.system.dpi)
+                        blf.size(font_id, int(scene.gaf_props.LabelFontSize*0.8), context.preferences.system.dpi)
                         blf.draw(font_id, item[2])
 
                     bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
@@ -1003,7 +1003,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
 
     size_limit = 100
 
-    skip_huge_files = bpy.props.BoolProperty(
+    skip_huge_files: bpy.props.BoolProperty(
         name = "Skip big files",
         description = "If you have big HDRIs (>"+str(size_limit)+" MB) with no smaller resolution available, these will be skipped to save time. Disabling this will mean it may take an unreasonable amount of time to generate thumbnails. Instead, it would be better if you manually create the lower resolution version first in Photoshop/Krita, then click 'Refresh' in Gaffer's User Preferences",
         default=True
@@ -1016,20 +1016,20 @@ class GafHDRIThumbGen(bpy.types.Operator):
         layout = self.layout
 
         col = layout.column()
-        col.label("This only has to be done once.")
-        col.label("The only way to stop this process once you start it is to forcibly close Blender.")
+        col.label(text="This only has to be done once.")
+        col.label(text="The only way to stop this process once you start it is to forcibly close Blender.")
 
         col.separator()
         col = layout.column(align=True)
         col.prop(self, 'skip_huge_files')
 
         if context.scene.gaf_props.ThumbnailsBigHDRIFound:
-            col.label("Large HDRI files were skipped last time.", icon='ERROR')
-            col.label("You may wish to disable 'Skip big files', but first read its tooltip.")
+            col.label(text="Large HDRI files were skipped last time.", icon='ERROR')
+            col.label(text="You may wish to disable 'Skip big files', but first read its tooltip.")
 
     def generate_thumb(self, name, files):
         context = bpy.context
-        prefs = context.user_preferences.addons[__package__].preferences
+        prefs = context.preferences.addons[__package__].preferences
 
         chosen_file = ''
 
@@ -1092,7 +1092,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
         if not self.skip_huge_files:
             log("Large files included", timestamp=False)
 
-        context.user_preferences.addons[__package__].preferences.RequestThumbGen = False
+        context.preferences.addons[__package__].preferences.RequestThumbGen = False
         hdris = get_hdri_list()
 
         progress_begin(context)
@@ -1201,7 +1201,7 @@ class GafHDRIPaddles(bpy.types.Operator):
     bl_idname = 'gaffer.hdri_paddles'
     bl_label = 'Next/Previous'
     bl_options = {'INTERNAL'}
-    do_next = bpy.props.BoolProperty()
+    do_next: bpy.props.BoolProperty()
 
     def execute(self, context):
         gaf_props = context.scene.gaf_props
@@ -1229,8 +1229,8 @@ class GafHDRIAddTag(bpy.types.Operator):
     bl_idname = 'gaffer.add_tag'
     bl_label = 'Add Tag'
     bl_options = {'INTERNAL'}
-    hdri = bpy.props.StringProperty()
-    tag = bpy.props.StringProperty()
+    hdri: bpy.props.StringProperty()
+    tag: bpy.props.StringProperty()
 
     def execute(self, context):
         set_tag(self.hdri, self.tag)
@@ -1289,23 +1289,23 @@ class GafGetHDRIHaven(bpy.types.Operator):
         col = layout.column(align=True)
         row = col.row()
         row.alignment='CENTER'
-        row.label("This will download ~"+str(num_hdris)+" HDRIs from hdrihaven.com")
+        row.label(text="This will download ~"+str(num_hdris)+" HDRIs from hdrihaven.com")
         row = col.row()
         row.alignment='CENTER'
-        row.label("(~"+str(download_size)+" MB)")
+        row.label(text="(~"+str(download_size)+" MB)")
 
         col.separator()
         row = col.row()
         row.alignment='CENTER'
-        row.label("The HDRIs are licenced as CC0, so you can do whatever you want with them.")
+        row.label(text="The HDRIs are licenced as CC0, so you can do whatever you want with them.")
         row = col.row()
         row.alignment='CENTER'
-        row.label("More info at hdrihaven.com")
+        row.label(text="More info at hdrihaven.com")
 
         col.separator()
         row = col.row()
         row.alignment='CENTER'
-        row.label("If you already have some of them, those will be skipped")
+        row.label(text="If you already have some of them, those will be skipped")
 
     def download_file(self, context, req, i, hh, h_list, out_folder, num_hdris):
         filename = hh+'_1k.hdr'
@@ -1331,7 +1331,7 @@ class GafGetHDRIHaven(bpy.types.Operator):
 
             progress_begin(context)
 
-            prefs = bpy.context.user_preferences.addons[__package__].preferences
+            prefs = bpy.context.preferences.addons[__package__].preferences
             out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
             if not os.path.exists(out_folder):
                 os.makedirs(out_folder)
@@ -1400,7 +1400,7 @@ class GafOpenHDRIHaven(bpy.types.Operator):
     "Download higher resolutions of this HDRI (also free) - opens web browser"
     bl_idname = 'gaffer.go_hdri_haven'
     bl_label = 'Download higher resolutions of this HDRI (also free)'
-    url = bpy.props.StringProperty()
+    url: bpy.props.StringProperty()
 
     def execute(self, context):
         bpy.ops.wm.url_open(url=self.url)
@@ -1438,10 +1438,10 @@ class GafDebugDeleteThumbs(bpy.types.Operator):
         col = self.layout.column(align=True)
         row = col.row(align=True)
         row.alignment = 'CENTER'
-        row.label("This will delete all thumbnail files that Gaffer has made.", icon="ERROR")
+        row.label(text="This will delete all thumbnail files that Gaffer has made.", icon="ERROR")
         row = col.row(align=True)
         row.alignment = 'CENTER'
-        row.label("You will need to generate them again.")
+        row.label(text="You will need to generate them again.")
 
     def execute(self, context):
         if os.path.exists(thumbnail_dir):
@@ -1468,10 +1468,10 @@ class GafDebugUploadHDRIList(bpy.types.Operator):
         col = self.layout.column(align=True)
         row = col.row(align=True)
         row.alignment = 'CENTER'
-        row.label("This will upload Gaffer's HDRI list to the internet,", icon="ERROR")
+        row.label(text="This will upload Gaffer's HDRI list to the internet,", icon="ERROR")
         row = col.row(align=True)
         row.alignment = 'CENTER'
-        row.label("and then open the public URL in your browser.")
+        row.label(text="and then open the public URL in your browser.")
 
     def execute(self, context):
 
@@ -1485,7 +1485,7 @@ class GafDebugUploadHDRIList(bpy.types.Operator):
                     get_file_list(os.path.join(p, f))
 
         if os.path.exists(hdri_list_path):
-            get_file_list(bpy.context.user_preferences.addons[__package__].preferences.hdri_path)
+            get_file_list(bpy.context.preferences.addons[__package__].preferences.hdri_path)
             file_list = sorted(file_list, key=lambda x: x.lower())
             hastebin_file(hdri_list_path, extra_string = "    Actual files:\n" + '\n'.join(file_list))
             return {'FINISHED'}
@@ -1506,10 +1506,10 @@ class GafDebugUploadLogs(bpy.types.Operator):
         col = self.layout.column(align=True)
         row = col.row(align=True)
         row.alignment = 'CENTER'
-        row.label("This will upload Gaffer's logs to the internet,", icon="ERROR")
+        row.label(text="This will upload Gaffer's logs to the internet,", icon="ERROR")
         row = col.row(align=True)
         row.alignment = 'CENTER'
-        row.label("and then open the public URL in your browser.")
+        row.label(text="and then open the public URL in your browser.")
 
     def execute(self, context):
         if os.path.exists(log_file):
