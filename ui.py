@@ -57,10 +57,10 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
         # Don't allow names to be edited during solo, will break the record of what was originally hidden
         row.label(text=light.name)
 
-    visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'RESTRICT_VIEW_ON' if light.hide else 'RESTRICT_VIEW_OFF', emboss=False)
+    visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'RESTRICT_VIEW_ON' if light.hide_viewport else 'RESTRICT_VIEW_OFF', emboss=False)
     visop.light = light.name
     visop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
-    visop.hide = not light.hide
+    visop.hide = not light.hide_viewport
 
     selop = row.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select else 'SMALL_TRI_RIGHT_VEC', text="", emboss=False)
     selop.light = light.name
@@ -89,7 +89,7 @@ def draw_BI_UI(context, layout, lights):
         try:
             if light[0]:
                 a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
-                if (gaf_props.VisibleLightsOnly and not a.hide) or (not gaf_props.VisibleLightsOnly):
+                if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
                     if (gaf_props.VisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not gaf_props.VisibleLayersOnly):
                         if a.name not in [o.name for o in gaf_props.Blacklist]:
                             lights_to_show.append(light)
@@ -283,7 +283,7 @@ def draw_cycles_UI(context, layout, lights):
         try:
             if light[0]:
                 a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
-                if (gaf_props.VisibleLightsOnly and not a.hide) or (not gaf_props.VisibleLightsOnly):
+                if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
                     if a.type != 'LAMP':
                         b = bpy.data.materials[light[1][1:-1]]
                         if b.use_nodes:
@@ -653,7 +653,7 @@ def draw_cycles_UI(context, layout, lights):
 
 print("OKK")
 
-class GafferPanelLights(bpy.types.Panel):
+class GAFFER_PT_lights(bpy.types.Panel):
 
     bl_label = "Lights"
     bl_space_type = "VIEW_3D"
@@ -704,7 +704,7 @@ class GafferPanelLights(bpy.types.Panel):
             layout.label(text="Render Engine not supported!")
 
 
-class GafferPanelTools(bpy.types.Panel):
+class GAFFER_PT_tools(bpy.types.Panel):
 
     bl_label = "Tools"
     bl_space_type = "VIEW_3D"
@@ -1008,7 +1008,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         row.alignment='CENTER'
         row.label(text=prefs.hdri_path)
 
-class GafferPanelHDRIs (bpy.types.Panel):
+class GAFFER_PT_hdris (bpy.types.Panel):
 
     bl_label = " "
     bl_space_type = "PROPERTIES"

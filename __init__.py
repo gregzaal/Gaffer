@@ -494,44 +494,44 @@ classes = [
     GafferPreferences,
     BlacklistedObject,
     GafferProperties,
-    operators.GafRename,
-    operators.GafSetTemp,
-    operators.GafTempShowList,
-    operators.GafTempHideList,
-    operators.GafShowMore,
-    operators.GafHideMore,
-    operators.GafHideShowLight,
-    operators.GafSelectLight,
-    operators.GafSolo,
-    operators.GafLampUseNodes,
-    operators.GafNodeSetStrength,
-    operators.GafRefreshLightList,
-    operators.GafCreateEnviroWidget,
-    operators.GafLinkSkyToSun,
-    operators.GafAimLight,
-    operators.GafShowLightRadius,
-    operators.GafShowLightLabel,
-    operators.GafRefreshBGL,
-    operators.GafAddBlacklisted,
-    operators.GafRemoveBlacklisted,
-    operators.GafDetectHDRIs,
-    operators.GafHDRIThumbGen,
-    operators.GafHDRIJPGGen,
-    operators.GafHDRIClearSearch,
-    operators.GafHDRIPaddles,
-    operators.GafHDRIAddTag,
-    operators.GafHDRIRandom,
-    operators.GafFixMIS,
-    operators.GafGetHDRIHaven,
-    operators.GafHideHDRIHaven,
-    operators.GafOpenHDRIHaven,
-    operators.GafHDRIOpenDataFolder,
-    operators.GafDebugDeleteThumbs,
-    operators.GafDebugUploadHDRIList,
-    operators.GafDebugUploadLogs,
-    ui.GafferPanelLights,
-    ui.GafferPanelTools,
-    ui.GafferPanelHDRIs,
+    operators.GAFFER_OT_rename,
+    operators.GAFFER_OT_set_temp,
+    operators.GAFFER_OT_show_temp_list,
+    operators.GAFFER_OT_hide_temp_list,
+    operators.GAFFER_OT_show_more,
+    operators.GAFFER_OT_hide_more,
+    operators.GAFFER_OT_hide_show_light,
+    operators.GAFFER_OT_select_light,
+    operators.GAFFER_OT_solo,
+    operators.GAFFER_OT_lamp_use_nodes,
+    operators.GAFFER_OT_node_set_strength,
+    operators.GAFFER_OT_refresh_light_list,
+    operators.GAFFER_OT_create_enviro_widget,
+    operators.GAFFER_OT_link_sky_to_sun,
+    operators.GAFFER_OT_aim_light,
+    operators.GAFFER_OT_show_light_radius,
+    operators.GAFFER_OT_show_light_label,
+    operators.GAFFER_OT_refresh_bgl,
+    operators.GAFFER_OT_add_blacklisted,
+    operators.GAFFER_OT_remove_blacklisted,
+    operators.GAFFER_OT_detect_hdris,
+    operators.GAFFER_OT_hdri_thumb_gen,
+    operators.GAFFER_OT_hdri_jpg_gen,
+    operators.GAFFER_OT_hdri_clear_search,
+    operators.GAFFER_OT_hdri_paddles,
+    operators.GAFFER_OT_hdri_add_tag,
+    operators.GAFFER_OT_hdri_random,
+    operators.GAFFER_OT_fix_mis,
+    operators.GAFFER_OT_get_hdrihaven,
+    operators.GAFFER_OT_hide_hdrihaven,
+    operators.GAFFER_OT_open_hdrihaven,
+    operators.GAFFER_OT_hdri_open_data_folder,
+    operators.GAFFER_OT_debug_delete_thumbs,
+    operators.GAFFER_OT_debug_upload_hdri_list,
+    operators.GAFFER_OT_debug_upload_logs,
+    ui.GAFFER_PT_lights,
+    ui.GAFFER_PT_tools,
+    ui.GAFFER_PT_hdris,
     ui.OBJECT_UL_object_list,
 ]
 
@@ -554,11 +554,11 @@ def unregister():
 
     functions.previews_unregister()
 
-    if operators.GafShowLightRadius._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(operators.GafShowLightRadius._handle, 'WINDOW')
+    if operators.GAFFER_OT_show_light_radius._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(operators.GAFFER_OT_show_light_radius._handle, 'WINDOW')
         bpy.context.scene.gaf_props.IsShowingRadius = False
-    if operators.GafShowLightLabel._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(operators.GafShowLightLabel._handle, 'WINDOW')
+    if operators.GAFFER_OT_show_light_label._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(operators.GAFFER_OT_show_light_label._handle, 'WINDOW')
         bpy.context.scene.gaf_props.IsShowingLabel = False
 
     del bpy.types.Scene.gaf_props

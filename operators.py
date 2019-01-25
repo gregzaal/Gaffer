@@ -42,15 +42,15 @@ def load_handler(dummy):
         was enabled when it was saved - however this function is called
         before the blender UI finishes loading, and thus no 3D view exists yet.
     '''
-    if GafShowLightRadius._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
-    if GafShowLightLabel._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
+    if GAFFER_OT_show_light_radius._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(GAFFER_OT_show_light_radius._handle, 'WINDOW')
+    if GAFFER_OT_show_light_label._handle is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(GAFFER_OT_show_light_label._handle, 'WINDOW')
     bpy.context.scene.gaf_props.IsShowingRadius = False
     bpy.context.scene.gaf_props.IsShowingLabel = False
 
     
-class GafRename(bpy.types.Operator):
+class GAFFER_OT_rename(bpy.types.Operator):
 
     'Rename this light'
     bl_idname = 'gaffer.rename'
@@ -80,7 +80,7 @@ class GafRename(bpy.types.Operator):
         refresh_light_list(context.scene)
         return {'FINISHED'}
 
-class GafSetTemp(bpy.types.Operator):
+class GAFFER_OT_set_temp(bpy.types.Operator):
 
     'Set the color temperature to a preset'
     bl_idname = 'gaffer.col_temp_preset'
@@ -99,7 +99,7 @@ class GafSetTemp(bpy.types.Operator):
         node.inputs[0].links[0].from_node.inputs[0].default_value = col_temp[self.temperature]
         return {'FINISHED'}
 
-class GafTempShowList(bpy.types.Operator):
+class GAFFER_OT_show_temp_list(bpy.types.Operator):
 
     'Set the color temperature to a preset'
     bl_idname = 'gaffer.col_temp_show'
@@ -111,7 +111,7 @@ class GafTempShowList(bpy.types.Operator):
         context.scene.gaf_props.LightUIIndex = self.l_index
         return {'FINISHED'}
 
-class GafTempHideList(bpy.types.Operator):
+class GAFFER_OT_hide_temp_list(bpy.types.Operator):
 
     'Hide color temperature presets'
     bl_idname = 'gaffer.col_temp_hide'
@@ -121,7 +121,7 @@ class GafTempHideList(bpy.types.Operator):
         context.scene.gaf_props.ColTempExpand = False
         return {'FINISHED'}
 
-class GafShowMore(bpy.types.Operator):
+class GAFFER_OT_show_more(bpy.types.Operator):
 
     'Show settings such as MIS, falloff, ray visibility...'
     bl_idname = 'gaffer.more_options_show'
@@ -136,7 +136,7 @@ class GafShowMore(bpy.types.Operator):
         context.scene.gaf_props.MoreExpand = exp_list
         return {'FINISHED'}
 
-class GafHideMore(bpy.types.Operator):
+class GAFFER_OT_hide_more(bpy.types.Operator):
 
     'Hide settings such as MIS, falloff, ray visibility...'
     bl_idname = 'gaffer.more_options_hide'
@@ -147,7 +147,7 @@ class GafHideMore(bpy.types.Operator):
         context.scene.gaf_props.MoreExpand = context.scene.gaf_props.MoreExpand.replace("_Light:_(" + self.light + ")_", "")
         return {'FINISHED'}
 
-class GafHideShowLight(bpy.types.Operator):
+class GAFFER_OT_hide_show_light(bpy.types.Operator):
 
     'Hide/Show this light (in viewport and in render)'
     bl_idname = 'gaffer.hide_light'
@@ -160,14 +160,14 @@ class GafHideShowLight(bpy.types.Operator):
         dataname = self.dataname
         if dataname == "__SINGLE_USER__":
             light = bpy.data.objects[self.light]
-            light.hide = self.hide
+            light.hide_viewport = self.hide
             light.hide_render = self.hide
         else:
             if dataname.startswith('LAMP'):
                 data = bpy.data.lamps[(dataname[4:])]  # actual data name (minus the prepended 'LAMP')
                 for obj in bpy.data.objects:
                     if obj.data == data:
-                        obj.hide = self.hide
+                        obj.hide_viewport = self.hide
                         obj.hide_render = self.hide
             else:
                 mat = bpy.data.materials[(dataname[3:])]  # actual data name (minus the prepended 'MAT')
@@ -175,11 +175,11 @@ class GafHideShowLight(bpy.types.Operator):
                     if obj.type == 'MESH':
                         for slot in obj.material_slots:
                             if slot.material == mat:
-                                obj.hide = self.hide
+                                obj.hide_viewport = self.hide
                                 obj.hide_render = self.hide
         return {'FINISHED'}
 
-class GafSelectLight(bpy.types.Operator):
+class GAFFER_OT_select_light(bpy.types.Operator):
 
     'Select this light'
     bl_idname = 'gaffer.select_light'
@@ -216,7 +216,7 @@ class GafSelectLight(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class GafSolo(bpy.types.Operator):
+class GAFFER_OT_solo(bpy.types.Operator):
 
     'Hide all other lights but this one'
     bl_idname = 'gaffer.solo'
@@ -271,10 +271,10 @@ class GafSolo(bpy.types.Operator):
                     obj = bpy.data.objects[l[0]]
                     if obj.name not in blacklist:
                         if obj.name == light or obj.name in linked_lights:
-                            obj.hide = False
+                            obj.hide_viewport = False
                             obj.hide_render = False
                         else:
-                            obj.hide = True
+                            obj.hide_viewport = True
                             obj.hide_render = True
 
             if context.scene.render.engine == 'CYCLES':
@@ -300,7 +300,7 @@ class GafSolo(bpy.types.Operator):
                         bpy.ops.gaffer.solo()
                         return {'FINISHED'}
                     if obj.name not in blacklist:
-                        obj.hide = castBool(l[1])
+                        obj.hide_viewport = castBool(l[1])
                         obj.hide_render = castBool(l[2])
                 elif context.scene.render.engine == 'CYCLES':
                     scene.gaf_props.WorldVis = castBool(l[1])
@@ -308,7 +308,7 @@ class GafSolo(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class GafLampUseNodes(bpy.types.Operator):
+class GAFFER_OT_lamp_use_nodes(bpy.types.Operator):
 
     'Make this lamp use nodes'
     bl_idname = 'gaffer.lamp_use_nodes'
@@ -322,7 +322,7 @@ class GafLampUseNodes(bpy.types.Operator):
         bpy.ops.gaffer.refresh_lights()
         return {'FINISHED'}
 
-class GafNodeSetStrength(bpy.types.Operator):
+class GAFFER_OT_node_set_strength(bpy.types.Operator):
 
     "Use this node's first Value input as the Strength slider for this light in the Gaffer panel"
     bl_idname = 'gaffer.node_set_strength'
@@ -339,7 +339,7 @@ class GafNodeSetStrength(bpy.types.Operator):
         setGafferNode(context, 'STRENGTH')
         return {'FINISHED'}
 
-class GafRefreshLightList(bpy.types.Operator):
+class GAFFER_OT_refresh_light_list(bpy.types.Operator):
 
     'Refresh the list of lights'
     bl_idname = 'gaffer.refresh_lights'
@@ -356,7 +356,7 @@ class GafRefreshLightList(bpy.types.Operator):
         refresh_bgl()  # update the radius/label as well
         return {'FINISHED'}
 
-class GafCreateEnviroWidget(bpy.types.Operator):
+class GAFFER_OT_create_enviro_widget(bpy.types.Operator):
 
     'Create an Empty which drives the rotation of the background texture'
     bl_idname = 'gaffer.envwidget'
@@ -447,7 +447,7 @@ class GafCreateEnviroWidget(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class GafLinkSkyToSun(bpy.types.Operator):
+class GAFFER_OT_link_sky_to_sun(bpy.types.Operator):
     bl_idname = "gaffer.link_sky_to_sun"
     bl_label = "Link Sky Texture:"
     bl_options = {'REGISTER', 'UNDO'}
@@ -506,7 +506,7 @@ class GafLinkSkyToSun(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class GafAimLight(bpy.types.Operator):
+class GAFFER_OT_aim_light(bpy.types.Operator):
 
     "Point the selected lights at a target"
     bl_idname = 'gaffer.aim'
@@ -585,7 +585,7 @@ class GafAimLight(bpy.types.Operator):
         return {'CANCELLED'}
 
 
-class GafShowLightRadius(bpy.types.Operator):
+class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
     'Display a circle around each light showing their radius'
     bl_idname = 'gaffer.show_radius'
@@ -597,13 +597,13 @@ class GafShowLightRadius(bpy.types.Operator):
 
     @staticmethod
     def handle_add(self, context):
-        GafShowLightRadius._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_radius, (context,), 'WINDOW', 'POST_VIEW')
+        GAFFER_OT_show_light_radius._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_radius, (context,), 'WINDOW', 'POST_VIEW')
 
     @staticmethod
     def handle_remove(context):
-        if GafShowLightRadius._handle is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(GafShowLightRadius._handle, 'WINDOW')
-        GafShowLightRadius._handle = None
+        if GAFFER_OT_show_light_radius._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(GAFFER_OT_show_light_radius._handle, 'WINDOW')
+        GAFFER_OT_show_light_radius._handle = None
 
     def draw_callback_radius(self, context):
         scene = context.scene
@@ -689,14 +689,14 @@ class GafShowLightRadius(bpy.types.Operator):
 
         if scene.gaf_props.IsShowingRadius:
             scene.gaf_props.IsShowingRadius = False
-            GafShowLightRadius.handle_remove(context)
+            GAFFER_OT_show_light_radius.handle_remove(context)
             return {'FINISHED'}
         elif context.area.type == 'VIEW_3D':
             scene.gaf_props.IsShowingRadius = True
             
             context.window_manager.modal_handler_add(self)
 
-            GafShowLightRadius.handle_add(self, context)
+            GAFFER_OT_show_light_radius.handle_add(self, context)
 
             self.objects = []
             for obj in scene.objects:
@@ -737,7 +737,7 @@ class GafShowLightRadius(bpy.types.Operator):
             self.report({'WARNING'}, "View3D not found, cannot run operator")
             return {'CANCELLED'}
 
-class GafShowLightLabel(bpy.types.Operator):
+class GAFFER_OT_show_light_label(bpy.types.Operator):
 
     'Display the name of each light in the viewport'
     bl_idname = 'gaffer.show_label'
@@ -747,13 +747,13 @@ class GafShowLightLabel(bpy.types.Operator):
 
     @staticmethod
     def handle_add(self, context):
-        GafShowLightLabel._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_label, (context,), 'WINDOW', 'POST_PIXEL')
+        GAFFER_OT_show_light_label._handle = self._handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback_label, (context,), 'WINDOW', 'POST_PIXEL')
 
     @staticmethod
     def handle_remove(context):
-        if GafShowLightLabel._handle is not None:
-            bpy.types.SpaceView3D.draw_handler_remove(GafShowLightLabel._handle, 'WINDOW')
-        GafShowLightLabel._handle = None
+        if GAFFER_OT_show_light_label._handle is not None:
+            bpy.types.SpaceView3D.draw_handler_remove(GAFFER_OT_show_light_label._handle, 'WINDOW')
+        GAFFER_OT_show_light_label._handle = None
 
     def alignment(self, x, y, width, height, margin):
         align = bpy.context.scene.gaf_props.LabelAlign
@@ -865,14 +865,14 @@ class GafShowLightLabel(bpy.types.Operator):
 
         if scene.gaf_props.IsShowingLabel:
             scene.gaf_props.IsShowingLabel = False
-            GafShowLightLabel.handle_remove(context)
+            GAFFER_OT_show_light_label.handle_remove(context)
             return {'FINISHED'}
         elif context.area.type == 'VIEW_3D':
             scene.gaf_props.IsShowingLabel = True
             
             context.window_manager.modal_handler_add(self)
 
-            GafShowLightLabel.handle_add(self, context)
+            GAFFER_OT_show_light_label.handle_add(self, context)
 
             self.objects = []
             for obj in scene.objects:
@@ -927,7 +927,7 @@ class GafShowLightLabel(bpy.types.Operator):
             self.report({'WARNING'}, "View3D not found, cannot run operator")
             return {'CANCELLED'}
 
-class GafRefreshBGL(bpy.types.Operator):
+class GAFFER_OT_refresh_bgl(bpy.types.Operator):
 
     "Update the radius and label display to account for undetected changes"
     bl_idname = 'gaffer.refresh_bgl'
@@ -941,7 +941,7 @@ class GafRefreshBGL(bpy.types.Operator):
         refresh_bgl()
         return {'FINISHED'}
 
-class GafAddBlacklisted(bpy.types.Operator):
+class GAFFER_OT_add_blacklisted(bpy.types.Operator):
 
     "Add the selected objects to the blacklist"
     bl_idname = 'gaffer.blacklist_add'
@@ -962,7 +962,7 @@ class GafAddBlacklisted(bpy.types.Operator):
         context.scene.gaf_props.BlacklistIndex = len(context.scene.gaf_props.Blacklist) - 1
         return {'FINISHED'}
 
-class GafRemoveBlacklisted(bpy.types.Operator):
+class GAFFER_OT_remove_blacklisted(bpy.types.Operator):
 
     "Remove the active list item from the blacklist"
     bl_idname = 'gaffer.blacklist_remove'
@@ -984,7 +984,7 @@ class GafRemoveBlacklisted(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class GafDetectHDRIs(bpy.types.Operator):
+class GAFFER_OT_detect_hdris(bpy.types.Operator):
 
     "Look for HDRIs in the chosen folder, matching different resolutions and variants together based on filename"
     bl_idname = 'gaffer.detect_hdris'
@@ -994,7 +994,7 @@ class GafDetectHDRIs(bpy.types.Operator):
         detect_hdris(self, context)
         return {'FINISHED'}
 
-class GafHDRIThumbGen(bpy.types.Operator):
+class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
 
     "Generate missing thumbnail images for all HDRIs"
     bl_idname = 'gaffer.generate_hdri_thumbs'
@@ -1136,7 +1136,7 @@ class GafHDRIThumbGen(bpy.types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=420*dpifac())
 
-class GafHDRIJPGGen(bpy.types.Operator):
+class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
 
     "Generate regular JPG and darkened JPG from HDRI"
     bl_idname = 'gaffer.generate_jpgs'
@@ -1183,7 +1183,7 @@ class GafHDRIJPGGen(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class GafHDRIClearSearch(bpy.types.Operator):
+class GAFFER_OT_hdri_clear_search(bpy.types.Operator):
 
     "Clear the search, show all HDRIs"
     bl_idname = 'gaffer.clear_search'
@@ -1195,7 +1195,7 @@ class GafHDRIClearSearch(bpy.types.Operator):
         
         return {'FINISHED'}
 
-class GafHDRIPaddles(bpy.types.Operator):
+class GAFFER_OT_hdri_paddles(bpy.types.Operator):
 
     "Switch to the next/previous HDRI"
     bl_idname = 'gaffer.hdri_paddles'
@@ -1223,7 +1223,7 @@ class GafHDRIPaddles(bpy.types.Operator):
             gaf_props.hdri = list_hdris[current_index+1] if self.do_next else list_hdris[current_index-1]
             return {'FINISHED'}
 
-class GafHDRIAddTag(bpy.types.Operator):
+class GAFFER_OT_hdri_add_tag(bpy.types.Operator):
 
     "Add this tag to the current HDRI"
     bl_idname = 'gaffer.add_tag'
@@ -1237,7 +1237,7 @@ class GafHDRIAddTag(bpy.types.Operator):
         
         return {'FINISHED'}
 
-class GafHDRIRandom(bpy.types.Operator):
+class GAFFER_OT_hdri_random(bpy.types.Operator):
 
     "Switch to a random HDRI"
     bl_idname = 'gaffer.hdri_random'
@@ -1261,7 +1261,7 @@ class GafHDRIRandom(bpy.types.Operator):
         
         return {'FINISHED'}
 
-class GafFixMIS(bpy.types.Operator):
+class GAFFER_OT_fix_mis(bpy.types.Operator):
 
     "Set the Multiple Importance Map resolution to 1024"
     bl_idname = 'gaffer.fix_mis'
@@ -1272,7 +1272,7 @@ class GafFixMIS(bpy.types.Operator):
         context.scene.world.cycles.sampling_method = 'AUTOMATIC'
         return {'FINISHED'}
 
-class GafGetHDRIHaven(bpy.types.Operator):
+class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
 
     "Instantly download free HDRIs from hdrihaven.com"
     bl_idname = 'gaffer.get_hdri_haven'
@@ -1383,7 +1383,7 @@ class GafGetHDRIHaven(bpy.types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=500*dpifac())
 
-class GafHideHDRIHaven(bpy.types.Operator):
+class GAFFER_OT_hide_hdrihaven(bpy.types.Operator):
 
     "Hide this button for good."
     bl_idname = 'gaffer.hide_hdri_haven'
@@ -1395,7 +1395,7 @@ class GafHideHDRIHaven(bpy.types.Operator):
         context.scene.gaf_props.ShowHDRIHaven = False
         return {'FINISHED'}
 
-class GafOpenHDRIHaven(bpy.types.Operator):
+class GAFFER_OT_open_hdrihaven(bpy.types.Operator):
 
     "Download higher resolutions of this HDRI (also free) - opens web browser"
     bl_idname = 'gaffer.go_hdri_haven'
@@ -1406,7 +1406,7 @@ class GafOpenHDRIHaven(bpy.types.Operator):
         bpy.ops.wm.url_open(url=self.url)
         return {'FINISHED'}
 
-class GafHDRIOpenDataFolder(bpy.types.Operator):
+class GAFFER_OT_hdri_open_data_folder(bpy.types.Operator):
 
     "Open Gaffer's data folder in your system file explorer"
     bl_idname = 'gaffer.open_data_folder'
@@ -1428,7 +1428,7 @@ class GafHDRIOpenDataFolder(bpy.types.Operator):
         
         return {'FINISHED'}
 
-class GafDebugDeleteThumbs(bpy.types.Operator):
+class GAFFER_OT_debug_delete_thumbs(bpy.types.Operator):
 
     "Delete all thumbnail images"
     bl_idname = 'gaffer.dbg_delete_thumbs'
@@ -1458,7 +1458,7 @@ class GafDebugDeleteThumbs(bpy.types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=340*dpifac())
 
-class GafDebugUploadHDRIList(bpy.types.Operator):
+class GAFFER_OT_debug_upload_hdri_list(bpy.types.Operator):
 
     "Upload your list of HDRIs to the internet"
     bl_idname = 'gaffer.dbg_upload_hdri_list'
@@ -1496,7 +1496,7 @@ class GafDebugUploadHDRIList(bpy.types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=300*dpifac())
 
-class GafDebugUploadLogs(bpy.types.Operator):
+class GAFFER_OT_debug_upload_logs(bpy.types.Operator):
 
     "Upload Gaffer's debugging logs to the internet"
     bl_idname = 'gaffer.dbg_upload_logs'

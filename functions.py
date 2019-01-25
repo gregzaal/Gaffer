@@ -330,7 +330,7 @@ def getHiddenStatus(scene, lights):
     temparr = []
     for light in lights:
         if light[0]:
-            temparr = [light[0], bpy.data.objects[light[0]].hide, bpy.data.objects[light[0]].hide_render]
+            temparr = [light[0], bpy.data.objects[light[0]].hide_viewport, bpy.data.objects[light[0]].hide_render]
             statelist.append(temparr)
 
     temparr = ["WorldEnviroLight", scene.gaf_props.WorldVis, scene.gaf_props.WorldReflOnly]
