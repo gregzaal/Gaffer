@@ -18,7 +18,7 @@
 
 bl_info = {
     "name": "Gaffer",
-    "description": "Master your lighting workflow with easy access to lamp properties and other tools",
+    "description": "Master your lighting workflow with easy access to light properties and other tools",
     "author": "Greg Zaal",
     "version": (3, 0, 5),
     "blender": (2, 80, 0),
@@ -178,11 +178,11 @@ class GafferProperties(bpy.types.PropertyGroup):
     VisibleLayersOnly: bpy.props.BoolProperty(
         name = "Visible Layers Only",
         default = True,
-        description = "Only show lamps that are on visible layers")
+        description = "Only show lights that are on visible layers")
     VisibleLightsOnly: bpy.props.BoolProperty(
         name = "Visible Lights Only",
         default = False,
-        description = "Only show lamps that are not hidden")
+        description = "Only show lights that are not hidden")
     WorldVis: bpy.props.BoolProperty(
         name = "Hide World lighting",
         default = True,
@@ -266,7 +266,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         default=(1.0,1.0,1.0))
     LabelAlign: bpy.props.EnumProperty(
         name="Alignment",
-        description="The positioning of the label relative to the lamp",
+        description="The positioning of the label relative to the light",
         default='r',
         items=(("c","Centered","Positioned exactly on the light"),
                ("t","Top","Positioned above the light"),
@@ -284,7 +284,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     SunObject: bpy.props.StringProperty(
         name="Sun Obj",
         default="",
-        description="The lamp object to use to drive the Sky rotation")
+        description="The light object to use to drive the Sky rotation")
 
     # HDRI Handler stuffs
     hdri_handler_enabled: bpy.props.BoolProperty(
@@ -503,7 +503,7 @@ classes = [
     operators.GAFFER_OT_hide_show_light,
     operators.GAFFER_OT_select_light,
     operators.GAFFER_OT_solo,
-    operators.GAFFER_OT_lamp_use_nodes,
+    operators.GAFFER_OT_light_use_nodes,
     operators.GAFFER_OT_node_set_strength,
     operators.GAFFER_OT_refresh_light_list,
     operators.GAFFER_OT_create_enviro_widget,

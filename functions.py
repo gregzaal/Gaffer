@@ -105,12 +105,12 @@ def refresh_light_list(scene):
 
     if scene.render.engine == 'BLENDER_RENDER':
         for obj in objects:
-            if obj.type == 'LAMP':
+            if obj.type == 'LIGHT':
                 m.append([obj.name, None, None])  # only use first element of list to keep usage consistent with cycles mode
     elif scene.render.engine == 'CYCLES':
         for obj in objects:
             light_mats = []
-            if obj.type == 'LAMP':
+            if obj.type == 'LIGHT':
                 if obj.data.use_nodes:
                     invalid_node = False
                     if obj.name in light_dict:
@@ -204,7 +204,7 @@ def refresh_light_list(scene):
     for light in m:
         obj = bpy.data.objects[light[0]]
         nodes = None
-        if obj.type == 'LAMP':
+        if obj.type == 'LIGHT':
             if obj.data.use_nodes:
                 nodes = obj.data.node_tree.nodes
         else:
@@ -430,7 +430,7 @@ def do_update_falloff(self):
         socket_no = 0
 
     connections = []
-    if light.type == 'LAMP':
+    if light.type == 'LIGHT':
         tree = light.data.node_tree
     else:
         tree = bpy.data.materials[lightitems[1]].node_tree

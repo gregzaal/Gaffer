@@ -44,11 +44,11 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
         if users[1] == 1:
             row.operator('gaffer.rename', text=light.name).light = light.name
         else:
-            data_name = users[0][4:] if users[0].startswith('LAMP') else users[0][3:]
+            data_name = users[0][5:] if users[0].startswith('LIGHT') else users[0][3:]
             op = row.operator('gaffer.rename', text='[' + str(users[1]) + '] ' + data_name)
             op.multiuser = users[0]
             op.light = data_name
-            # if light.type == 'LAMP':
+            # if light.type == 'LIGHT':
             #     op.multiuser = light.type
             #     op.light = light.data.name
             # else:
@@ -109,11 +109,11 @@ def draw_BI_UI(context, layout, lights):
     templist = []
     for item in lights_to_show:
         light = scene.objects[item[0][1:-1]]  # drop the apostrophies
-        if ('LAMP' + light.data.name) in duplicates:
-            duplicates['LAMP' + light.data.name] += 1
+        if ('LIGHT' + light.data.name) in duplicates:
+            duplicates['LIGHT' + light.data.name] += 1
         else:
             templist.append(item)
-            duplicates['LAMP' + light.data.name] = 1
+            duplicates['LIGHT' + light.data.name] = 1
     lights_to_show = templist
 
     i = 0
@@ -126,7 +126,7 @@ def draw_BI_UI(context, layout, lights):
         col = split.column()
         row = col.row(align=True)
 
-        users = ['LAMP' + light.data.name, duplicates['LAMP' + light.data.name]]
+        users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
         draw_renderer_independant(gaf_props, row, light, users)
 
         # strength
@@ -284,7 +284,7 @@ def draw_cycles_UI(context, layout, lights):
             if light[0]:
                 a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
                 if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
-                    if a.type != 'LAMP':
+                    if a.type != 'LIGHT':
                         b = bpy.data.materials[light[1][1:-1]]
                         if b.use_nodes:
                             c = b.node_tree.nodes[light[2][1:-1]]
@@ -310,12 +310,12 @@ def draw_cycles_UI(context, layout, lights):
     templist = []
     for item in lights_to_show:
         light = scene.objects[item[0][1:-1]]  # drop the apostrophies
-        if light.type == 'LAMP':
-            if ('LAMP' + light.data.name) in duplicates:
-                duplicates['LAMP' + light.data.name] += 1
+        if light.type == 'LIGHT':
+            if ('LIGHT' + light.data.name) in duplicates:
+                duplicates['LIGHT' + light.data.name] += 1
             else:
                 templist.append(item)
-                duplicates['LAMP' + light.data.name] = 1
+                duplicates['LIGHT' + light.data.name] = 1
         else:
             mat = bpy.data.materials[item[1][1:-1]]
             if ('MAT' + mat.name) in duplicates:
@@ -330,7 +330,7 @@ def draw_cycles_UI(context, layout, lights):
         light = scene.objects[item[0][1:-1]]  # drop the apostrophies
         doesnt_use_nodes = False
         is_portal = False
-        if light.type == 'LAMP':
+        if light.type == 'LIGHT':
             material = None
             if light.data.use_nodes:
                 node_strength = light.data.node_tree.nodes[item[2][1:-1]]
@@ -350,8 +350,8 @@ def draw_cycles_UI(context, layout, lights):
             box = maincol.box()
             row = box.row()
             row.label(text="\"" + light.name + "\" doesn't use nodes!")
-            if light.type == 'LAMP':
-                row.operator('gaffer.lamp_use_nodes', icon='NODETREE', text='').light = light.name
+            if light.type == 'LIGHT':
+                row.operator('gaffer.light_use_nodes', icon='NODETREE', text='').light = light.name
         else:
             if item[3].startswith("'"):
                 socket_strength_str = str(item[3][1:-1])
@@ -374,8 +374,8 @@ def draw_cycles_UI(context, layout, lights):
             col = split.column()
             row = col.row(align=True)
 
-            if light.type == 'LAMP':
-                users = ['LAMP' + light.data.name, duplicates['LAMP' + light.data.name]]
+            if light.type == 'LIGHT':
+                users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
             else:
                 users = ['MAT' + material.name, duplicates['MAT' + material.name]]
             draw_renderer_independant(gaf_props, row, light, users)
@@ -386,7 +386,7 @@ def draw_cycles_UI(context, layout, lights):
                 strength_sockets = node_strength.inputs
                 if socket_strength_type == 'o':
                     strength_sockets = node_strength.outputs
-                if light.type == 'LAMP':
+                if light.type == 'LIGHT':
                     row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True, emboss=False)
                 else:
                     row.label(text='', icon='MESH_GRID')
@@ -403,7 +403,7 @@ def draw_cycles_UI(context, layout, lights):
                     row.label(text="  Node Invalid")
 
                 # color
-                if light.type == 'LAMP':
+                if light.type == 'LIGHT':
                     nodes = light.data.node_tree.nodes
                 else:
                     nodes = material.node_tree.nodes
@@ -457,7 +457,7 @@ def draw_cycles_UI(context, layout, lights):
             if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
                 col = box.column()
                 row = col.row(align=True)
-                if light.type == 'LAMP':
+                if light.type == 'LIGHT':
                     if light.data.type == 'AREA':
                         if light.data.shape == 'RECTANGLE':
                             row.prop(light.data, 'size')
@@ -492,14 +492,14 @@ def draw_cycles_UI(context, layout, lights):
                     row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
                 if hasattr(light, "GafferFalloff"):
                     drawfalloff = True
-                    if light.type == 'LAMP':
+                    if light.type == 'LIGHT':
                         if light.data.type == 'SUN' or light.data.type == 'HEMI' or (light.data.type == 'AREA' and light.data.cycles.is_portal):
                             drawfalloff = False
                     if drawfalloff:
                         col.prop(light, "GafferFalloff", text="Falloff")
                         if node_strength.type != 'LIGHT_FALLOFF' and light.GafferFalloff != 'quadratic':
                             col.label(text="Light Falloff node is missing", icon="ERROR")
-                if light.type == 'LAMP':
+                if light.type == 'LIGHT':
                     if light.data.type == 'AREA':
                         col.prop(light.data.cycles, 'is_portal', "Portal")
             i += 1
@@ -826,20 +826,19 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
 
         tmpc = row.column(align=True)
         tmpcc = tmpc.column(align=True)
-        tmpcc.scale_y=8 if not toolbar else 3.5
+        tmpcc.scale_y=10 if not toolbar else 4.5
         tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
         tmpr = tmpc.column(align=True)
         tmpr.scale_y=1
         tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
 
         tmpc = row.column()
-        tmpc.scale_y=1.5 / (2 if toolbar else 1)
-        window_size_multiplier = (context.window.width/1920)/dpifac()
-        tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8*window_size_multiplier)
+        tmpc.scale_y=1 / (2 if toolbar else 1)
+        tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=11)
 
         tmpc = row.column(align=True)
         tmpcc = tmpc.column(align=True)
-        tmpcc.scale_y=8 if not toolbar else 3.5
+        tmpcc.scale_y=10 if not toolbar else 4.5
         tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
         tmpr = tmpc.column(align=True)
         tmpr.scale_y=1

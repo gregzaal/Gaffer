@@ -64,15 +64,15 @@ class GAFFER_OT_rename(bpy.types.Operator):
     def draw(self, context):
         self.layout.prop(self, 'light')
         if self.multiuser:
-            self.layout.label(text="You are renaming the " + ("lamp data" if self.multiuser.startswith("LAMP") else "material") + ", which has multiple users")
+            self.layout.label(text="You are renaming the " + ("light data" if self.multiuser.startswith("LIGHT") else "material") + ", which has multiple users")
 
     def invoke(self, context, event):
         self.oldname = self.light
         return context.window_manager.invoke_props_popup(self, event)
 
     def execute(self, context):
-        if self.multiuser.startswith("LAMP"):
-            bpy.data.lamps[self.oldname].name = self.light
+        if self.multiuser.startswith("LIGHT"):
+            bpy.data.lights[self.oldname].name = self.light
         elif self.multiuser.startswith("MAT"):
             bpy.data.materials[self.oldname].name = self.light
         else:
@@ -92,7 +92,7 @@ class GAFFER_OT_set_temp(bpy.types.Operator):
 
     def execute(self, context):
         light = context.scene.objects[self.light]
-        if light.type == 'LAMP':
+        if light.type == 'LIGHT':
             node = light.data.node_tree.nodes[self.node]
         else:
             node = bpy.data.materials[self.material].node_tree.nodes[self.node]
@@ -163,8 +163,8 @@ class GAFFER_OT_hide_show_light(bpy.types.Operator):
             light.hide_viewport = self.hide
             light.hide_render = self.hide
         else:
-            if dataname.startswith('LAMP'):
-                data = bpy.data.lamps[(dataname[4:])]  # actual data name (minus the prepended 'LAMP')
+            if dataname.startswith('LIGHT'):
+                data = bpy.data.lights[(dataname[5:])]  # actual data name (minus the prepended 'LIGHT')
                 for obj in bpy.data.objects:
                     if obj.data == data:
                         obj.hide_viewport = self.hide
@@ -200,8 +200,8 @@ class GAFFER_OT_select_light(bpy.types.Operator):
             obj.select = True
             context.scene.objects.active = obj
         else:
-            if dataname.startswith('LAMP'):
-                data = bpy.data.lamps[(dataname[4:])]  # actual data name (minus the prepended 'LAMP')
+            if dataname.startswith('LIGHT'):
+                data = bpy.data.lights[(dataname[5:])]  # actual data name (minus the prepended 'LIGHT')
                 for obj in bpy.data.objects:
                     if obj.data == data:
                         obj.select = True
@@ -237,8 +237,8 @@ class GAFFER_OT_solo(bpy.types.Operator):
         dataname = self.dataname
         linked_lights = []
         if dataname not in ["__SINGLE_USER__", "__EXIT_SOLO__"] and showhide:  # only make list if going into Solo and obj has multiple users
-            if dataname.startswith('LAMP'):
-                data = bpy.data.lamps[(dataname[4:])]  # actual data name (minus the prepended 'LAMP')
+            if dataname.startswith('LIGHT'):
+                data = bpy.data.lights[(dataname[5:])]  # actual data name (minus the prepended 'LIGHT')
                 for obj in bpy.data.objects:
                     if obj.data == data:
                         linked_lights.append(obj.name)
@@ -308,16 +308,16 @@ class GAFFER_OT_solo(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class GAFFER_OT_lamp_use_nodes(bpy.types.Operator):
+class GAFFER_OT_light_use_nodes(bpy.types.Operator):
 
-    'Make this lamp use nodes'
-    bl_idname = 'gaffer.lamp_use_nodes'
+    'Make this light use nodes'
+    bl_idname = 'gaffer.light_use_nodes'
     bl_label = 'Use Nodes'
     light: bpy.props.StringProperty()
 
     def execute(self, context):
         obj = bpy.data.objects[self.light]
-        if obj.type == 'LAMP':
+        if obj.type == 'LIGHT':
             obj.data.use_nodes = True
         bpy.ops.gaffer.refresh_lights()
         return {'FINISHED'}
@@ -460,7 +460,7 @@ class GAFFER_OT_link_sky_to_sun(bpy.types.Operator):
 
         tree = context.scene.world.node_tree
         node = tree.nodes[self.node_name]
-        lampob = bpy.data.objects[context.scene.gaf_props.SunObject]
+        lightob = bpy.data.objects[context.scene.gaf_props.SunObject]
 
         if tree.animation_data:
             if tree.animation_data.action:
@@ -487,21 +487,21 @@ class GAFFER_OT_link_sky_to_sun(bpy.types.Operator):
         var = dr[0].driver.variables.new()
         var.name = varname
         var.type = 'SINGLE_PROP'
-        var.targets[0].id = lampob
+        var.targets[0].id = lightob
         var.targets[0].data_path = 'matrix_world[2][0]'
         # Y
         dr[1].driver.expression = varname
         var = dr[1].driver.variables.new()
         var.name = varname
         var.type = 'SINGLE_PROP'
-        var.targets[0].id = lampob
+        var.targets[0].id = lightob
         var.targets[0].data_path = 'matrix_world[2][1]'
         # Y
         dr[2].driver.expression = varname
         var = dr[2].driver.variables.new()
         var.name = varname
         var.type = 'SINGLE_PROP'
-        var.targets[0].id = lampob
+        var.targets[0].id = lightob
         var.targets[0].data_path = 'matrix_world[2][2]'
 
         return {'FINISHED'}
@@ -700,8 +700,8 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
             self.objects = []
             for obj in scene.objects:
-                # It doesn't make sense to try show the radius for mesh, area or hemi lamps.
-                if obj.type == 'LAMP':
+                # It doesn't make sense to try show the radius for mesh, area or hemi lights.
+                if obj.type == 'LIGHT':
                     if obj.data.type in ['POINT', 'SUN', 'SPOT']:
                         color = scene.gaf_props.DefaultRadiusColor
                         if scene.render.engine == 'CYCLES' and obj.data.use_nodes:
@@ -879,7 +879,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                 color = scene.gaf_props.DefaultLabelBGColor
                 nodes = None
                 data = None
-                if obj.type == 'LAMP':
+                if obj.type == 'LIGHT':
                     if obj.data.users > 1:
                         data = obj.data.name
                     if scene.render.engine == 'CYCLES' and obj.data.use_nodes:
@@ -917,7 +917,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
 
                         self.objects.append([obj, color, data])
 
-                if obj.type == 'LAMP' and not nodes:  # is a lamp but doesnt use_nodes
+                if obj.type == 'LIGHT' and not nodes:  # is a light but doesnt use_nodes
                     color = obj.data.color
                     self.objects.append([obj, color, data])
 
