@@ -793,10 +793,10 @@ def draw_progress_bar(gaf_props, layout):
         b = layout.box()
         col = b.column(align=True)
         col.label(text=gaf_props.ProgressText)
-        split = col.split(percentage=max(0.01, gaf_props.Progress), align=True)
+        split = col.split(factor=max(0.01, gaf_props.Progress), align=True)
         r = split.row()
         r.alert=True
-        r.prop(gaf_props, 'ProgressBarText', "")
+        r.prop(gaf_props, 'ProgressBarText', text="")
         r = split.row()
         r.label(text="")
         c = b.column(align=True)
