@@ -31,12 +31,6 @@ from bpy.app.handlers import persistent
 from .constants import *
 
 
-def _force_redraw_hack():  # Taken from Campbell's Cell Fracture addon
-    return  # TODO this function crashes in 2.8, maybe there's a newer method?
-    _force_redraw_hack.opr(**_force_redraw_hack.arg)
-_force_redraw_hack.opr = bpy.ops.wm.redraw_timer
-_force_redraw_hack.arg = dict(type='DRAW_WIN_SWAP', iterations=1)
-
 def log(text, timestamp=True, also_print = False):
     ts = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -1518,6 +1512,12 @@ def show_hdrihaven():
     if not os.path.exists(os.path.join(prefs.hdri_path, 'HDRI Haven')):
         if get_persistent_setting('show_hdri_haven'):
             bpy.context.scene.gaf_props.ShowHDRIHaven = True
+
+def _force_redraw_hack():  # Taken from Campbell's Cell Fracture addon
+    return  # TODO this function crashes in 2.8, better use something like asyncio or a modal operator instead.
+    _force_redraw_hack.opr(**_force_redraw_hack.arg)
+_force_redraw_hack.opr = bpy.ops.wm.redraw_timer
+_force_redraw_hack.arg = dict(type='DRAW_WIN_SWAP', iterations=1)
 
 def progress_begin(context):
     context.scene.gaf_props.ShowProgress = True

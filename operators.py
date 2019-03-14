@@ -195,26 +195,26 @@ class GAFFER_OT_select_light(bpy.types.Operator):
 
     def execute(self, context):
         for item in bpy.data.objects:
-            item.select = False
+            item.select_set(False)
         dataname = self.dataname
         if dataname == "__SINGLE_USER__":
             obj = bpy.data.objects[self.light]
-            obj.select = True
-            context.scene.objects.active = obj
+            obj.select_set(True)
+            context.view_layer.objects.active = obj
         else:
             if dataname.startswith('LIGHT'):
                 data = bpy.data.lights[(dataname[5:])]  # actual data name (minus the prepended 'LIGHT')
                 for obj in bpy.data.objects:
                     if obj.data == data:
-                        obj.select = True
+                        obj.select_set(True)
             else:
                 mat = bpy.data.materials[(dataname[3:])]  # actual data name (minus the prepended 'MAT')
                 for obj in bpy.data.objects:
                     if obj.type == 'MESH':
                         for slot in obj.material_slots:
                             if slot.material == mat:
-                                obj.select = True
-            context.scene.objects.active = bpy.data.objects[self.light]
+                                obj.select_set(True)
+            context.view_layer.objects.active = bpy.data.objects[self.light]
 
         return {'FINISHED'}
 
@@ -537,7 +537,7 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
 
         elif self.target_type == 'SELECTED':
             # Aim the active object at the average location of all other selected objects
-            active = context.scene.objects.active
+            active = context.view_layer.objects.active
             objects = [obj for obj in context.selected_objects if obj != active]
             num_objects = len(objects)
 
@@ -570,7 +570,7 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
 
         elif self.target_type == 'ACTIVE':
             # Aim the selected objects at the active object
-            active = context.scene.objects.active
+            active = context.view_layer.objects.active
             objects = [obj for obj in context.selected_objects if obj != active]
             if not active:
                 self.report({'ERROR'}, "No active object!")
