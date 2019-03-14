@@ -218,7 +218,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     LightRadiusDrawType: bpy.props.EnumProperty(
         name="Draw Type",
         description="How should the radius display look?",
-        default='solid',
+        default='dotted',
         items=(("filled","Filled","Draw a circle filled with a solid color"),
                ("solid","Solid","Draw a solid outline of the circle"),
                ("dotted","Dotted","Draw a dotted outline of the circle")))

@@ -19,6 +19,8 @@
 import bpy
 import json
 import bgl, blf
+import gpu
+from gpu_extras.batch import batch_for_shader
 from math import pi, cos, sin, log, ceil
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -608,8 +610,9 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
     def draw_callback_radius(self, context):
         scene = context.scene
         region = context.region
+        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-        if context.space_data.viewport_shade == 'RENDERED':
+        if context.space_data.shading.type == 'RENDERED':
             return
 
         for item in self.objects:
@@ -629,18 +632,18 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                                             color = item[1]
                                     else:
                                         color = scene.gaf_props.DefaultRadiusColor
+                                    
+                                    bgl.glEnable(bgl.GL_BLEND)
+                                    # bgl.glEnable(bgl.GL_POLYGON_SMOOTH)  # Anti-aliasing; Gives bad results in 2.8, leaving here in case of future fix.
+                                    if scene.gaf_props.LightRadiusXray:
+                                        bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
 
                                     rv3d = context.region_data
-                                    
                                     view = rv3d.view_matrix
                                     persp = rv3d.perspective_matrix
 
-                                    bgl.glEnable(bgl.GL_BLEND)
-
                                     radius = obj.data.shadow_soft_size
-
                                     obj_matrix_world = obj.matrix_world
-
                                     origin = obj.matrix_world.translation
 
                                     view_mat = context.space_data.region_3d.view_matrix
@@ -650,39 +653,75 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                                     angle = up.angle(view_dir)
                                     axis = up.cross(view_dir)
 
-                                    mat = Matrix.Translation(origin) * Matrix.Rotation(angle, 4, axis)
-                                    
-                                    bgl.glColor4f(color[0], color[1], color[2], scene.gaf_props.LightRadiusAlpha)
-                                    bgl.glEnable(bgl.GL_LINE_SMOOTH)  # anti-aliasing
-                                    if scene.gaf_props.LightRadiusXray:
-                                        bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
-                                    if scene.gaf_props.LightRadiusDrawType == 'filled':
-                                        bgl.glBegin(bgl.GL_TRIANGLE_FAN)
+                                    mat = Matrix.Translation(origin) @ Matrix.Rotation(angle, 4, axis)
+
+                                    if scene.gaf_props.LightRadiusDrawType == 'dotted':
+                                        sides = 24
                                     else:
-                                        if scene.gaf_props.LightRadiusDrawType == 'dotted':
-                                            bgl.glLineStipple(4, 0x3333)
-                                            bgl.glEnable(bgl.GL_LINE_STIPPLE)
-                                        bgl.glLineWidth(3)
-                                        bgl.glBegin(bgl.GL_LINE_STRIP)
-                                    sides = 64
-                                    for i in range(sides + 1):
+                                        sides = 64
+
+                                    verts = []
+                                    for i in range(sides):
                                         cosine = radius * cos(i * 2 * pi / sides)
                                         sine = radius * sin(i * 2 * pi / sides)
                                         vec = Vector((cosine, sine, 0))
-                                        bgl.glVertex3f(*(mat*vec))
-                                    bgl.glEnd()
+                                        c = (mat@vec)
+                                        verts.append((c.x, c.y, c.z))
+                                    if scene.gaf_props.LightRadiusDrawType != 'filled':
+                                        radius = radius * 0.9  # TODO thickness option
+                                        for i in range(sides):
+                                            cosine = radius * cos(i * 2 * pi / sides)
+                                            sine = radius * sin(i * 2 * pi / sides)
+                                            vec = Vector((cosine, sine, 0))
+                                            c = (mat@vec)
+                                            verts.append((c.x, c.y, c.z))
+                                    else:
+                                        vec = Vector((0, 0, 0))
+                                        c = (mat@vec)
+                                        verts.append((c.x, c.y, c.z))
 
-                                    # restore opengl defaults
-                                    bgl.glPointSize(1)
-                                    bgl.glLineWidth(1)
-                                    bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
+                                    indices = []
+                                    if scene.gaf_props.LightRadiusDrawType != 'filled':
+                                        for i in range(sides):
+                                            if scene.gaf_props.LightRadiusDrawType == 'dotted' and i % 2:
+                                                continue
+                                            a = i
+                                            b = i+1
+                                            c = i+1+sides
+                                            d = i+sides
+                                            indices.append((a, b, c))
+                                            indices.append((a, c, d))
+                                            if i == sides-2:
+                                                break  # We'll do the last 2 tris manually, math is a bit over my head :)
+                                        if scene.gaf_props.LightRadiusDrawType != 'dotted':
+                                            indices.append((0, sides-1, sides*2-1))
+                                            indices.append((0, sides, sides*2-1))
+                                    else:
+                                        for i in range(sides):
+                                            a = i
+                                            b = (i+1)%sides
+                                            indices.append((a, b, sides))
+                                    shader.bind()
+                                    shader.uniform_float("color", (color[0], color[1], color[2], scene.gaf_props.LightRadiusAlpha))
+                                    batch = batch_for_shader(shader, 'TRIS', {"pos": verts}, indices=indices)
+                                    batch.draw(shader)
+
                                     bgl.glDisable(bgl.GL_BLEND)
-                                    bgl.glDisable(bgl.GL_LINE_SMOOTH)
-                                    bgl.glDisable(bgl.GL_LINE_STIPPLE)
+                                    # bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
     
     def modal(self, context, event):
-        context.area.tag_redraw()
-        return {'PASS_THROUGH'}
+        if context.scene.gaf_props.IsShowingRadius:
+            if context.area:
+                context.area.tag_redraw()
+                return {'PASS_THROUGH'}
+            else:
+                context.scene.gaf_props.IsShowingRadius = False
+                GAFFER_OT_show_light_radius.handle_remove(context)
+                return {'FINISHED'}
+        else:
+            context.scene.gaf_props.IsShowingRadius = False
+            GAFFER_OT_show_light_radius.handle_remove(context)
+            return {'FINISHED'}
 
     def invoke(self, context, event):
         scene = context.scene
@@ -779,7 +818,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
     def draw_callback_label(self, context):
         scene = context.scene
 
-        if context.space_data.viewport_shade == 'RENDERED':
+        if context.space_data.shading.type == 'RENDERED':
             return
 
         # font_size_factor is used to scale the rectangles based on the font size and DPI, measured against a font size of 62
@@ -787,6 +826,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
         draw_type = scene.gaf_props.LabelDrawType
         background_color = scene.gaf_props.DefaultLabelBGColor
         text_color = scene.gaf_props.LabelTextColor
+        shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
 
         for item in self.objects:
             obj = item[0]
@@ -804,9 +844,11 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                 if loc:  # sometimes this is None if lights are out of view
                     x, y = loc
 
-                    char_width = 36 * font_size_factor
+                    font_id = 1  # Monospace font
+                    char_width = 37 * font_size_factor
                     height = 65 * font_size_factor
                     width = len(obj.name) * int(char_width) + 1
+                    # width = blf.dimensions(font_id, obj.name)[0]
                     if item[2]:
                         width = max(width, len(item[2]) * int(char_width*0.8) + 1)
 
@@ -816,10 +858,11 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                     if draw_type != 'color_text':
                         # Draw background rectangles
                         bgl.glEnable(bgl.GL_BLEND)
+                        shader.bind()
                         if draw_type == 'color_bg' and scene.gaf_props.LabelUseColor:
-                            bgl.glColor4f(color[0], color[1], color[2], scene.gaf_props.LabelAlpha)
+                            shader.uniform_float("color", (color[0], color[1], color[2], scene.gaf_props.LabelAlpha))
                         else:
-                            bgl.glColor4f(background_color[0], background_color[1], background_color[2], scene.gaf_props.LabelAlpha)
+                            shader.uniform_float("color", (background_color[0], background_color[1], background_color[2], scene.gaf_props.LabelAlpha))
 
                         x1 = x
                         x2 = x1 + width
@@ -830,16 +873,15 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                             y1 = y - (8 * font_size_factor) - height * 0.8 - 4
                             y2 = y1 + height + height * 0.8 + 4
 
-                        draw_rounded_rect(x1, y1, x2, y2, 20*font_size_factor)
+                        draw_rounded_rect(shader, x1, y1, x2, y2, 20*font_size_factor)
 
                         bgl.glDisable(bgl.GL_BLEND)
 
                     # Draw text
                     if draw_type != 'color_bg' and scene.gaf_props.LabelUseColor:
-                        bgl.glColor4f(color[0], color[1], color[2], scene.gaf_props.LabelAlpha if draw_type == 'color_text' else 1.0)
+                        blf.color(font_id, color[0], color[1], color[2], scene.gaf_props.LabelAlpha if draw_type == 'color_text' else 1.0)
                     else:
-                        bgl.glColor4f(text_color[0], text_color[1], text_color[2], 1.0)
-                    font_id = 1
+                        blf.color(font_id, text_color[0], text_color[1], text_color[2], 1.0)
                     blf.position(font_id, x, y, 0)
                     blf.size(font_id, scene.gaf_props.LabelFontSize, context.preferences.system.dpi)
                     blf.draw(font_id, obj.name)
@@ -848,17 +890,20 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                         blf.position(font_id, x, y_sub, 0)
                         blf.size(font_id, int(scene.gaf_props.LabelFontSize*0.8), context.preferences.system.dpi)
                         blf.draw(font_id, item[2])
-
-                    bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
     
     def modal(self, context, event):
-        try:
-            context.area.tag_redraw()
-        except:
-            # When the user goes full-screen, then hovers the mouse over the info header,
-            # tag_redraw fails for some reason (AttributeError, but catch all in case)
-            print ("failed to redraw")
-        return {'PASS_THROUGH'}
+        if context.scene.gaf_props.IsShowingLabel:
+            if context.area:
+                context.area.tag_redraw()
+                return {'PASS_THROUGH'}
+            else:
+                context.scene.gaf_props.IsShowingLabel = False
+                GAFFER_OT_show_light_label.handle_remove(context)
+                return {'FINISHED'}
+        else:
+            context.scene.gaf_props.IsShowingLabel = False
+            GAFFER_OT_show_light_label.handle_remove(context)
+            return {'FINISHED'}
 
     def invoke(self, context, event):
         scene = context.scene

@@ -19,6 +19,8 @@
 import bpy
 import json
 import bgl, blf
+import gpu
+from gpu_extras.batch import batch_for_shader
 import time, datetime
 from collections import OrderedDict
 from math import pi, cos, sin, log, radians
@@ -507,16 +509,13 @@ def refresh_bgl():
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
 
-def draw_rect(x1, y1, x2, y2):
-    # For each quad, the draw order is important. Start with bottom left and go anti-clockwise.
-    bgl.glBegin(bgl.GL_QUADS)
-    bgl.glVertex2f(x1,y1)
-    bgl.glVertex2f(x1,y2)
-    bgl.glVertex2f(x2,y2)
-    bgl.glVertex2f(x2,y1)
-    bgl.glEnd()
+def draw_rect(shader, x1, y1, x2, y2):
+    verts = ((x1, y1), (x1, y2), (x2, y1), (x2, y2))
+    indices = ((0, 1, 2), (1, 2, 3))
+    batch = batch_for_shader(shader, 'TRIS', {"pos": verts}, indices=indices)
+    batch.draw(shader)
 
-def draw_corner(x, y, r, corner):
+def draw_corner(shader, x, y, r, corner):
     sides = 16
     if corner == 'BL':
         r1 = 8
@@ -531,25 +530,30 @@ def draw_corner(x, y, r, corner):
         r1 = 0
         r2 = 4
 
-    bgl.glBegin(bgl.GL_TRIANGLE_FAN)
-    bgl.glVertex2f(x, y)
+    verts = [(x, y)]
     for i in range(r1, r2+1):
         cosine = r * cos(i * 2 * pi / sides) + x
         sine = r * sin(i * 2 * pi / sides) + y
-        bgl.glVertex2f(cosine, sine)
-    bgl.glEnd()
+        verts.append((cosine, sine))
+    
+    indices = []
+    for i in range(r2 - r1):
+        indices.append((0, i+1, i+2))
 
-def draw_rounded_rect(x1, y1, x2, y2, r):
-    draw_rect(x1, y1, x2, y2)  # Main quad
-    draw_rect(x1-r, y1, x1, y2)  # Left edge
-    draw_rect(x2, y1, x2+r, y2)  # Right edge
-    draw_rect(x1, y2, x2, y2+r)  # Top edge
-    draw_rect(x1, y1-r, x2, y1)  # Bottom edge
+    batch = batch_for_shader(shader, 'TRIS', {"pos": verts}, indices=indices)
+    batch.draw(shader)
 
-    draw_corner(x1, y1, r, 'BL')  # Bottom left
-    draw_corner(x1, y2, r, 'TL')  # Top left
-    draw_corner(x2, y2, r, 'TR')  # Top right
-    draw_corner(x2, y1, r, 'BR')  # Bottom right
+def draw_rounded_rect(shader, x1, y1, x2, y2, r):
+    draw_rect(shader, x1, y1, x2, y2)  # Main quad
+    draw_rect(shader, x1-r, y1, x1, y2)  # Left edge
+    draw_rect(shader, x2, y1, x2+r, y2)  # Right edge
+    draw_rect(shader, x1, y2, x2, y2+r)  # Top edge
+    draw_rect(shader, x1, y1-r, x2, y1)  # Bottom edge
+
+    draw_corner(shader, x1, y1, r, 'BL')  # Bottom left
+    draw_corner(shader, x1, y2, r, 'TL')  # Top left
+    draw_corner(shader, x2, y2, r, 'TR')  # Top right
+    draw_corner(shader, x2, y1, r, 'BR')  # Bottom right
 
 
 
