@@ -340,23 +340,12 @@ def getHiddenStatus(scene, lights):
 
     scene.gaf_props.LightsHiddenRecord = str(statelist)
 
-def isOnVisibleLayer(obj, scene):
-    obj_layers = []
-    for i, layer in enumerate(obj.layers):
-        if layer == True:
-            obj_layers.append(i)
-
-    scene_layers = []
-    for i, layer in enumerate(scene.layers):
-        if layer == True:
-            scene_layers.append(i)
-
-    common = set(obj_layers) & set(scene_layers)
-
-    if common:
-        return True
-    else:
-        return False
+def isInVisibleCollection(obj, scene):
+    for oc in obj.users_collection:
+        for child in bpy.context.window.view_layer.layer_collection.children:
+            if child.is_visible and child.collection == oc:
+                return True
+    return False
 
 
 def dictOfLights():

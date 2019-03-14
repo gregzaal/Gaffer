@@ -175,10 +175,10 @@ class GafferProperties(bpy.types.PropertyGroup):
         name = "soloactive",
         default = '',
         description = "soloactive")
-    VisibleLayersOnly: bpy.props.BoolProperty(
-        name = "Visible Layers Only",
+    VisibleCollectionsOnly: bpy.props.BoolProperty(
+        name = "Visible Collections Only",
         default = True,
-        description = "Only show lights that are on visible layers")
+        description = "Only show lights that are in visible collections")
     VisibleLightsOnly: bpy.props.BoolProperty(
         name = "Visible Lights Only",
         default = False,

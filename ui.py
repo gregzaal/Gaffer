@@ -90,7 +90,7 @@ def draw_BI_UI(context, layout, lights):
             if light[0]:
                 a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
                 if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
-                    if (gaf_props.VisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not gaf_props.VisibleLayersOnly):
+                    if (gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, scene)) or (not gaf_props.VisibleCollectionsOnly):
                         if a.name not in [o.name for o in gaf_props.Blacklist]:
                             lights_to_show.append(light)
         except:
@@ -282,7 +282,7 @@ def draw_cycles_UI(context, layout, lights):
     for light in lights:
         try:
             if light[0]:
-                a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
+                a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
                 if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
                     if a.type != 'LIGHT':
                         b = bpy.data.materials[light[1][1:-1]]
@@ -291,10 +291,10 @@ def draw_cycles_UI(context, layout, lights):
                     else:
                         if a.data.use_nodes:
                             c = a.data.node_tree.nodes[light[2][1:-1]]
-                    if (gaf_props.VisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not gaf_props.VisibleLayersOnly):
+                    if (gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, scene)) or (not gaf_props.VisibleCollectionsOnly):
                         if a.name not in [o.name for o in gaf_props.Blacklist]:
                             lights_to_show.append(light)
-        except:
+        except KeyError:
             box = maincol.box()
             row = box.row(align=True)
             row.label(text="Light list out of date")
@@ -679,7 +679,7 @@ class GAFFER_PT_lights(bpy.types.Panel):
             solobtn.showhide = False
             solobtn.worldsolo = False
         row.operator('gaffer.refresh_lights', text="Refresh", icon='FILE_REFRESH')  # may not be needed if drawing errors are cought correctly (eg newly added lights)
-        row.prop(gaf_props, "VisibleLayersOnly", text='', icon='LAYER_ACTIVE')
+        row.prop(gaf_props, "VisibleCollectionsOnly", text='', icon='LAYER_ACTIVE')
         row.prop(gaf_props, "VisibleLightsOnly", text='', icon='VISIBLE_IPO_ON')
         row.prop(gaf_props, "MoreExpandAll", text='', icon='PREFERENCES')
 
