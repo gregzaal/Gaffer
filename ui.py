@@ -62,7 +62,7 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
     visop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
     visop.hide = not light.hide_viewport
 
-    selop = row.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select else 'SMALL_TRI_RIGHT_VEC', text="", emboss=False)
+    selop = row.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select_get() else 'SMALL_TRI_RIGHT_VEC', text="", emboss=False)
     selop.light = light.name
     selop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
     if gaf_props.SoloActive == '':
@@ -387,11 +387,10 @@ def draw_cycles_UI(context, layout, lights):
                 if socket_strength_type == 'o':
                     strength_sockets = node_strength.outputs
                 if light.type == 'LIGHT':
-                    row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True, emboss=False)
+                    row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True)
                 else:
                     row.label(text='', icon='MESH_GRID')
 
-                row.separator()
                 try:
                     if ((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) \
                     or (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) \
@@ -651,7 +650,6 @@ def draw_cycles_UI(context, layout, lights):
                                 row.label(text="Link Sky Texture:")
                             row.prop_search(gaf_props, "SunObject", bpy.data, "objects", text="")
 
-print("OKK")
 
 class GAFFER_PT_lights(bpy.types.Panel):
 
@@ -810,87 +808,89 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
     if gaf_props.hdri:
         col = layout.column(align=True)
 
-        if gaf_props.hdri_search:
-            row = col.row(align=True)
-            row.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
-            row.operator('gaffer.clear_search', text="", icon='X')
-            subrow = row.row(align=True)
-            subrow.alignment = 'RIGHT'
-            subrow.label(text=str(len(hdri_enum_previews(gaf_props, context))) + ' matches')
-        else:
-            col.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
+        if not toolbar or "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
 
-        col = layout.column(align=True)
-
-        row = col.row(align=True)
-
-        tmpc = row.column(align=True)
-        tmpcc = tmpc.column(align=True)
-        tmpcc.scale_y=10 if not toolbar else 4.5
-        tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
-        tmpr = tmpc.column(align=True)
-        tmpr.scale_y=1
-        tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
-
-        tmpc = row.column()
-        tmpc.scale_y=1 / (2 if toolbar else 1)
-        tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=11)
-
-        tmpc = row.column(align=True)
-        tmpcc = tmpc.column(align=True)
-        tmpcc.scale_y=10 if not toolbar else 4.5
-        tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
-        tmpr = tmpc.column(align=True)
-        tmpr.scale_y=1
-        tmpr.operator('gaffer.hdri_random', text='', icon_value=icons['random'].icon_id)
-
-        if gaf_props.hdri_show_tags_ui:
-            col.separator()
-            box = col.box()
-            tags_col = box.column(align=True)
-            tags_col.label(text="Choose some tags:")
-            tags_col.separator()
-
-            current_tags = get_tags()
-            if gaf_props.hdri in current_tags:
-                current_tags = current_tags[gaf_props.hdri]
+            if gaf_props.hdri_search:
+                row = col.row(align=True)
+                row.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
+                row.operator('gaffer.clear_search', text="", icon='X')
+                subrow = row.row(align=True)
+                subrow.alignment = 'RIGHT'
+                subrow.label(text=str(len(hdri_enum_previews(gaf_props, context))) + ' matches')
             else:
-                current_tags = []
+                col.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
 
-            i = 0
-            for t in possible_tags:
-                if i % 4 == 0 or t == '##split##':  # Split tags into columns
-                    row = tags_col.row(align=True)
-                if t != '##split##':
+            col = layout.column(align=True)
 
-                    op = row.operator('gaffer.add_tag', text=t.title(), icon='FILE_TICK' if t in current_tags else 'NONE')
-                    op.hdri = gaf_props.hdri
-                    op.tag = t
-                    i += 1
-                else:
-                    i = 0
-            tags_col.prop(gaf_props, 'hdri_custom_tags', icon_value=icons['text-cursor'].icon_id)
-            tags_col.separator()
-            tags_col.prop(gaf_props, 'hdri_show_tags_ui', text="Done", toggle=True)
-            col.separator()
-
-        col = layout.column(align=True)
-
-        if prefs.RequestThumbGen:
             row = col.row(align=True)
-            row.alignment = 'CENTER'
-            row.operator('gaffer.generate_hdri_thumbs', icon='IMAGE')
+
+            tmpc = row.column(align=True)
+            tmpcc = tmpc.column(align=True)
+            tmpcc.scale_y=10 if not toolbar else 4.5
+            tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
+            tmpr = tmpc.column(align=True)
+            tmpr.scale_y=1
+            tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
+
+            tmpc = row.column()
+            tmpc.scale_y=1 / (2 if toolbar else 1)
+            tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=11)
+
+            tmpc = row.column(align=True)
+            tmpcc = tmpc.column(align=True)
+            tmpcc.scale_y=10 if not toolbar else 4.5
+            tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
+            tmpr = tmpc.column(align=True)
+            tmpr.scale_y=1
+            tmpr.operator('gaffer.hdri_random', text='', icon_value=icons['random'].icon_id)
+
+            if gaf_props.hdri_show_tags_ui:
+                col.separator()
+                box = col.box()
+                tags_col = box.column(align=True)
+                tags_col.label(text="Choose some tags:")
+                tags_col.separator()
+
+                current_tags = get_tags()
+                if gaf_props.hdri in current_tags:
+                    current_tags = current_tags[gaf_props.hdri]
+                else:
+                    current_tags = []
+
+                i = 0
+                for t in possible_tags:
+                    if i % 4 == 0 or t == '##split##':  # Split tags into columns
+                        row = tags_col.row(align=True)
+                    if t != '##split##':
+
+                        op = row.operator('gaffer.add_tag', text=t.title(), icon='FILE_TICK' if t in current_tags else 'NONE')
+                        op.hdri = gaf_props.hdri
+                        op.tag = t
+                        i += 1
+                    else:
+                        i = 0
+                tags_col.prop(gaf_props, 'hdri_custom_tags', icon_value=icons['text-cursor'].icon_id)
+                tags_col.separator()
+                tags_col.prop(gaf_props, 'hdri_show_tags_ui', text="Done", toggle=True)
+                col.separator()
+
+            col = layout.column(align=True)
+
+            if prefs.RequestThumbGen:
+                row = col.row(align=True)
+                row.alignment = 'CENTER'
+                row.operator('gaffer.generate_hdri_thumbs', icon='IMAGE')
+                col.separator()
+
+            row = col.row(align=True)
+            row.prop(gaf_props, "hdri_variation", text="")
+            if hdri_haven_list and hdri_list:
+                if gaf_props.hdri in hdri_haven_list and gaf_props.hdri in hdri_list:
+                    if not any(("_16k" in h or "_8k" in h or "_4k" in h) for h in hdri_list[gaf_props.hdri]):
+                        row.operator('gaffer.go_hdri_haven', text="", icon_value=icons['hdri_haven'].icon_id).url="https://hdrihaven.com/hdri/?h="+gaf_props.hdri
+
             col.separator()
-
-        row = col.row(align=True)
-        row.prop(gaf_props, "hdri_variation", text="")
-        if hdri_haven_list and hdri_list:
-            if gaf_props.hdri in hdri_haven_list and gaf_props.hdri in hdri_list:
-                if not any(("_16k" in h or "_8k" in h or "_4k" in h) for h in hdri_list[gaf_props.hdri]):
-                    row.operator('gaffer.go_hdri_haven', text="", icon_value=icons['hdri_haven'].icon_id).url="https://hdrihaven.com/hdri/?h="+gaf_props.hdri
-
-        col.separator()
-        col.separator()
+            col.separator()
         col.prop(gaf_props, 'hdri_rotation', slider=True)
         col.separator()
         row = col.row(align = True)
