@@ -32,6 +32,7 @@ from .constants import *
 
 
 def _force_redraw_hack():  # Taken from Campbell's Cell Fracture addon
+    return  # TODO this function crashes in 2.8, maybe there's a newer method?
     _force_redraw_hack.opr(**_force_redraw_hack.arg)
 _force_redraw_hack.opr = bpy.ops.wm.redraw_timer
 _force_redraw_hack.arg = dict(type='DRAW_WIN_SWAP', iterations=1)

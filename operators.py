@@ -1049,7 +1049,7 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
     size_limit = 100
 
     skip_huge_files: bpy.props.BoolProperty(
-        name = "Skip big files",
+        name = "Skip files larger than "+str(size_limit)+" MB to save time (recommended).",
         description = "If you have big HDRIs (>"+str(size_limit)+" MB) with no smaller resolution available, these will be skipped to save time. Disabling this will mean it may take an unreasonable amount of time to generate thumbnails. Instead, it would be better if you manually create the lower resolution version first in Photoshop/Krita, then click 'Refresh' in Gaffer's User Preferences",
         default=True
         )
@@ -1061,8 +1061,9 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
         layout = self.layout
 
         col = layout.column()
-        col.label(text="This only has to be done once.")
+        col.label(text="This may take a few minutes, but only has to be done once.")
         col.label(text="The only way to stop this process once you start it is to forcibly close Blender.")
+        col.label(text="Due to a bug in Blender 2.8, no progress bar will be shown.")
 
         col.separator()
         col = layout.column(align=True)
@@ -1143,25 +1144,30 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
         progress_begin(context)
 
         num_hdris = len(hdris)
-
-
-        from concurrent.futures import ThreadPoolExecutor
-        executor = ThreadPoolExecutor(max_workers=8 if self.skip_huge_files else 4)
-        threads = []
-        for i, h in enumerate(hdris):
-            t = executor.submit(self.generate_thumb, h, hdris[h])
-            threads.append(t)
+        threaded = True  # Set to False for debugging
 
         errors = []
-        while (any(t._state!="FINISHED" for t in threads)):
-            num_finished = 0
-            for tt in threads:
-                if tt._state == "FINISHED":
-                    num_finished += 1
-                    if tt.result() != None:
-                        errors.append(tt.result())
-            progress_update(context, num_finished/num_hdris, "Generating thumbnail: "+str(num_finished+1)+'/'+str(num_hdris))
-            sleep (2)
+        if threaded:
+            from concurrent.futures import ThreadPoolExecutor
+            executor = ThreadPoolExecutor(max_workers=8 if self.skip_huge_files else 4)
+            threads = []
+            for i, h in enumerate(hdris):
+                t = executor.submit(self.generate_thumb, h, hdris[h])
+                threads.append(t)
+
+            while (any(t._state!="FINISHED" for t in threads)):
+                num_finished = 0
+                for tt in threads:
+                    if tt._state == "FINISHED":
+                        num_finished += 1
+                        if tt.result() != None:
+                            errors.append(tt.result())
+                progress_update(context, num_finished/num_hdris, "Generating thumbnail: "+str(num_finished+1)+'/'+str(num_hdris))
+                sleep (2)
+        else:
+            for num_finished, h in enumerate(hdris):
+                self.generate_thumb(h, hdris[h])
+                progress_update(context, num_finished/num_hdris, "Generating thumbnail: "+str(num_finished+1)+'/'+str(num_hdris))
 
         if errors:
             for e in errors:
