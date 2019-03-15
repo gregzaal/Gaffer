@@ -79,7 +79,7 @@ class Singleton_updater(object):
 		self._include_master = False
 		self._manual_only = False
 		self._version_min_update = None
-		self._version_max_update = None
+		self._version_max_update = (3, 1, 0)
 
 		# by default, backup current addon if new is being loaded
 		self._backup_current = True 
