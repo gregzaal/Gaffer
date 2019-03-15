@@ -65,7 +65,7 @@ class GAFFER_OT_rename(bpy.types.Operator):
 
     def draw(self, context):
         self.layout.prop(self, 'light')
-        if self.multiuser:
+        if self.multiuser != "":
             self.layout.label(text="You are renaming the " + ("light data" if self.multiuser.startswith("LIGHT") else "material") + ", which has multiple users")
 
     def invoke(self, context, event):
@@ -848,9 +848,9 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                     char_width = 37 * font_size_factor
                     height = 65 * font_size_factor
                     width = len(obj.name) * int(char_width) + 1
-                    # width = blf.dimensions(font_id, obj.name)[0]
                     if item[2]:
-                        width = max(width, len(item[2]) * int(char_width*0.8) + 1)
+                        width_2 = len(item[2]) * int(char_width) + 1
+                        width = max(width*0.8, width_2)
 
                     x, y = self.alignment(x, y, width, height if not item[2] else height - height * 0.8 - 4, scene.gaf_props.LabelMargin*font_size_factor)
                     y_sub = y - (8 * font_size_factor) - height
@@ -884,12 +884,14 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                         blf.color(font_id, text_color[0], text_color[1], text_color[2], 1.0)
                     blf.position(font_id, x, y, 0)
                     blf.size(font_id, scene.gaf_props.LabelFontSize, context.preferences.system.dpi)
-                    blf.draw(font_id, obj.name)
 
-                    if item[2]:
+                    if not item[2]:
+                        blf.draw(font_id, obj.name)
+                    else:
+                        blf.draw(font_id, item[2])
                         blf.position(font_id, x, y_sub, 0)
                         blf.size(font_id, int(scene.gaf_props.LabelFontSize*0.8), context.preferences.system.dpi)
-                        blf.draw(font_id, item[2])
+                        blf.draw(font_id, obj.name)
     
     def modal(self, context, event):
         if context.scene.gaf_props.IsShowingLabel:
