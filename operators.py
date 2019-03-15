@@ -407,7 +407,7 @@ class GAFFER_OT_create_enviro_widget(bpy.types.Operator):
         widget_data = bpy.data.objects.new("Environment Rotation Widget", None)
         scene.objects.link(widget_data)
         widget = scene.objects["Environment Rotation Widget"]
-        widget.location = scene.cursor_location
+        widget.location = scene.cursor.location
         widget.rotation_euler = map_rotation
         widget.empty_draw_type = 'SPHERE'
         widget.empty_draw_size = self.radius
@@ -531,7 +531,7 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
                 self.report({'ERROR'}, "No selected objects!")
                 return {'CANCELLED'}
             for obj in context.selected_editable_objects:
-                self.aim(context, obj, context.scene.cursor_location)
+                self.aim(context, obj, context.scene.cursor.location)
 
             return {'FINISHED'}
 
