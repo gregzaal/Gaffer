@@ -34,6 +34,8 @@ if "bpy" in locals():
     imp.reload(functions)
     imp.reload(operators)
     imp.reload(ui)
+    imp.reload(addon_updater)
+    imp.reload(addon_updater_ops)
 else:
     from . import constants, functions, operators, ui
 
@@ -41,6 +43,7 @@ import bpy
 import os
 import json
 import bgl, blf
+from . import addon_updater_ops
 from collections import OrderedDict
 from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
@@ -51,6 +54,41 @@ from bpy.app.handlers import persistent
 class GafferPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
+    # Add-on Updater Prefs
+    auto_check_update: bpy.props.BoolProperty(
+        name = "Auto-check for Update",
+        description = "If enabled, auto-check for updates using an interval",
+        default = True,
+        )
+    updater_intrval_months: bpy.props.IntProperty(
+        name='Months',
+        description = "Number of months between checking for updates",
+        default=0,
+        min=0
+        )
+    updater_intrval_days: bpy.props.IntProperty(
+        name='Days',
+        description = "Number of days between checking for updates",
+        default=1,
+        min=0,
+        )
+    updater_intrval_hours: bpy.props.IntProperty(
+        name='Hours',
+        description = "Number of hours between checking for updates",
+        default=0,
+        min=0,
+        max=23
+        )
+    updater_intrval_minutes: bpy.props.IntProperty(
+        name='Minutes',
+        description = "Number of minutes between checking for updates",
+        default=0,
+        min=0,
+        max=59
+        )
+    updater_expand_prefs: bpy.props.BoolProperty(default=False)
+
+    # Add-on Prefs
     hdri_path: bpy.props.StringProperty(
         name="HDRI Folder",
         subtype='DIR_PATH',
@@ -128,6 +166,8 @@ class GafferPreferences(bpy.types.AddonPreferences):
         row = main_col.row()
         row.alignment = 'RIGHT'
         row.prop(self, 'include_8bit')
+
+        addon_updater_ops.update_settings_ui(self,context)
 
         box = layout.box()
         col = box.column()
@@ -536,6 +576,7 @@ classes = [
 ]
 
 def register():
+    addon_updater_ops.register(bl_info)
 
     functions.previews_register()
     functions.cleanup_logs()
@@ -550,6 +591,8 @@ def register():
     bpy.app.handlers.load_post.append(operators.load_handler)
 
 def unregister():
+    addon_updater_ops.unregister()
+
     bpy.app.handlers.load_post.remove(operators.load_handler)
 
     functions.previews_unregister()
