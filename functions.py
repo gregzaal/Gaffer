@@ -91,7 +91,7 @@ def refresh_light_list(scene):
             name="Light Falloff",
             items=(("constant","Constant","No light falloff","IPO_CONSTANT",1),
                    ("linear","Linear","Fade light strength linearly over the distance it travels","IPO_LINEAR",2),
-                   ("quadratic","Quadratic","(Realisic) Light strength is inversely proportional to the square of the distance it travels","IPO_SINE",3)),
+                   ("quadratic","Quadratic","(Realisic) Light strength is inversely proportional to the square of the distance it travels","IPO_QUAD",3)),
             default="quadratic",
             description="The rate at which the light loses intensity over distance",
             update=_update_falloff)
