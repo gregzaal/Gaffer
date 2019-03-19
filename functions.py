@@ -84,6 +84,31 @@ def dpifac():
 
 
 def refresh_light_list(scene):
+
+    def get_next_available_value_socket(node):
+        current_node = node
+        found_node = node.name
+        found_socket = -1
+        i = 0
+        max_iterations = 1000  # Prevent infinite loop. Unlikely that users have more than this many nodes just for a light.
+        while found_socket == -1:
+            i += 1
+            if i == max_iterations:
+                print("Gaffer Warning: Max iterations hit in get_next_available_value_socket for "+node.name)
+                break
+            if len(current_node.inputs) == 0:
+                # End of the line.
+                break
+
+            for si, s in enumerate(current_node.inputs):
+                if s.type == 'VALUE':
+                    if not s.is_linked:
+                        found_node = current_node.name
+                        found_socket = si
+                        break
+                    else:
+                        current_node = s.links[0].from_node
+        return found_node, found_socket
     m = []
 
     if not hasattr(bpy.types.Object, "GafferFalloff"):
@@ -120,27 +145,16 @@ def refresh_light_list(scene):
                             if node.name != "Emission Viewer":
                                 if node.type == 'EMISSION':
                                     if node.outputs[0].is_linked:
-                                        if node.inputs[1].is_linked:
-                                            socket_index = 0
-                                            subnode = node.inputs[1].links[0].from_node
-                                            if subnode.inputs:
-                                                for inpt in subnode.inputs:
-                                                    if inpt.type == 'VALUE':  # use first Value socket as strength
-                                                        m.append([obj.name, None, subnode.name, 'i'+str(socket_index)])
-                                                        break
-                                        else:
-                                            m.append([obj.name, None, node.name, 1])
+                                        node_name, socket_index = get_next_available_value_socket(node)
+                                        m.append([obj.name, None, node_name, 'i'+str(socket_index)])
                                         break
                     else:
                         node = obj.data.node_tree.nodes[light_dict[obj.name]]
-                        socket_index = 0
                         if node.inputs:
-                            for inpt in node.inputs:
-                                if inpt.type == 'VALUE':  # use first Value socket as strength
-                                    m.append([obj.name, None, node.name, 'i'+str(socket_index)])
-                                    break
-                                socket_index += 1
+                            node_name, socket_index = get_next_available_value_socket(node)
+                            m.append([obj.name, None, node_name, 'i'+str(socket_index)])
                         elif node.outputs:
+                            socket_index = 0
                             for oupt in node.outputs:
                                 if oupt.type == 'VALUE':  # use first Value socket as strength
                                     m.append([obj.name, None, node.name, 'o'+str(socket_index)])
@@ -167,31 +181,18 @@ def refresh_light_list(scene):
                                         if node.name != "Emission Viewer":
                                             if node.type == 'EMISSION':
                                                 if node.outputs[0].is_linked:
-                                                    if node.inputs[1].is_linked:
-                                                        socket_index = 0
-                                                        subnode = node.inputs[1].links[0].from_node
-                                                        if subnode.inputs:
-                                                            for inpt in subnode.inputs:
-                                                                if inpt.type == 'VALUE':  # use first Value socket as strength
-                                                                    m.append([obj.name, slot.material.name, subnode.name, 'i'+str(socket_index)])
-                                                                    light_mats.append(slot.material)
-                                                                    slot_break = True
-                                                                    break
-                                                    else:
-                                                        m.append([obj.name, slot.material.name, node.name, 1])
-                                                        light_mats.append(slot.material)  # skip this material next time it's checked
-                                                        slot_break = True
-                                                        break
+                                                    node_name, socket_index = get_next_available_value_socket(node)
+                                                    m.append([obj.name, slot.material.name, node_name, 'i'+str(socket_index)])
+                                                    light_mats.append(slot.material)  # Skip this material next time it's checked
+                                                    slot_break = True
+                                                    break
                                 else:
                                     node = slot.material.node_tree.nodes[light_dict[obj.name]]
-                                    socket_index = 0
                                     if node.inputs:
-                                        for inpt in node.inputs:
-                                            if inpt.type == 'VALUE':  # use first Value socket as strength
-                                                m.append([obj.name, slot.material.name, node.name, 'i'+str(socket_index)])
-                                                break
-                                            socket_index += 1
+                                        node_name, socket_index = get_next_available_value_socket(node)
+                                        m.append([obj.name, slot.material.name, node_name, 'i'+str(socket_index)])
                                     elif node.outputs:
+                                        socket_index = 0
                                         for oupt in node.outputs:
                                             if oupt.type == 'VALUE':  # use first Value socket as strength
                                                 m.append([obj.name, slot.material.name, node.name, 'o'+str(socket_index)])
@@ -486,12 +487,9 @@ def _update_world_vis(self, context):
 
 
 def refresh_bgl():
-    print ("refreshed bgl")
-
     if bpy.context.scene.gaf_props.IsShowingRadius:
         bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
         bpy.ops.gaffer.show_radius('INVOKE_DEFAULT')
-
     if bpy.context.scene.gaf_props.IsShowingLabel:
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
