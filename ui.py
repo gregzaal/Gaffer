@@ -58,7 +58,7 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
         # Don't allow names to be edited during solo, will break the record of what was originally hidden
         row.label(text=light.name)
 
-    visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'RESTRICT_VIEW_ON' if light.hide_viewport else 'RESTRICT_VIEW_OFF', emboss=False)
+    visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'HIDE_ON' if light.hide_viewport else 'HIDE_OFF', emboss=False)
     visop.light = light.name
     visop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
     visop.hide = not light.hide_viewport
@@ -524,7 +524,7 @@ def draw_cycles_UI(context, layout, lights):
             row.operator("gaffer.more_options_show", icon='TRIA_RIGHT', text='', emboss=False).light = "WorldEnviroLight"
 
         row.label(text="World")
-        row.prop(gaf_props, "WorldVis", text="", icon='%s' % 'RESTRICT_VIEW_OFF' if gaf_props.WorldVis else 'RESTRICT_VIEW_ON', emboss=False)
+        row.prop(gaf_props, "WorldVis", text="", icon='%s' % 'HIDE_OFF' if gaf_props.WorldVis else 'HIDE_ON', emboss=False)
 
         if gaf_props.SoloActive == '':
             solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
