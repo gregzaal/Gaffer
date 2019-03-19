@@ -340,6 +340,9 @@ def isInVisibleCollection(obj, scene):
         for child in bpy.context.window.view_layer.layer_collection.children:
             if child.is_visible and child.collection == oc:
                 return True
+    for o in scene.collection.objects:  # Master collection can't be hidden
+        if obj == o:
+            return True
     return False
 
 
