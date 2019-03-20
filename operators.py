@@ -890,7 +890,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
 
                 region = context.region
                 rv3d = context.space_data.region_3d
-                loc = location_3d_to_region_2d(region, rv3d, obj.location)
+                loc = location_3d_to_region_2d(region, rv3d, obj.matrix_world.translation)
                 if loc:  # sometimes this is None if lights are out of view
                     x, y = loc
 
