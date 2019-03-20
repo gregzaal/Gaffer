@@ -66,6 +66,10 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
     selop = row.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select_get() else 'RESTRICT_SELECT_ON', text="", emboss=False)
     selop.light = light.name
     selop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
+
+    # aimop = row.operator("gaffer.aim_view", icon="IMAGE_PLANE", text="", emboss=False)
+    # aimop.light = light.name
+
     if gaf_props.SoloActive == '':
         solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
         solobtn.light = light.name

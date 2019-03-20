@@ -109,6 +109,7 @@ def refresh_light_list(scene):
                     else:
                         current_node = s.links[0].from_node
         return found_node, found_socket
+    
     m = []
 
     if not hasattr(bpy.types.Object, "GafferFalloff"):

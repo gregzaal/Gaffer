@@ -586,6 +586,56 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
 
         return {'CANCELLED'}
 
+class GAFFER_OT_aim_light_with_view(bpy.types.Operator):
+
+    'Aim this light using the 3D view camera'
+    bl_idname = 'gaffer.aim_view'
+    bl_label = 'Aim With View'
+    bl_options = {'INTERNAL'}  # TODO remove
+
+    light: bpy.props.StringProperty()
+
+    old_cam = None
+    old_lock = None
+
+    # TODO poll for 3d view
+
+    def execute(self, context):
+        print("execute")
+
+    def modal(self, context, event):
+        print(event.type, context.space_data.type)
+        if event.type in ('RET', 'SPACE'):
+            bpy.ops.view3d.view_camera()
+            context.scene.camera = self.old_cam
+            context.space_data.lock_camera = self.old_lock
+            print("confirm")
+            return {'FINISHED'}
+        elif event.type in ('RIGHTMOUSE', 'ESC'):
+            bpy.ops.view3d.view_camera()
+            context.scene.camera = self.old_cam
+            context.space_data.lock_camera = self.old_lock
+            print("cancelled")
+            return {'CANCELLED'}
+        else:
+            return {'PASS_THROUGH'}
+
+        return {'RUNNING_MODAL'}
+
+    def invoke(self, context, event):
+        if context.space_data.type == 'VIEW_3D':
+            obj = bpy.data.objects[self.light]
+            self.old_cam = context.scene.camera
+            self.old_lock = context.space_data.lock_camera
+            context.scene.camera = obj
+            context.space_data.lock_camera = True
+            bpy.ops.view3d.view_camera()
+            print('RUNNING_MODAL')
+            context.window_manager.modal_handler_add(self)
+            return {'RUNNING_MODAL'}
+        else:
+            self.report({'WARNING'}, "Active space must be a View3d")
+            return {'CANCELLED'}
 
 class GAFFER_OT_show_light_radius(bpy.types.Operator):
 

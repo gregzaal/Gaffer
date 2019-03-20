@@ -549,6 +549,7 @@ classes = [
     operators.GAFFER_OT_create_enviro_widget,
     operators.GAFFER_OT_link_sky_to_sun,
     operators.GAFFER_OT_aim_light,
+    operators.GAFFER_OT_aim_light_with_view,
     operators.GAFFER_OT_show_light_radius,
     operators.GAFFER_OT_show_light_label,
     operators.GAFFER_OT_refresh_bgl,
