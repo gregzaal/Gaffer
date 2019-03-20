@@ -731,7 +731,7 @@ class GAFFER_PT_tools(bpy.types.Panel):
 
         # Aiming
         col = maincol.column(align = True)
-        col.label(text="Aim:", icon='ALEMBIC')  # TODO used to use 'MAN_TRANS' icon
+        col.label(text="Aim:", icon='LIGHT_AREA')
         col.operator('gaffer.aim', text="Selection at 3D cursor").target_type = 'CURSOR'
         col.operator('gaffer.aim', text="Selected at active").target_type = 'ACTIVE'
         col.operator('gaffer.aim', text="Active at selected").target_type = 'SELECTED'
@@ -742,7 +742,7 @@ class GAFFER_PT_tools(bpy.types.Panel):
         box = maincol.box() if gaf_props.IsShowingRadius else maincol.column()
         sub = box.column(align=True)
         row = sub.row(align=True)
-        row.operator('gaffer.show_radius', text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius", icon='ERROR')  # TODO used to use icon 'META_EMPTY'
+        row.operator('gaffer.show_radius', text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius", icon='MESH_CIRCLE')
         if gaf_props.IsShowingRadius:
             row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
             sub.prop(gaf_props, 'LightRadiusAlpha', slider=True)
@@ -763,7 +763,7 @@ class GAFFER_PT_tools(bpy.types.Panel):
         box = maincol.box() if gaf_props.IsShowingLabel else maincol.column()
         sub = box.column(align=True)
         row = sub.row(align=True)
-        row.operator('gaffer.show_label', text="Show Label" if not gaf_props.IsShowingLabel else "Hide Label", icon='LONGDISPLAY')
+        row.operator('gaffer.show_label', text="Show Label" if not gaf_props.IsShowingLabel else "Hide Label", icon='ALIGN_LEFT')
         if gaf_props.IsShowingLabel:
             row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
             label_draw_type = gaf_props.LabelDrawType
