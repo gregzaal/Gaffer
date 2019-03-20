@@ -1043,6 +1043,11 @@ def update_search(self, context):
     if context.scene.gaf_props.hdri:
         # Force update of currently shown thumbnail
         context.scene.gaf_props.hdri = context.scene.gaf_props.hdri
+    else:
+        hdri_list = get_hdri_list(use_search=True)
+        if hdri_list:
+            # Default to first HDRI in list if the previous one isn't there.
+            context.scene.gaf_props.hdri = tuple(hdri_list)[0]
 
 def update_variation(self, context):
     gaf_props = context.scene.gaf_props
