@@ -1364,6 +1364,46 @@ class GAFFER_OT_hdri_random(bpy.types.Operator):
         
         return {'FINISHED'}
 
+class GAFFER_OT_hdri_reset(bpy.types.Operator):
+
+    "Reset all HDRI adjustments (rotation, brightness, etc.) to their default values"
+    bl_idname = 'gaffer.hdri_reset'
+    bl_label = 'Reset'
+    bl_options = {'INTERNAL'}
+
+    hdri: bpy.props.StringProperty()
+
+    def execute(self, context):
+        defaults = get_defaults(self.hdri)
+        rna_props = context.scene.gaf_props.bl_rna.properties
+        
+        for d in defaults_stored:
+            v = 0
+            if d in defaults:
+                v = defaults[d]
+            else:
+                if "hdri_"+d in rna_props.keys():
+                    v = rna_props["hdri_"+d].default
+
+            if "hdri_"+d in rna_props.keys():
+                context.scene.gaf_props['hdri_'+d] = v
+        
+        return {'FINISHED'}
+
+class GAFFER_OT_hdri_save(bpy.types.Operator):
+
+    "Save the current adjustments (rotation, brightness, etc.) as the default for this HDRI"
+    bl_idname = 'gaffer.hdri_save'
+    bl_label = 'Save Adjustments'
+    bl_options = {'INTERNAL'}
+
+    hdri: bpy.props.StringProperty()
+
+    def execute(self, context):
+        set_defaults(context, self.hdri)
+        self.report({'INFO'}, "Saved defaults for "+nice_hdri_name(context.scene.gaf_props.hdri))
+        return {'FINISHED'}
+
 class GAFFER_OT_fix_mis(bpy.types.Operator):
 
     "Set the Multiple Importance Map resolution to 1024"

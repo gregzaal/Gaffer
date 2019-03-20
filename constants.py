@@ -75,6 +75,14 @@ jpg_dir = os.path.join(data_dir, 'hdri_jpgs')
 if not os.path.exists(jpg_dir): os.makedirs(jpg_dir)
 hdri_list_path = os.path.join(data_dir, 'gaffer_hdris.json')
 tags_path = os.path.join(data_dir, 'tags.json')
+defaults_path = os.path.join(data_dir, 'hdri_defaults.json')
+defaults_stored = ["rotation",
+                   "brightness",
+                   "contrast",
+                   "saturation",
+                   "warmth",
+                   "tint",
+                   "clamp"]
 settings_file = os.path.join(data_dir, 'settings.json')
 preview_collections = {}
 icon_dir = os.path.join(os.path.dirname(__file__), 'icons')

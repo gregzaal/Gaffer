@@ -562,6 +562,8 @@ classes = [
     operators.GAFFER_OT_hdri_paddles,
     operators.GAFFER_OT_hdri_add_tag,
     operators.GAFFER_OT_hdri_random,
+    operators.GAFFER_OT_hdri_reset,
+    operators.GAFFER_OT_hdri_save,
     operators.GAFFER_OT_fix_mis,
     operators.GAFFER_OT_get_hdrihaven,
     operators.GAFFER_OT_hide_hdrihaven,

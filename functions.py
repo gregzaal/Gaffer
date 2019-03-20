@@ -1452,6 +1452,26 @@ def get_possible_tags_list():
 if len(possible_tags) < 1:
     possible_tags = get_possible_tags_list()
 
+def get_defaults(hdri_name):
+    if os.path.exists(defaults_path):
+        with open(defaults_path) as f:
+            data = json.load(f)
+        if hdri_name in data:
+            return data[hdri_name]
+    return {}
+
+def set_defaults(context, hdri_name):
+    defaults = {}
+    if os.path.exists(defaults_path):
+        with open(defaults_path) as f:
+            defaults = json.load(f)
+    for d in defaults_stored:
+        if hdri_name not in defaults:
+            defaults[hdri_name] = {}
+        defaults[hdri_name][d] = context.scene.gaf_props['hdri_'+d]
+    with open(defaults_path, 'w') as f:
+        f.write(json.dumps(defaults, indent=4))
+
 def get_hdri_haven_list(force_update=False):
     ''' Get HDRI Haven list from web once per week, otherwise fetch from file'''
 
