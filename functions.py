@@ -626,6 +626,8 @@ def detect_hdris(self, context):
             f.write(json.dumps(hdris, indent=4))
 
         hdri_list = hdris
+        if context.scene.gaf_props['hdri'] >= len(hdri_list):
+            context.scene.gaf_props['hdri'] = 0
         refresh_previews()
         set_persistent_setting('hdri_path', prefs.hdri_path)
         prefs.ForcePreviewsRefresh = True
@@ -681,6 +683,9 @@ if len(hdri_list) < 1:
     hdri_list = get_hdri_list()
 
 def get_variation(hdri, mode=None, var=None):
+    if hdri == "":
+        return
+
     variations = hdri_list[hdri]
     hdri_path = bpy.context.preferences.addons[__package__].preferences.hdri_path
     if mode == 'smallest':
@@ -858,16 +863,17 @@ def new_link(links, from_socket, to_socket, force=False):
 
 def switch_hdri(self, context):
     gaf_props = context.scene.gaf_props
-    default_var = get_variation(gaf_props.hdri, mode='smallest')  # Default to smallest
+    if gaf_props.hdri != "":
+        default_var = get_variation(gaf_props.hdri, mode='smallest')  # Default to smallest
 
-    # But prefer 1k if there is one
-    for v in hdri_list[gaf_props.hdri]:
-        if '1k' in v:
-            default_var = get_variation(gaf_props.hdri, var=v)
-            break
+        # But prefer 1k if there is one
+        for v in hdri_list[gaf_props.hdri]:
+            if '1k' in v:
+                default_var = get_variation(gaf_props.hdri, var=v)
+                break
 
-    gaf_props.hdri_variation = default_var
-    setup_hdri(self, context)
+        gaf_props.hdri_variation = default_var
+        setup_hdri(self, context)
     show_hdrihaven()
 
 def setup_hdri(self, context):
