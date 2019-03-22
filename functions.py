@@ -604,7 +604,6 @@ def detect_hdris(self, context):
             if sub_path.startswith('\\') or sub_path.startswith('/'):
                 sub_path = sub_path[1:]
 
-            files = sorted(files, key=lambda x: os.path.getsize(os.path.join(path, x)))
             hdri_file_pairs = []
             for f in files:
                 hdri_name = get_hdri_basename(f)
@@ -620,7 +619,12 @@ def detect_hdris(self, context):
     if (prefs.hdri_path):
         check_folder_for_HDRIs(prefs.hdri_path)
 
-        hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))  # Sort by hdri name
+        # Sort variations by filesize
+        for h in hdris:
+            hdris[h] = sorted(hdris[h], key=lambda x: os.path.getsize(os.path.join(prefs.hdri_path, x)))
+
+        # Sort HDRI list alphabetically
+        hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
 
         with open(hdri_list_path, 'w') as f:
             f.write(json.dumps(hdris, indent=4))
