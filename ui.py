@@ -836,7 +836,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             tmpc = row.column(align=True)
             tmpr = tmpc.column(align=True)
             tmpr.scale_y=1
-            tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
+            tmpr.operator('gaffer.hdri_reset', text='', icon='FILE_REFRESH').hdri = gaf_props.hdri
             tmpcc = tmpc.column(align=True)
             tmpcc.scale_y=9 if not toolbar else 3.5
             tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
@@ -851,13 +851,13 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             tmpc = row.column(align=True)
             tmpr = tmpc.column(align=True)
             tmpr.scale_y=1
-            tmpr.operator('gaffer.hdri_random', text='', icon_value=icons['random'].icon_id)
+            tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
             tmpcc = tmpc.column(align=True)
             tmpcc.scale_y=9 if not toolbar else 3.5
             tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
             tmpr = tmpc.column(align=True)
             tmpr.scale_y=1
-            tmpr.operator('gaffer.hdri_reset', text='', icon='FILE_REFRESH').hdri = gaf_props.hdri
+            tmpr.operator('gaffer.hdri_random', text='', icon_value=icons['random'].icon_id)
 
 
             if gaf_props.hdri_show_tags_ui:

@@ -1339,7 +1339,7 @@ class GAFFER_OT_hdri_variation_paddles(bpy.types.Operator):
         variations = get_hdri_list(use_search=True)[gaf_props.hdri]
         last_var = len(variations)-1
         adj = 1 if self.do_next else -1
-        
+
         gaf_props['hdri_variation'] = min(last_var, max(0, gaf_props['hdri_variation'] + adj))
         update_variation(self, context)
         return {'FINISHED'}
