@@ -560,6 +560,7 @@ classes = [
     operators.GAFFER_OT_hdri_jpg_gen,
     operators.GAFFER_OT_hdri_clear_search,
     operators.GAFFER_OT_hdri_paddles,
+    operators.GAFFER_OT_hdri_variation_paddles,
     operators.GAFFER_OT_hdri_add_tag,
     operators.GAFFER_OT_hdri_random,
     operators.GAFFER_OT_hdri_reset,

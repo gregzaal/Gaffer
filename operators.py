@@ -1326,6 +1326,24 @@ class GAFFER_OT_hdri_paddles(bpy.types.Operator):
             gaf_props.hdri = list_hdris[current_index+1] if self.do_next else list_hdris[current_index-1]
             return {'FINISHED'}
 
+class GAFFER_OT_hdri_variation_paddles(bpy.types.Operator):
+
+    "Switch to the next/previous HDRI variation"
+    bl_idname = 'gaffer.hdri_variation_paddles'
+    bl_label = 'Next/Previous'
+    bl_options = {'INTERNAL'}
+    do_next: bpy.props.BoolProperty()
+
+    def execute(self, context):
+        gaf_props = context.scene.gaf_props
+        variations = get_hdri_list(use_search=True)[gaf_props.hdri]
+        last_var = len(variations)-1
+        adj = 1 if self.do_next else -1
+        
+        gaf_props['hdri_variation'] = min(last_var, max(0, gaf_props['hdri_variation'] + adj))
+        update_variation(self, context)
+        return {'FINISHED'}
+
 class GAFFER_OT_hdri_add_tag(bpy.types.Operator):
 
     "Add this tag to the current HDRI"

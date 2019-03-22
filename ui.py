@@ -899,12 +899,14 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 col.separator()
 
             row = col.row(align=True)
+            row.operator('gaffer.hdri_variation_paddles', text='', icon='TRIA_LEFT').do_next=False
             row.prop(gaf_props, "hdri_variation", text="")
             if hdri_haven_list and hdri_list:
                 if gaf_props.hdri in hdri_haven_list and gaf_props.hdri in hdri_list:
                     if not any(("_16k" in h or "_8k" in h or "_4k" in h) for h in hdri_list[gaf_props.hdri]):
                         row.operator('gaffer.go_hdri_haven', text="", icon_value=icons['hdri_haven'].icon_id).url="https://hdrihaven.com/hdri/?h="+gaf_props.hdri
 
+            row.operator('gaffer.hdri_variation_paddles', text='', icon='TRIA_RIGHT').do_next=True
             col.separator()
             col.separator()
         col.prop(gaf_props, 'hdri_rotation', slider=True)
