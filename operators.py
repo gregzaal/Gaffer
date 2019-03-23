@@ -1558,7 +1558,7 @@ class GAFFER_OT_hide_hdrihaven(bpy.types.Operator):
 
 class GAFFER_OT_open_hdrihaven(bpy.types.Operator):
 
-    "Download higher resolutions of this HDRI (also free) - opens web browser"
+    "Higher resolution versions of this HDRI are available for free (CC0) on HDRI Haven, click to open a web browser and download them"
     bl_idname = 'gaffer.go_hdri_haven'
     bl_label = 'Download higher resolutions of this HDRI (also free)'
     url: bpy.props.StringProperty()
