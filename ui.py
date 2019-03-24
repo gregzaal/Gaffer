@@ -908,6 +908,15 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
 
             row.operator('gaffer.hdri_variation_paddles', text='', icon='TRIA_RIGHT').do_next=True
             col.separator()
+
+            if gaf_props.FileNotFoundError:
+                row = col.row(align = True)
+                row.scale_y = 1.5
+                row.alert = True
+                row.alignment = 'CENTER'
+                row.label(text="File not found. Try refreshing your HDRI list:", icon='ERROR')
+                row.operator('gaffer.detect_hdris', text="Refresh", icon="FILE_REFRESH")
+
             col.separator()
         col.prop(gaf_props, 'hdri_rotation', slider=True)
         col.separator()

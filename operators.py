@@ -1133,7 +1133,7 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
 
         # Check if thumb file came with HDRI
         d = os.path.dirname(files[0])
-        for f in os.listdir(os.path.join(prefs.hdri_path, d)):
+        for f in os.listdir(d):
             if any(os.path.splitext(f)[0].lower().endswith(e) and name == get_hdri_basename(f) for e in thumb_endings):
                 chosen_file = os.path.join(d, f)
                 break
@@ -1158,16 +1158,15 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
                     for f in files:
                         if os.path.splitext(f)[1].lower() in allowed_file_types:
                             if not os.path.splitext(f)[0].lower().endswith('env'):
-                                file_sizes[f] = os.path.getsize(os.path.join(prefs.hdri_path, f))
+                                file_sizes[f] = os.path.getsize(f)
                     chosen_file = min(file_sizes, key=file_sizes.get)
         if not chosen_file:
             chosen_file = files[0]  # Safety fallback
 
         # Create thumbnail
-        fp = os.path.join(prefs.hdri_path, chosen_file)
         thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
-            filesize = os.path.getsize(fp)/1024/1024
+            filesize = os.path.getsize(chosen_file)/1024/1024
             log('    ' + name + ": " + chosen_file + "  " + str(ceil(filesize))+" MB", also_print=True)
             
             if filesize < self.size_limit or not self.skip_huge_files:
@@ -1177,7 +1176,7 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
                 cmd.append("--python")
                 cmd.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "resize.py"))
                 cmd.append('--')
-                cmd.append(fp)
+                cmd.append(chosen_file)
                 cmd.append('200')
                 cmd.append(thumb_file)
                 run(cmd)
@@ -1249,14 +1248,14 @@ class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
     def generate_jpgs(self, context, name):
         gaf_props = context.scene.gaf_props
 
-        hdri_path = get_variation(name, mode="biggest")
+        fp = get_variation(name, mode="biggest")
 
         img_exists = False
         for m in ['', '_dark']:  # Run twice, once for normal JPG and once for darkened JPG
             jpg_path = os.path.join(jpg_dir, name + m + ".jpg")
             if not os.path.exists(jpg_path):
                 if not img_exists:
-                    img = bpy.data.images.load(hdri_path, check_existing=False)
+                    img = bpy.data.images.load(fp, check_existing=False)
                     img_exists = True
                 darkened = m == '_dark'
                 save_image(context, img, jpg_path, 'JPEG', -4 if darkened else 0)

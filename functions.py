@@ -600,14 +600,10 @@ def detect_hdris(self, context):
                     if f != "_MACOSX":
                         check_folder_for_HDRIs(os.path.join(path, f))
 
-            sub_path = path.replace(prefs.hdri_path, "")
-            if sub_path.startswith('\\') or sub_path.startswith('/'):
-                sub_path = sub_path[1:]
-
             hdri_file_pairs = []
             for f in files:
                 hdri_name = get_hdri_basename(f)
-                hdri_file_pairs.append([hdri_name, f if sub_path == "" else os.path.join(sub_path, f)])
+                hdri_file_pairs.append([hdri_name, os.path.join(path, f)])
 
             for h in hdri_file_pairs:
                 if h[0] in hdris:
@@ -621,7 +617,7 @@ def detect_hdris(self, context):
 
         # Sort variations by filesize
         for h in hdris:
-            hdris[h] = sorted(hdris[h], key=lambda x: os.path.getsize(os.path.join(prefs.hdri_path, x)))
+            hdris[h] = sorted(hdris[h], key=lambda x: os.path.getsize(x))
 
         # Sort HDRI list alphabetically
         hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
@@ -693,11 +689,11 @@ def get_variation(hdri, mode=None, var=None):
     variations = hdri_list[hdri]
     hdri_path = bpy.context.preferences.addons[__package__].preferences.hdri_path
     if mode == 'smallest':
-        return os.path.join(hdri_path, variations[0])
+        return variations[0]
     elif mode == 'biggest':
-        return os.path.join(hdri_path, variations[-1])
+        return variations[-1]
     elif var:
-        return os.path.join(hdri_path, var)
+        return var
     else:
         return "ERROR: Unsupported mode!"
 
@@ -821,9 +817,12 @@ def handler_node(context, t, background=False):
     return n
 
 def set_image(context, path, node):
-    img = bpy.data.images.load(path, check_existing=True)
-    node.image = img
-    return True
+    if os.path.exists(path):
+        img = bpy.data.images.load(path, check_existing=True)
+        node.image = img
+        return True
+    else:
+        return False
 
 def uses_default_values(node, node_type):
     # Return if the node is using all it's default values (and can therefore be muted to save render time)
@@ -972,7 +971,8 @@ def setup_hdri(self, context):
 
 
     # Set Env images
-    set_image(context, os.path.join(prefs.hdri_path, gaf_props.hdri_variation), n_img)
+    gaf_props.FileNotFoundError = not os.path.exists(gaf_props.hdri_variation)
+    set_image(context, gaf_props.hdri_variation, n_img)
     if extra_nodes:
         if gaf_props.hdri_use_jpg_background:
             jpg_path = os.path.join(jpg_dir, gaf_props.hdri+".jpg")
@@ -1067,7 +1067,8 @@ def update_variation(self, context):
         return None  # Don't do anything if handler is disabled
 
     n = handler_node(context, "ShaderNodeTexEnvironment")
-    set_image(context, os.path.join(prefs.hdri_path, gaf_props.hdri_variation), n)
+    gaf_props.FileNotFoundError = not os.path.exists(gaf_props.hdri_variation)
+    set_image(context, gaf_props.hdri_variation, n)
 
     return None
 
