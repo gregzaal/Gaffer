@@ -1574,6 +1574,7 @@ def init_persistent_settings(set_name=None, set_value=None):
     ''' Initialize persistent settings file with option to change a default value'''
 
     settings = {'show_hdri_haven': True,
+                'hdri_path': '',  # Legacy
                 'hdri_paths': [""]}
 
     if set_name is not None:
