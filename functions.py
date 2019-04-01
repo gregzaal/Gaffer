@@ -1573,9 +1573,23 @@ def progress_end(context):
 def init_persistent_settings(set_name=None, set_value=None):
     ''' Initialize persistent settings file with option to change a default value'''
 
-    settings = {'show_hdri_haven': True,
+    settings = {}
+
+    # Some settings might already exist
+    if os.path.exists(settings_file):
+        with open(settings_file) as f:
+            settings = json.load(f)
+
+    # First time use in 2.8, copy path from 2.7
+    if 'hdri_path' in settings and not 'hdri_paths' in settings:
+        settings['hdri_paths'] = [settings['hdri_path']]
+
+    defaults = {'show_hdri_haven': True,
                 'hdri_path': '',  # Legacy
                 'hdri_paths': [""]}
+    for d in defaults:
+        if d not in settings:
+            settings[d] = defaults[d]
 
     if set_name is not None:
         settings[set_name] = set_value
