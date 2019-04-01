@@ -626,8 +626,9 @@ def detect_hdris(self, context):
             f.write(json.dumps(hdris, indent=4))
 
         hdri_list = hdris
-        if context.scene.gaf_props['hdri'] >= len(hdri_list):
-            context.scene.gaf_props['hdri'] = 0
+        if 'hdri' in context.scene.gaf_props:
+            if context.scene.gaf_props['hdri'] >= len(hdri_list):
+                context.scene.gaf_props['hdri'] = 0
         refresh_previews()
         set_persistent_setting('hdri_path', prefs.hdri_path)
         prefs.ForcePreviewsRefresh = True
