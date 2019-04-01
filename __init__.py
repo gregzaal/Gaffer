@@ -122,7 +122,19 @@ class GafferPreferences(bpy.types.AddonPreferences):
         layout = self.layout
 
         main_col = layout.column()
-        main_col.prop(self, 'hdri_path')
+        # main_col.prop(self, 'hdri_path')
+
+        hdri_paths = functions.get_persistent_setting('hdri_paths')
+        main_col.label(text="HDRI Folders:")
+        for i, hp in enumerate(hdri_paths):
+            row = main_col.row(align=True)
+            row.operator('gaffer.hdri_path_edit', text=hp).folder_index=i
+            if i > 0:
+                row.operator('gaffer.hdri_path_remove', text="", icon="X").folder_index=i
+            row.operator('gaffer.hdri_path_edit', text="", icon="FILE_FOLDER").folder_index=i
+        row = main_col.row()
+        row.alignment = 'RIGHT'
+        row.operator('gaffer.hdri_path_add', icon="ADD")
 
         if self.hdri_path:
             if os.path.exists(self.hdri_path):
@@ -557,6 +569,9 @@ classes = [
     operators.GAFFER_OT_add_blacklisted,
     operators.GAFFER_OT_remove_blacklisted,
     operators.GAFFER_OT_detect_hdris,
+    operators.GAFFER_OT_hdri_path_edit,
+    operators.GAFFER_OT_hdri_path_add,
+    operators.GAFFER_OT_hdri_path_remove,
     operators.GAFFER_OT_hdri_thumb_gen,
     operators.GAFFER_OT_hdri_jpg_gen,
     operators.GAFFER_OT_hdri_clear_search,

@@ -1573,7 +1573,9 @@ def progress_end(context):
 def init_persistent_settings(set_name=None, set_value=None):
     ''' Initialize persistent settings file with option to change a default value'''
 
-    settings = {'show_hdri_haven': True, 'hdri_path': ''}
+    settings = {'show_hdri_haven': True,
+                'hdri_path': '',
+                'hdri_paths': [""]}
 
     if set_name is not None:
         settings[set_name] = set_value

@@ -25,6 +25,7 @@ from math import pi, cos, sin, log, ceil
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
+from bpy_extras.io_utils import ImportHelper
 from time import sleep
 from subprocess import run
 
@@ -1089,6 +1090,46 @@ class GAFFER_OT_detect_hdris(bpy.types.Operator):
 
     def execute(self, context):
         detect_hdris(self, context)
+        return {'FINISHED'}
+
+class GAFFER_OT_hdri_path_edit(bpy.types.Operator, ImportHelper):
+
+    "Select a folder to scan for HDRIs"
+    bl_idname = 'gaffer.hdri_path_edit'
+    bl_label = 'Edit HDRI Path'
+
+    directory: bpy.props.StringProperty(
+        name='Directory',
+        subtype='DIR_PATH',
+        default='',
+        description='Folder to search in for image files')
+
+    folder_index: bpy.props.IntProperty(default=0)
+
+    def execute(self, context):
+        print(self.folder_index)
+        print(self.directory)
+        return {'FINISHED'}
+
+class GAFFER_OT_hdri_path_add(bpy.types.Operator):
+
+    "Add multiple HDRI folders to detect HDRIs in multiple locations or on different drives"
+    bl_idname = 'gaffer.hdri_path_add'
+    bl_label = 'Add another HDRI folder'
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+class GAFFER_OT_hdri_path_remove(bpy.types.Operator):
+
+    "Remove this HDRI folder, don't detect HDRIs from it"
+    bl_idname = 'gaffer.hdri_path_remove'
+    bl_label = 'Remove HDRI folder'
+
+    folder_index: bpy.props.IntProperty(default=0)
+
+    def execute(self, context):
+        print(self.folder_index)
         return {'FINISHED'}
 
 class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
