@@ -546,13 +546,14 @@ def draw_rounded_rect(shader, x1, y1, x2, y2, r):
 # HDRI stuffs
 
 def update_hdri_path(self, context):
-    prefs = bpy.context.preferences.addons[__package__].preferences
-    if prefs.hdri_path.startswith('//'):
-        prefs.hdri_path = os.path.abspath(bpy.path.abspath(prefs.hdri_path))
-        # For some reason bpy.path.abspath often still includes some
-        # relativeness, such as "C:/path/../real_path/to/file.jpg"
-        # So running os.path.abspath(bpy.path.abspath) should resolve
-        # to "C:/real_path/to/file.jpg"
+    hdri_paths = get_persistent_setting('hdri_paths')
+    for i, hp in enumerate(hdri_paths):
+        if hp.startswith('//'):
+            hdri_paths[i] = os.path.abspath(bpy.path.abspath(hp))
+            # For some reason bpy.path.abspath often still includes some
+            # relativeness, such as "C:/path/../real_path/to/file.jpg"
+            # So running os.path.abspath(bpy.path.abspath) should resolve
+            # to "C:/real_path/to/file.jpg"
 
     detect_hdris(self, context)
     get_hdri_haven_list(force_update=True)
@@ -611,9 +612,10 @@ def detect_hdris(self, context):
                 else:
                     hdris[h[0]] = [h[1]]
 
-    prefs = bpy.context.preferences.addons[__package__].preferences
-    if (prefs.hdri_path):
-        check_folder_for_HDRIs(prefs.hdri_path)
+    hdri_paths = get_persistent_setting('hdri_paths')
+    if (hdri_paths[0] != ""):
+        for hp in hdri_paths:
+            check_folder_for_HDRIs(hp)
 
         # Sort variations by filesize
         for h in hdris:
@@ -630,7 +632,7 @@ def detect_hdris(self, context):
             if context.scene.gaf_props['hdri'] >= len(hdri_list):
                 context.scene.gaf_props['hdri'] = 0
         refresh_previews()
-        set_persistent_setting('hdri_path', prefs.hdri_path)
+        prefs = bpy.context.preferences.addons[__package__].preferences
         prefs.ForcePreviewsRefresh = True
         switch_hdri(self, context)
 
@@ -672,9 +674,6 @@ def get_hdri_list(use_search=False):
                     return data
             else:
                 return data
-
-
-
         else:
             return {}
     else:
@@ -688,7 +687,6 @@ def get_variation(hdri, mode=None, var=None):
         return
 
     variations = hdri_list[hdri]
-    hdri_path = bpy.context.preferences.addons[__package__].preferences.hdri_path
     if mode == 'smallest':
         return variations[0]
     elif mode == 'biggest':
@@ -1037,7 +1035,8 @@ def hdri_enable(self, context):
     if gaf_props.hdri_handler_enabled:
         store_old_world_settings(context)
         prefs = context.preferences.addons[__package__].preferences
-        if prefs.hdri_path != "" and os.path.exists(prefs.hdri_path):
+        hdri_paths = get_persistent_setting('hdri_paths')
+        if hdri_paths[0] != "" and os.path.exists(hdri_paths[0]):
             detect_hdris(self, context)
             setup_hdri(self, context)
             prefs.ForcePreviewsRefresh = True
@@ -1412,9 +1411,9 @@ def variation_enum_previews(self, context):
 
     variations = hdri_list[gaf_props.hdri]
     for v in variations:
-        enum_items.append((os.path.join(context.preferences.addons[__package__].preferences.hdri_path, v),
+        enum_items.append((v,
                            os.path.basename(v),
-                           os.path.join(context.preferences.addons[__package__].preferences.hdri_path, v)))
+                           v))
 
     return enum_items
 
@@ -1547,8 +1546,8 @@ if len(hdri_haven_list) < 1:
     hdri_haven_list = get_hdri_haven_list()
 
 def show_hdrihaven():
-    prefs = bpy.context.preferences.addons[__package__].preferences
-    if not os.path.exists(os.path.join(prefs.hdri_path, 'HDRI Haven')):
+    hdri_paths = get_persistent_setting('hdri_paths')
+    if not os.path.exists(os.path.join(hdri_paths[0], 'HDRI Haven')):
         if get_persistent_setting('show_hdri_haven'):
             bpy.context.scene.gaf_props.ShowHDRIHaven = True
 
@@ -1575,7 +1574,6 @@ def init_persistent_settings(set_name=None, set_value=None):
     ''' Initialize persistent settings file with option to change a default value'''
 
     settings = {'show_hdri_haven': True,
-                'hdri_path': '',
                 'hdri_paths': [""]}
 
     if set_name is not None:

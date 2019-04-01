@@ -1030,9 +1030,6 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         row = layout.row()
         row.alignment='CENTER'
         row.label(text="Please put some in the HDRI folder:")
-        row = layout.row()
-        row.alignment='CENTER'
-        row.label(text=prefs.hdri_path)
 
 class GAFFER_PT_hdris (bpy.types.Panel):
 
@@ -1051,8 +1048,7 @@ class GAFFER_PT_hdris (bpy.types.Panel):
 
         layout = self.layout
         row = layout.row(align=True)
-        if prefs.hdri_path and os.path.exists(prefs.hdri_path):
-            row.prop(gaf_props, 'hdri_handler_enabled', text="")
+        row.prop(gaf_props, 'hdri_handler_enabled', text="")
         if gaf_props.hdri and gaf_props.hdri_handler_enabled:
             row.label(text="HDRI: " + nice_hdri_name(gaf_props.hdri))
         else:
@@ -1068,13 +1064,14 @@ class GAFFER_PT_hdris (bpy.types.Panel):
         draw_progress_bar(gaf_props, layout)
 
         col = layout.column()
-        if not os.path.exists(prefs.hdri_path):
+        hdri_paths = get_persistent_setting('hdri_paths')
+        if not os.path.exists(hdri_paths[0]):
             row = col.row()
             row.alignment = 'CENTER'
             row.label(text="Select a folder in the Add-on User Preferences")
             row = col.row()
             row.alignment = 'CENTER'
-            row.label(text="Ctrl-Alt-U > Add-ons > Gaffer > HDRI Folder")
+            row.label(text="Preferences > Add-ons > Gaffer > HDRI Folder")
         else:
             if gaf_props.hdri_handler_enabled:
                 draw_hdri_handler(context, col, gaf_props, prefs, icons)

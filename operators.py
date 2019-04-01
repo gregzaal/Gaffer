@@ -1096,7 +1096,8 @@ class GAFFER_OT_hdri_path_edit(bpy.types.Operator, ImportHelper):
 
     "Select a folder to scan for HDRIs"
     bl_idname = 'gaffer.hdri_path_edit'
-    bl_label = 'Edit HDRI Path'
+    bl_label = 'Select Folder'
+    bl_options = {'INTERNAL'}
 
     directory: bpy.props.StringProperty(
         name='Directory',
@@ -1107,17 +1108,50 @@ class GAFFER_OT_hdri_path_edit(bpy.types.Operator, ImportHelper):
     folder_index: bpy.props.IntProperty(default=0)
 
     def execute(self, context):
-        print(self.folder_index)
-        print(self.directory)
+        hdri_paths = get_persistent_setting('hdri_paths')
+
+        if self.directory in hdri_paths:
+            self.report({'ERROR'}, "You've already added this folder")
+            return {'CANCELLED'}
+
+        for i, hp in enumerate(hdri_paths):
+            if self.directory.startswith(hp) and i != self.folder_index:
+                self.report({'ERROR'}, "The folder you selected is a subfolder of another HDRI folder, so it will be scanned already.")
+                return {'CANCELLED'}
+
+        hdri_paths[self.folder_index] = self.directory
+        set_persistent_setting('hdri_paths', hdri_paths)
+        update_hdri_path(self, context)
         return {'FINISHED'}
 
-class GAFFER_OT_hdri_path_add(bpy.types.Operator):
+class GAFFER_OT_hdri_path_add(bpy.types.Operator, ImportHelper):
 
     "Add multiple HDRI folders to detect HDRIs in multiple locations or on different drives"
     bl_idname = 'gaffer.hdri_path_add'
-    bl_label = 'Add another HDRI folder'
+    bl_label = 'Select Folder'
+    bl_options = {'INTERNAL'}
+
+    directory: bpy.props.StringProperty(
+        name='Directory',
+        subtype='DIR_PATH',
+        default='',
+        description='Folder to search in for image files')
 
     def execute(self, context):
+        hdri_paths = get_persistent_setting('hdri_paths')
+
+        if self.directory in hdri_paths:
+            self.report({'ERROR'}, "You've already added this folder")
+            return {'CANCELLED'}
+
+        for hp in hdri_paths:
+            if self.directory.startswith(hp):
+                self.report({'ERROR'}, "The folder you selected is a subfolder of another HDRI folder, so it will be scanned already.")
+                return {'CANCELLED'}
+        
+        hdri_paths.append(self.directory)
+        set_persistent_setting('hdri_paths', hdri_paths)
+        update_hdri_path(self, context)
         return {'FINISHED'}
 
 class GAFFER_OT_hdri_path_remove(bpy.types.Operator):
@@ -1125,12 +1159,25 @@ class GAFFER_OT_hdri_path_remove(bpy.types.Operator):
     "Remove this HDRI folder, don't detect HDRIs from it"
     bl_idname = 'gaffer.hdri_path_remove'
     bl_label = 'Remove HDRI folder'
+    bl_options = {'INTERNAL'}
 
     folder_index: bpy.props.IntProperty(default=0)
 
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        row = col.row(align=True)
+        row.alignment = 'CENTER'
+        row.label(text="Are you sure you want to delete this path?", icon="ERROR")
+
     def execute(self, context):
-        print(self.folder_index)
+        hdri_paths = get_persistent_setting('hdri_paths')
+        del(hdri_paths[self.folder_index])
+        set_persistent_setting('hdri_paths', hdri_paths)
+        update_hdri_path(self, context)
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=250*dpifac())
 
 class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
 
@@ -1374,6 +1421,8 @@ class GAFFER_OT_hdri_variation_paddles(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     do_next: bpy.props.BoolProperty()
 
+    # TODO poll if start or end of list
+
     def execute(self, context):
         gaf_props = context.scene.gaf_props
         variations = get_hdri_list(use_search=True)[gaf_props.hdri]
@@ -1532,8 +1581,8 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
 
             progress_begin(context)
 
-            prefs = bpy.context.preferences.addons[__package__].preferences
-            out_folder = os.path.join(prefs.hdri_path, 'HDRI Haven')
+            hdri_paths = get_persistent_setting('hdri_paths')
+            out_folder = os.path.join(hdri_paths[0], 'HDRI Haven')
             if not os.path.exists(out_folder):
                 os.makedirs(out_folder)
 
@@ -1686,7 +1735,9 @@ class GAFFER_OT_debug_upload_hdri_list(bpy.types.Operator):
                     get_file_list(os.path.join(p, f))
 
         if os.path.exists(hdri_list_path):
-            get_file_list(bpy.context.preferences.addons[__package__].preferences.hdri_path)
+            hdri_paths = get_persistent_setting('hdri_paths')
+            for hp in hdri_paths:
+                get_file_list(hp)
             file_list = sorted(file_list, key=lambda x: x.lower())
             hastebin_file(hdri_list_path, extra_string = "    Actual files:\n" + '\n'.join(file_list))
             return {'FINISHED'}

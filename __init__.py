@@ -89,13 +89,6 @@ class GafferPreferences(bpy.types.AddonPreferences):
     updater_expand_prefs: bpy.props.BoolProperty(default=False)
 
     # Add-on Prefs
-    hdri_path: bpy.props.StringProperty(
-        name="HDRI Folder",
-        subtype='DIR_PATH',
-        description='The folder where all your HDRIs are stored',
-        default=functions.get_persistent_setting('hdri_path'),
-        update=functions.update_hdri_path
-        )
     show_hdri_list: bpy.props.BoolProperty(
         name="Show",
         description="List all the detected HDRIs and their variants/resolutions below",
@@ -122,22 +115,29 @@ class GafferPreferences(bpy.types.AddonPreferences):
         layout = self.layout
 
         main_col = layout.column()
-        # main_col.prop(self, 'hdri_path')
 
         hdri_paths = functions.get_persistent_setting('hdri_paths')
-        main_col.label(text="HDRI Folders:")
+        row = main_col.row(align=True)
+        row.label(text="HDRI Folders:")
+        if hdri_paths[0] != "":
+            sub = row.column(align=True)
+            sub.alignment = 'RIGHT'
+            sub.operator('gaffer.hdri_path_add', text="Add another", icon="ADD")
+        hp_col = main_col.column(align=True)
         for i, hp in enumerate(hdri_paths):
-            row = main_col.row(align=True)
+            row = hp_col.row(align=True)
             row.operator('gaffer.hdri_path_edit', text=hp).folder_index=i
-            if i > 0:
+            if len(hdri_paths) > 1:
                 row.operator('gaffer.hdri_path_remove', text="", icon="X").folder_index=i
             row.operator('gaffer.hdri_path_edit', text="", icon="FILE_FOLDER").folder_index=i
-        row = main_col.row()
-        row.alignment = 'RIGHT'
-        row.operator('gaffer.hdri_path_add', icon="ADD")
 
-        if self.hdri_path:
-            if os.path.exists(self.hdri_path):
+        if hdri_paths[0] != "":
+            all_paths_exist = True
+            for hp in hdri_paths:
+                if not os.path.exists(hp):
+                    all_paths_exist = False
+                    break
+            if all_paths_exist:
                 hdris = functions.get_hdri_list()
                 if hdris:
                     num_files = sum(len(x) for x in hdris.values())
