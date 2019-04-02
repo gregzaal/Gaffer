@@ -67,9 +67,6 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
     selop.light = light.name
     selop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
 
-    # aimop = row.operator("gaffer.aim_view", icon="IMAGE_PLANE", text="", emboss=False)
-    # aimop.light = light.name
-
     if gaf_props.SoloActive == '':
         solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
         solobtn.light = light.name
@@ -730,11 +727,21 @@ class GAFFER_PT_tools(bpy.types.Panel):
         maincol = layout.column()
 
         # Aiming
-        col = maincol.column(align = True)
-        col.label(text="Aim:", icon='LIGHT_AREA')
-        col.operator('gaffer.aim', text="Selection at 3D cursor").target_type = 'CURSOR'
-        col.operator('gaffer.aim', text="Selected at active").target_type = 'ACTIVE'
-        col.operator('gaffer.aim', text="Active at selected").target_type = 'SELECTED'
+        maincol.separator()
+        box = maincol.box()
+        subcol = box.column(align=True)
+        row = subcol.row()
+        row.alignment = 'CENTER'
+        row.label(text="Aim:", icon='LIGHT_AREA')
+        row = subcol.row()
+        col = row.column(align = True)
+        col.label(text="Selected:")
+        col.operator('gaffer.aim', text="at 3D cursor", icon='PIVOT_CURSOR').target_type = 'CURSOR'
+        col.operator('gaffer.aim', text="at active", icon='FULLSCREEN_EXIT').target_type = 'ACTIVE'
+        col = row.column(align = True)
+        col.label(text="Active:")
+        col.operator('gaffer.aim', text="at selected", icon='PARTICLES').target_type = 'SELECTED'
+        col.operator("gaffer.aim_view", text="w/ 3D View", icon='VIEW_CAMERA')
 
         maincol.separator()
 
@@ -756,8 +763,6 @@ class GAFFER_PT_tools(bpy.types.Panel):
             row.prop(gaf_props, 'LightRadiusSelectedOnly')
             row = sub.row(align=True)
             row.prop(gaf_props, 'DefaultRadiusColor')
-
-        maincol.separator()
 
         # Draw Label
         box = maincol.box() if gaf_props.IsShowingLabel else maincol.column()

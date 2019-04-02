@@ -589,54 +589,70 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
 
 class GAFFER_OT_aim_light_with_view(bpy.types.Operator):
 
-    'Aim this light using the 3D view camera'
+    'Aim the active object using the 3D view camera'
     bl_idname = 'gaffer.aim_view'
     bl_label = 'Aim With View'
-    bl_options = {'INTERNAL'}  # TODO remove
-
-    light: bpy.props.StringProperty()
 
     old_cam = None
     old_lock = None
+    old_transf = None
 
-    # TODO poll for 3d view
-
-    def execute(self, context):
-        print("execute")
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == 'VIEW_3D' and context.object
 
     def modal(self, context, event):
-        print(event.type, context.space_data.type)
-        if event.type in ('RET', 'SPACE'):
+        obj = context.object
+        if event.type in ('RET', 'SPACE') or \
+            (event.type == 'LEFTMOUSE' and event.value != 'CLICK_DRAG'):  # Some weird pie menu bug
             bpy.ops.view3d.view_camera()
             context.scene.camera = self.old_cam
             context.space_data.lock_camera = self.old_lock
-            print("confirm")
+            context.area.header_text_set(None)
             return {'FINISHED'}
         elif event.type in ('RIGHTMOUSE', 'ESC'):
             bpy.ops.view3d.view_camera()
             context.scene.camera = self.old_cam
             context.space_data.lock_camera = self.old_lock
-            print("cancelled")
+            obj.location = self.old_transf[0]
+            obj.rotation_quaternion = self.old_transf[1]
+            obj.rotation_euler = self.old_transf[2]
+            context.area.header_text_set(None)
             return {'CANCELLED'}
-        else:
+        elif event.type in ('MOUSEMOVE',
+                            'INBETWEEN_MOUSEMOVE',
+                            'MIDDLEMOUSE',
+                            'WHEELDOWNMOUSE',
+                            'WHEELUPMOUSE',
+                            'LEFT_CTRL',
+                            'LEFT_SHIFT',
+                            'LEFT_ALT'):
+            # Only allow navigation keys to prevent user from changing camera or doing anything else unexpected
             return {'PASS_THROUGH'}
+        else:
+            return {'RUNNING_MODAL'}
 
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
-        if context.space_data.type == 'VIEW_3D':
-            obj = bpy.data.objects[self.light]
-            self.old_cam = context.scene.camera
-            self.old_lock = context.space_data.lock_camera
-            context.scene.camera = obj
-            context.space_data.lock_camera = True
-            bpy.ops.view3d.view_camera()
-            print('RUNNING_MODAL')
-            context.window_manager.modal_handler_add(self)
-            return {'RUNNING_MODAL'}
-        else:
-            self.report({'WARNING'}, "Active space must be a View3d")
+        if not context.object:
+            self.report({'ERROR'}, "No active object")
             return {'CANCELLED'}
+
+        if context.space_data.type != 'VIEW_3D':
+            self.report({'ERROR'}, "Must be run from the 3D view")
+            return {'CANCELLED'}
+
+        obj = context.object
+        self.old_cam = context.scene.camera
+        self.old_lock = context.space_data.lock_camera
+        self.old_transf = [obj.location.copy(), obj.rotation_quaternion.copy(), obj.rotation_euler.copy()]
+        context.scene.camera = obj
+        context.space_data.lock_camera = True
+        bpy.ops.view3d.view_camera()
+        context.area.header_text_set("LMB/Enter/Space: Confirm    Esc/RMB: Cancel")
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
 
 class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
