@@ -522,7 +522,10 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
         direction = target - obj_loc
         # point obj '-Z' and use its 'Y' as up
         rot_quat = direction.to_track_quat('-Z', 'Y')
-        obj.rotation_euler = rot_quat.to_euler()
+        if obj.rotation_mode == 'QUATERNION':
+            obj.rotation_quaternion = rot_quat
+        else:
+            obj.rotation_euler = rot_quat.to_euler()
 
     def execute(self, context):
         if self.target_type == 'CURSOR':
@@ -546,7 +549,7 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
                 self.report({'ERROR'}, "You need an active object!")
                 return {'CANCELLED'}
             elif num_objects == 0:
-                if active.select:
+                if active.select_get():
                     self.report({'ERROR'}, "Select more than one object!")
                 else:
                     self.report({'ERROR'}, "No selected objects!")
