@@ -81,8 +81,7 @@ defaults_stored = ["rotation",
                    "contrast",
                    "saturation",
                    "warmth",
-                   "tint",
-                   "clamp"]
+                   "tint"]
 settings_file = os.path.join(data_dir, 'settings.json')
 preview_collections = {}
 icon_dir = os.path.join(os.path.dirname(__file__), 'icons')
