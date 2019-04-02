@@ -879,7 +879,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                         row = tags_col.row(align=True)
                     if t != '##split##':
 
-                        op = row.operator('gaffer.add_tag', text=t.title(), icon='FILE_TICK' if t in current_tags else 'NONE')
+                        op = row.operator('gaffer.add_tag', text=t.title(), icon='CHECKBOX_HLT' if t in current_tags else 'NONE')
                         op.hdri = gaf_props.hdri
                         op.tag = t
                         i += 1
