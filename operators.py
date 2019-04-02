@@ -1421,11 +1421,9 @@ class GAFFER_OT_hdri_variation_paddles(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     do_next: bpy.props.BoolProperty()
 
-    # TODO poll if start or end of list
-
     def execute(self, context):
         gaf_props = context.scene.gaf_props
-        variations = get_hdri_list(use_search=True)[gaf_props.hdri]
+        variations = get_hdri_list()[gaf_props.hdri]
         last_var = len(variations)-1
         adj = 1 if self.do_next else -1
 
