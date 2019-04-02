@@ -1493,7 +1493,7 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
                     v = rna_props["hdri_"+d].default
 
             if "hdri_"+d in rna_props.keys():
-                context.scene.gaf_props['hdri_'+d] = v
+                setattr(context.scene.gaf_props, 'hdri_'+d, v)
         
         return {'FINISHED'}
 
