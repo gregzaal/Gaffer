@@ -962,6 +962,11 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 col = box.column(align = True)
                 col.prop(gaf_props, 'hdri_tint', slider=True)
                 col.prop(gaf_props, 'hdri_clamp', slider=True)
+                split = col.split(factor=0.75, align=True)
+                r = split.row(align=True)
+                r.prop(gaf_props, 'hdri_horz_shift', slider=True)
+                r = split.row(align=True)
+                r.prop(gaf_props, 'hdri_horz_exp', slider=False)
                 col.separator()
 
                 col.label(text="Control background separately:")

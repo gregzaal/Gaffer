@@ -408,6 +408,22 @@ class GafferProperties(bpy.types.PropertyGroup):
         soft_max=2,
         update=functions.update_tint
         )
+    hdri_horz_shift: bpy.props.FloatProperty(
+        name="Horizon Shift",
+        description='Move the horizon down to view more of the sky',
+        default=0,
+        soft_min=0,
+        soft_max=1,
+        update=functions.update_rotation
+        )
+    hdri_horz_exp: bpy.props.FloatProperty(
+        name="Warp",
+        description='Adjust this if the sky looks distorted',
+        default=0,
+        soft_min=-1,
+        soft_max=1,
+        update=functions.update_rotation
+        )
     hdri_use_jpg_background: bpy.props.BoolProperty(
         name = "High-res JPG background",
         default = False,

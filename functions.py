@@ -1077,9 +1077,14 @@ def update_rotation(self, context):
     if not gaf_props.hdri_handler_enabled:
         return None  # Don't do anything if handler is disabled
 
-    value = gaf_props.hdri_rotation
     n = handler_node(context, "ShaderNodeMapping")
-    n.rotation.z = radians(value)
+
+    n.rotation.z = radians(gaf_props.hdri_rotation)
+
+    e = 2
+    n.translation.z = pow(gaf_props.hdri_horz_shift, e)*2# / (gaf_props.hdri_horz_exp+1)
+    n.scale.z = pow(1 - ((gaf_props.hdri_horz_exp*2-1) * pow(gaf_props.hdri_horz_shift, e)), e)
+
     n.mute = uses_default_values(n, "ShaderNodeMapping")
 
     return None
