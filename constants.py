@@ -81,7 +81,24 @@ defaults_stored = ["rotation",
                    "contrast",
                    "saturation",
                    "warmth",
-                   "tint"]
+                   "tint",
+                   "clamp",
+                   "horz_shift",
+                   "horz_exp",
+                   "use_separate_brightness",
+                   "use_separate_contrast",
+                   "use_separate_saturation",
+                   "use_separate_warmth",
+                   "use_separate_tint",
+                   "background_brightness",
+                   "background_contrast",
+                   "background_saturation",
+                   "background_warmth",
+                   "background_tint",
+                   "use_bg_reflections",
+                   "use_jpg_background",
+                   "use_darkened_jpg",
+                   ]
 settings_file = os.path.join(data_dir, 'settings.json')
 preview_collections = {}
 icon_dir = os.path.join(os.path.dirname(__file__), 'icons')

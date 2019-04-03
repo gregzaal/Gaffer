@@ -1602,12 +1602,14 @@ class GAFFER_OT_hdri_random(bpy.types.Operator):
 
 class GAFFER_OT_hdri_reset(bpy.types.Operator):
 
-    "Reset all HDRI adjustments (rotation, brightness, etc.) to their default values"
+    """Reset all HDRI adjustments (rotation, brightness, etc.) to their default values.
+Hold shift to load factory default values instead of your saved defaults"""
     bl_idname = 'gaffer.hdri_reset'
     bl_label = 'Reset'
     bl_options = {'INTERNAL'}
 
     hdri: bpy.props.StringProperty()
+    factory: bpy.props.BoolProperty()
 
     def execute(self, context):
         defaults = get_defaults(self.hdri)
@@ -1615,7 +1617,7 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
         
         for d in defaults_stored:
             v = 0
-            if d in defaults:
+            if d in defaults and not self.factory:
                 v = defaults[d]
             else:
                 if "hdri_"+d in rna_props.keys():
@@ -1625,6 +1627,10 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
                 setattr(context.scene.gaf_props, 'hdri_'+d, v)
         
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        self.factory = event.shift
+        return self.execute(context)
 
 class GAFFER_OT_hdri_save(bpy.types.Operator):
 
