@@ -562,7 +562,7 @@ def draw_cycles_UI(context, layout, lights):
                         current_node = background.inputs[1].links[0].from_node
                         temp_current_node = None
                         i = 0  # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
-                        while strength_node == None and i < 100:  # limitted to 100 chained nodes
+                        while strength_node == None and i < 1000:  # limitted to 100 chained nodes
                             i += 1
                             connected_inputs = False
                             if temp_current_node:
