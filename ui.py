@@ -49,11 +49,6 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
             op = row.operator('gaffer.rename', text='[' + str(users[1]) + '] ' + data_name)
             op.multiuser = users[0]
             op.light = data_name
-            # if light.type == 'LIGHT':
-            #     op.multiuser = light.type
-            #     op.light = light.data.name
-            # else:
-            #     op.light = light.name
     else:
         # Don't allow names to be edited during solo, will break the record of what was originally hidden
         row.label(text=light.name)
@@ -674,8 +669,8 @@ class GAFFER_PT_lights(bpy.types.Panel):
         lights_str = gaf_props.Lights
         lights = stringToNestedList(lights_str)
         layout = self.layout
-
         col = layout.column(align=True)
+
         row = col.row(align=True)
         if gaf_props.SoloActive != "":  # if in solo mode
             solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='')
@@ -699,6 +694,10 @@ class GAFFER_PT_lights(bpy.types.Panel):
                     solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='Reset Solo')
                     solobtn.showhide = False
                     row.label(text="       ")
+
+        row = col.row(align=True)
+        row.prop(bpy.context.scene.view_settings, 'exposure', text="Global Exposure", slider=False)
+        row.operator('gaffer.apply_exposure', text="", icon='CHECKBOX_HLT')
 
         if scene.render.engine == 'BLENDER_RENDER':
             draw_BI_UI(context, layout, lights)

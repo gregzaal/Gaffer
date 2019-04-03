@@ -359,6 +359,118 @@ class GAFFER_OT_refresh_light_list(bpy.types.Operator):
         refresh_bgl()  # update the radius/label as well
         return {'FINISHED'}
 
+class GAFFER_OT_apply_exposure(bpy.types.Operator):
+
+    'Apply Exposure\nAdjust the brightness of all lights by the exposure amount and set the exposure slider back to 0'
+    bl_idname = 'gaffer.apply_exposure'
+    bl_label = 'Apply'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        scene = context.scene
+        gaf_props = scene.gaf_props
+        lights_str = gaf_props.Lights
+        lights = stringToNestedList(lights_str)
+
+        evs = scene.view_settings.exposure  # CM exposure is set in EVs/stops
+        exposure = pow(2, evs)  # Linear exposure adjustment
+
+        scene.view_settings.exposure = 0
+
+        # Almost all of this is copy pasted from ui.draw_cycles_UI. TODO make a function for finding the strength property.
+        for item in lights:
+            light = scene.objects[item[0][1:-1]]  # drop the apostrophies
+            if light.type == 'LIGHT':
+                material = None
+                if light.data.use_nodes:
+                    node_strength = light.data.node_tree.nodes[item[2][1:-1]]
+                else:
+                    doesnt_use_nodes = True
+
+                if light.data.type == 'AREA' and light.data.cycles.is_portal:
+                    is_portal = True
+            else:
+                material = bpy.data.materials[item[1][1:-1]]
+                if material.use_nodes:
+                    node_strength = material.node_tree.nodes[item[2][1:-1]]
+                else:
+                    doesnt_use_nodes = True
+
+            if item[3].startswith("'"):
+                socket_strength_str = str(item[3][1:-1])
+            else:
+                socket_strength_str = str(item[3])
+
+            if socket_strength_str.startswith('o'):
+                socket_strength_type = 'o'
+                socket_strength = int(socket_strength_str[1:])
+            elif socket_strength_str.startswith('i'):
+                socket_strength_type = 'i'
+                socket_strength = int(socket_strength_str[1:])
+            else:
+                socket_strength_type = 'i'
+                socket_strength = int(socket_strength_str)
+
+            strength_sockets = node_strength.inputs
+            if socket_strength_type == 'o':
+                strength_sockets = node_strength.outputs
+            try:
+                if ((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) \
+                or (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) \
+                and hasattr(strength_sockets[socket_strength], "default_value"):
+                    strength_sockets[socket_strength].default_value = strength_sockets[socket_strength].default_value * exposure
+                else:
+                    self.report({'ERROR'}, item[0]+" does not have a valid node. Try refreshing the light list.")
+            except:
+                self.report({'ERROR'}, item[0]+" does not have a valid node. Try refreshing the light list.")
+
+        # World
+        if gaf_props.hdri_handler_enabled:
+            gaf_props.hdri_brightness = gaf_props.hdri_brightness + evs
+            if gaf_props.hdri_use_separate_brightness:
+                gaf_props.hdri_background_brightness = gaf_props.hdri_background_brightness + evs
+        else:
+            world = scene.world
+            if world.use_nodes:
+                backgrounds = []  # make a list of all linked Background shaders, use the right-most one
+                background = None
+                for node in world.node_tree.nodes:
+                    if node.type == 'BACKGROUND':
+                        if not node.name.startswith("HDRIHandler_"):
+                            if node.outputs[0].is_linked:
+                                backgrounds.append(node)
+                if backgrounds:
+                    background = sorted(backgrounds, key=lambda x: x.location.x, reverse=True)[0]
+                    # Strength
+                    if background.inputs[1].is_linked:
+                        strength_node = None
+                        current_node = background.inputs[1].links[0].from_node
+                        temp_current_node = None
+                        i = 0  # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
+                        while strength_node == None and i < 1000:  # limitted to 100 chained nodes
+                            i += 1
+                            connected_inputs = False
+                            if temp_current_node:
+                                current_node = temp_current_node
+                            for socket in current_node.inputs:
+                                # stop at first node with an unconnected Value socket
+                                if socket.type == 'VALUE' and not socket.is_linked:
+                                    strength_node = current_node
+                                else:
+                                    if socket.is_linked:
+                                        temp_current_node = socket.links[0].from_node
+
+                        if strength_node:
+                            for socket in strength_node.inputs:
+                                if socket.type == 'VALUE' and not socket.is_linked:  # use first color socket
+                                    socket.default_value = socket.default_value * exposure
+                                    break
+                    else:
+                        background.inputs[1].default_value = background.inputs[1].default_value * exposure
+
+
+        return {'FINISHED'}
+
 class GAFFER_OT_create_enviro_widget(bpy.types.Operator):
 
     'Create an Empty which drives the rotation of the background texture'

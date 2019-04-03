@@ -575,6 +575,7 @@ classes = [
     operators.GAFFER_OT_light_use_nodes,
     operators.GAFFER_OT_node_set_strength,
     operators.GAFFER_OT_refresh_light_list,
+    operators.GAFFER_OT_apply_exposure,
     operators.GAFFER_OT_create_enviro_widget,
     operators.GAFFER_OT_link_sky_to_sun,
     operators.GAFFER_OT_aim_light,
