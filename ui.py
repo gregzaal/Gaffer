@@ -63,7 +63,9 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
     visop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
     visop.hide = not light.hide_viewport
 
-    selop = row.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select_get() else 'RESTRICT_SELECT_ON', text="", emboss=False)
+    sub = row.column(align=True)
+    sub.alert = light.select_get()
+    selop = sub.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select_get() else 'RESTRICT_SELECT_ON', text="", emboss=False)
     selop.light = light.name
     selop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
 
