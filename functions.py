@@ -126,11 +126,7 @@ def refresh_light_list(scene):
 
     objects = sorted(scene.objects, key=lambda x: x.name)
 
-    if scene.render.engine == 'BLENDER_RENDER':
-        for obj in objects:
-            if obj.type == 'LIGHT':
-                m.append([obj.name, None, None])  # only use first element of list to keep usage consistent with cycles mode
-    elif scene.render.engine == 'CYCLES':
+    if scene.render.engine == 'CYCLES':
         for obj in objects:
             light_mats = []
             if obj.type == 'LIGHT':

@@ -24,7 +24,7 @@ from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
 
-supported_renderers = ['BLENDER_RENDER', 'CYCLES']
+supported_renderers = ['CYCLES']
 
 col_temp = {"01_Flame (1700)": 1700,
             "02_Tungsten (3200)": 3200,
