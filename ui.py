@@ -467,7 +467,7 @@ class GAFFER_PT_lights(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return True if context.scene.render.engine in supported_renderers else False
+        return context.scene.render.engine in supported_renderers
 
     def draw(self, context):
         addon_updater_ops.check_for_update_background()
