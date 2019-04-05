@@ -195,7 +195,7 @@ class GAFFER_OT_select_light(bpy.types.Operator):
         return context.mode == 'OBJECT'
 
     def execute(self, context):
-        for item in bpy.data.objects:
+        for item in context.scene.objects:
             item.select_set(False)
         dataname = self.dataname
         if dataname == "__SINGLE_USER__":
