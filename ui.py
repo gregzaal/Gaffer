@@ -510,6 +510,7 @@ class GAFFER_PT_lights(bpy.types.Panel):
         if scene.render.engine == 'CYCLES':
             draw_cycles_UI(context, layout, lights)
         else:
+            # This should never run, the engine is already checked in the poll function
             layout.label(text="Render Engine not supported!")
 
         addon_updater_ops.update_notice_box_ui(self, context)
