@@ -25,7 +25,7 @@ bl_info = {
     "location": "3D View > Tools  &  World Settings > HDRI",
     "warning": "",
     "wiki_url": "https://github.com/gregzaal/Gaffer/wiki",
-    "tracker_url": "https://github.com/gregzaal/Gaffer/issues",
+    "tracker_url": "https://github.com/gregzaal/Gaffer/issues?q=is%3Aopen+is%3Aissue+label%3Abug",
     "category": "Lighting"}
 
 if "bpy" in locals():
