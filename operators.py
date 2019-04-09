@@ -1608,8 +1608,7 @@ class GAFFER_OT_hdri_random(bpy.types.Operator):
 
 class GAFFER_OT_hdri_reset(bpy.types.Operator):
 
-    """Reset all HDRI adjustments (rotation, brightness, etc.) to their default values.
-Hold shift to load factory default values instead of your saved defaults"""
+    """Reset all HDRI adjustments (rotation, brightness, etc.) to their default values.\nHold shift to load factory default values instead of your saved defaults"""
     bl_idname = 'gaffer.hdri_reset'
     bl_label = 'Reset'
     bl_options = {'INTERNAL'}

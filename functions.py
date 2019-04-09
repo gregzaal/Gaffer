@@ -1485,7 +1485,7 @@ def set_defaults(context, hdri_name):
     for d in defaults_stored:
         if hdri_name not in defaults:
             defaults[hdri_name] = {}
-        defaults[hdri_name][d] = context.scene.gaf_props['hdri_'+d]
+        defaults[hdri_name][d] = getattr(context.scene.gaf_props, 'hdri_'+d)
     with open(defaults_path, 'w') as f:
         f.write(json.dumps(defaults, indent=4))
 
