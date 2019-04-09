@@ -18,10 +18,12 @@
 
 import bpy
 import json
-import bgl, blf
+import bgl
+import blf
 import gpu
 from gpu_extras.batch import batch_for_shader
-import time, datetime
+import time
+import datetime
 from collections import OrderedDict
 from math import pi, cos, sin, log, radians
 from mathutils import Vector, Matrix, Euler
@@ -31,16 +33,19 @@ from bpy.app.handlers import persistent
 from .constants import *
 
 
-def log(text, timestamp=True, also_print = False):
+# Utils
+
+def log(text, timestamp=True, also_print=False):
     ts = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
 
     with open(log_file, 'a') as f:
         if also_print:
-            print (text)
+            print(text)
         if timestamp:
             f.write(ts + "    " + text + '\n')
         else:
-            f.write(' '*len(ts) + "    " + text + '\n')
+            f.write(' ' * len(ts) + "    " + text + '\n')
+
 
 def cleanup_logs():
     ''' Delete log lines that are older than 1 week to keep the file size down '''
@@ -56,32 +61,37 @@ def cleanup_logs():
                 pass
             else:
                 age = time.time() - time.mktime(d.timetuple())
-                if age/60/60/24 > 7:
+                if age / 60 / 60 / 24 > 7:
                     i = ln_no
                 else:
                     break
         if i > 0:
-            new_lines = lines[i+1:]
+            new_lines = lines[i + 1:]
             with open(log_file, 'w') as f:
                 f.writelines(new_lines)
+
 
 def hastebin_file(filepath, extra_string=""):
     if os.path.exists(filepath):
         with open(filepath, 'r') as f:
             lines = f.read()
         from requests import post as requests_post
-        r = requests_post("https://hastebin.com/documents", lines + '\n'*4 + extra_string)
+        r = requests_post("https://hastebin.com/documents", lines + '\n' * 4 + extra_string)
         url = "https://hastebin.com/" + json.loads(r.content.decode())['key']
         bpy.ops.wm.url_open(url=url)
 
+
 def dpifac():
     prefs = bpy.context.preferences.system
-    if hasattr(prefs, 'pixel_size'):  # python access to this was only added recently, assume non-retina display is used if using older blender
+    # python access to this was only added recently, assume non-retina display is used if using older blender
+    if hasattr(prefs, 'pixel_size'):
         retinafac = bpy.context.preferences.system.pixel_size
     else:
         retinafac = 1
-    return bpy.context.preferences.system.dpi/(72/retinafac)
+    return bpy.context.preferences.system.dpi / (72 / retinafac)
 
+
+# Light list functions
 
 def refresh_light_list(scene):
 
@@ -90,11 +100,11 @@ def refresh_light_list(scene):
         found_node = node.name
         found_socket = -1
         i = 0
-        max_iterations = 1000  # Prevent infinite loop. Unlikely that users have more than this many nodes just for a light.
+        max_iterations = 1000  # Prevent infinite loop
         while found_socket == -1:
             i += 1
             if i == max_iterations:
-                print("Gaffer Warning: Max iterations hit in get_next_available_value_socket for "+node.name)
+                print("Gaffer Warning: Max iterations hit in get_next_available_value_socket for " + node.name)
                 break
             if len(current_node.inputs) == 0:
                 # End of the line.
@@ -115,9 +125,11 @@ def refresh_light_list(scene):
     if not hasattr(bpy.types.Object, "GafferFalloff"):
         bpy.types.Object.GafferFalloff = bpy.props.EnumProperty(
             name="Light Falloff",
-            items=(("constant","Constant","No light falloff","IPO_CONSTANT",1),
-                   ("linear","Linear","Fade light strength linearly over the distance it travels","IPO_LINEAR",2),
-                   ("quadratic","Quadratic","(Realisic) Light strength is inversely proportional to the square of the distance it travels","IPO_QUAD",3)),
+            items=(("constant", "Constant", "No light falloff", "IPO_CONSTANT", 1),
+                   ("linear", "Linear", "Fade light strength linearly over the distance it travels", "IPO_LINEAR", 2),
+                   ("quadratic", "Quadratic",
+                    "(Realisic) Light strength is inversely proportional to the square of the distance it travels",
+                    "IPO_QUAD", 3)),
             default="quadratic",
             description="The rate at which the light loses intensity over distance",
             update=_update_falloff)
@@ -133,7 +145,7 @@ def refresh_light_list(scene):
                 if obj.data.use_nodes:
                     invalid_node = False
                     if obj.name in light_dict:
-                        if light_dict[obj.name] == "None":  # A light that previously did not use nodes (like default light)
+                        if light_dict[obj.name] == "None":  # Previously did not use nodes (like default light)
                             invalid_node = True
                         elif light_dict[obj.name] not in obj.data.node_tree.nodes:
                             invalid_node = True
@@ -143,18 +155,18 @@ def refresh_light_list(scene):
                                 if node.type == 'EMISSION':
                                     if node.outputs[0].is_linked:
                                         node_name, socket_index = get_next_available_value_socket(node)
-                                        m.append([obj.name, None, node_name, 'i'+str(socket_index)])
+                                        m.append([obj.name, None, node_name, 'i' + str(socket_index)])
                                         break
                     else:
                         node = obj.data.node_tree.nodes[light_dict[obj.name]]
                         if node.inputs:
                             node_name, socket_index = get_next_available_value_socket(node)
-                            m.append([obj.name, None, node_name, 'i'+str(socket_index)])
+                            m.append([obj.name, None, node_name, 'i' + str(socket_index)])
                         elif node.outputs:
                             socket_index = 0
                             for oupt in node.outputs:
                                 if oupt.type == 'VALUE':  # use first Value socket as strength
-                                    m.append([obj.name, None, node.name, 'o'+str(socket_index)])
+                                    m.append([obj.name, None, node.name, 'o' + str(socket_index)])
                                     break
                                 socket_index += 1
                 else:
@@ -169,7 +181,7 @@ def refresh_light_list(scene):
                             if slot.material.use_nodes:
                                 invalid_node = False
                                 if obj.name in light_dict:
-                                    if light_dict[obj.name] == "None":  # A light that previously did not use nodes (like default light)
+                                    if light_dict[obj.name] == "None":  # Previously did not use nodes
                                         invalid_node = True
                                     elif light_dict[obj.name] not in slot.material.node_tree.nodes:
                                         invalid_node = True
@@ -179,20 +191,26 @@ def refresh_light_list(scene):
                                             if node.type == 'EMISSION':
                                                 if node.outputs[0].is_linked:
                                                     node_name, socket_index = get_next_available_value_socket(node)
-                                                    m.append([obj.name, slot.material.name, node_name, 'i'+str(socket_index)])
-                                                    light_mats.append(slot.material)  # Skip this material next time it's checked
+                                                    m.append([obj.name,
+                                                              slot.material.name,
+                                                              node_name,
+                                                              'i' + str(socket_index)])
+                                                    light_mats.append(slot.material)  # Skip this material next time
                                                     slot_break = True
                                                     break
                                 else:
                                     node = slot.material.node_tree.nodes[light_dict[obj.name]]
                                     if node.inputs:
                                         node_name, socket_index = get_next_available_value_socket(node)
-                                        m.append([obj.name, slot.material.name, node_name, 'i'+str(socket_index)])
+                                        m.append([obj.name, slot.material.name, node_name, 'i' + str(socket_index)])
                                     elif node.outputs:
                                         socket_index = 0
                                         for oupt in node.outputs:
                                             if oupt.type == 'VALUE':  # use first Value socket as strength
-                                                m.append([obj.name, slot.material.name, node.name, 'o'+str(socket_index)])
+                                                m.append([obj.name,
+                                                          slot.material.name,
+                                                          node.name,
+                                                          'o' + str(socket_index)])
                                                 break
                                             socket_index += 1
 
@@ -211,11 +229,13 @@ def refresh_light_list(scene):
                     bpy.data.objects[light[0]].GafferFalloff = 'quadratic'
     scene.gaf_props.Lights = str(m)
 
+
 def force_update(context, obj=None):
     if not obj:
         context.space_data.node_tree.update_tag()
     else:
         obj.data.node_tree.update_tag()
+
 
 def stringToList(str="", stripquotes=False):
     raw = str.split(", ")
@@ -231,6 +251,7 @@ def stringToList(str="", stripquotes=False):
         raw = tmplist
     return raw
 
+
 def stringToNestedList(str="", stripquotes=False):
     raw = str.split("], ")
     raw[0] = (raw[0])[1:]
@@ -244,6 +265,7 @@ def stringToNestedList(str="", stripquotes=False):
         newraw.append(stringToList(item, stripquotes))
     return newraw
 
+
 def castBool(str):
     if str == 'True':
         return True
@@ -251,8 +273,11 @@ def castBool(str):
         return False
 
 
+# Color functions
+
 def setColTemp(node, temp):
     node.inputs[0].default_value = temp
+
 
 def convert_temp_to_RGB(colour_temperature):
     """
@@ -282,7 +307,7 @@ def convert_temp_to_RGB(colour_temperature):
             red = tmp_red
 
     # green
-    if tmp_internal <=66:
+    if tmp_internal <= 66:
         tmp_green = 99.4708025861 * log(tmp_internal) - 161.1195681661
         if tmp_green < 0:
             green = 0
@@ -300,7 +325,7 @@ def convert_temp_to_RGB(colour_temperature):
             green = tmp_green
 
     # blue
-    if tmp_internal >=66:
+    if tmp_internal >= 66:
         blue = 255
     elif tmp_internal <= 19:
         blue = 0
@@ -313,12 +338,15 @@ def convert_temp_to_RGB(colour_temperature):
         else:
             blue = tmp_blue
 
-    return [red/255, green/255, blue/255]  # return RGB in a 0-1 range
+    return [red / 255, green / 255, blue / 255]  # return RGB in a 0-1 range
+
 
 def convert_wavelength_to_RGB(wavelength):
     # normalize wavelength into a number between 0 and 80 and use it as the index for the list
     return wavelength_list[min(80, max(0, int((wavelength - 380) * 0.2)))]
 
+
+# Visibility functions
 
 def getHiddenStatus(scene, lights):
     statelist = []
@@ -333,6 +361,7 @@ def getHiddenStatus(scene, lights):
 
     scene.gaf_props.LightsHiddenRecord = str(statelist)
 
+
 def isInVisibleCollection(obj, scene):
     for oc in obj.users_collection:
         for child in bpy.context.window.view_layer.layer_collection.children:
@@ -343,6 +372,8 @@ def isInVisibleCollection(obj, scene):
             return True
     return False
 
+
+# Misc functions
 
 def dictOfLights():
     # Create dict of light name as key with node name as value
@@ -373,7 +404,7 @@ def setGafferNode(context, nodetype, tree=None, obj=None):
     node = nodetree.nodes.active
     lights = stringToNestedList(context.scene.gaf_props.Lights, stripquotes=True)
 
-    if obj == None:
+    if obj is None:
         obj = context.object
     for light in lights:
         # TODO poll for pinned nodetree (active object is not necessarily the one that this tree belongs to)
@@ -432,7 +463,7 @@ def do_update_falloff(self):
             for link in connections:
                 tree.links.new(node.outputs[socket_no], link)
         else:
-            if light.GafferFalloff != 'quadratic':  # No point making Light Falloff node if you're setting it to quadratic and a falloff node already exists
+            if light.GafferFalloff != 'quadratic':
                 fnode = tree.nodes.new('ShaderNodeLightFalloff')
                 fnode.inputs[0].default_value = node.inputs[int(str(lightitems[3])[-1])].default_value
                 fnode.location.x = node.location.x - 250
@@ -442,11 +473,14 @@ def do_update_falloff(self):
                 setGafferNode(bpy.context, 'STRENGTH', tree, light)
         force_update(bpy.context, light)
     except:
-        print ("Warning: do_update_falloff failed, node may not exist anymore")
+        print("Warning: do_update_falloff failed, node may not exist anymore")
+
 
 def _update_falloff(self, context):
     do_update_falloff(self)
 
+
+# World vis functions
 
 def do_set_world_refl_only(context):
     scene = context.scene
@@ -462,8 +496,10 @@ def do_set_world_refl_only(context):
         world.cycles_visibility.scatter = not scene.gaf_props.WorldReflOnly
         world.update_tag()
 
+
 def _update_world_refl_only(self, context):
     do_set_world_refl_only(context)
+
 
 def do_set_world_vis(context):
     scene = context.scene
@@ -479,9 +515,12 @@ def do_set_world_vis(context):
     world.cycles_visibility.scatter = scene.gaf_props.WorldVis
     world.update_tag()
 
+
 def _update_world_vis(self, context):
     do_set_world_vis(context)
 
+
+# Drawing functions
 
 def refresh_bgl():
     if bpy.context.scene.gaf_props.IsShowingRadius:
@@ -491,11 +530,13 @@ def refresh_bgl():
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
         bpy.ops.gaffer.show_label('INVOKE_DEFAULT')
 
+
 def draw_rect(shader, x1, y1, x2, y2):
     verts = ((x1, y1), (x1, y2), (x2, y1), (x2, y2))
     indices = ((0, 1, 2), (1, 2, 3))
     batch = batch_for_shader(shader, 'TRIS', {"pos": verts}, indices=indices)
     batch.draw(shader)
+
 
 def draw_corner(shader, x, y, r, corner):
     sides = 16
@@ -513,24 +554,25 @@ def draw_corner(shader, x, y, r, corner):
         r2 = 4
 
     verts = [(x, y)]
-    for i in range(r1, r2+1):
+    for i in range(r1, r2 + 1):
         cosine = r * cos(i * 2 * pi / sides) + x
         sine = r * sin(i * 2 * pi / sides) + y
         verts.append((cosine, sine))
     
     indices = []
     for i in range(r2 - r1):
-        indices.append((0, i+1, i+2))
+        indices.append((0, i + 1, i + 2))
 
     batch = batch_for_shader(shader, 'TRIS', {"pos": verts}, indices=indices)
     batch.draw(shader)
 
+
 def draw_rounded_rect(shader, x1, y1, x2, y2, r):
     draw_rect(shader, x1, y1, x2, y2)  # Main quad
-    draw_rect(shader, x1-r, y1, x1, y2)  # Left edge
-    draw_rect(shader, x2, y1, x2+r, y2)  # Right edge
-    draw_rect(shader, x1, y2, x2, y2+r)  # Top edge
-    draw_rect(shader, x1, y1-r, x2, y1)  # Bottom edge
+    draw_rect(shader, x1 - r, y1, x1, y2)  # Left edge
+    draw_rect(shader, x2, y1, x2 + r, y2)  # Right edge
+    draw_rect(shader, x1, y2, x2, y2 + r)  # Top edge
+    draw_rect(shader, x1, y1 - r, x2, y1)  # Bottom edge
 
     draw_corner(shader, x1, y1, r, 'BL')  # Bottom left
     draw_corner(shader, x1, y2, r, 'TL')  # Top left
@@ -538,8 +580,7 @@ def draw_rounded_rect(shader, x1, y1, x2, y2, r):
     draw_corner(shader, x2, y1, r, 'BR')  # Bottom right
 
 
-
-# HDRI stuffs
+# HDRI functions
 
 def update_hdri_path(self, context):
     hdri_paths = get_persistent_setting('hdri_paths')
@@ -553,6 +594,7 @@ def update_hdri_path(self, context):
 
     detect_hdris(self, context)
     get_hdri_haven_list(force_update=True)
+
 
 def get_hdri_basename(f):
     separators = ['_', '-', '.', ' ']
@@ -568,6 +610,7 @@ def get_hdri_basename(f):
     else:
         hdri_name = fn
     return hdri_name
+
 
 def detect_hdris(self, context):
 
@@ -632,6 +675,7 @@ def detect_hdris(self, context):
         prefs.ForcePreviewsRefresh = True
         switch_hdri(self, context)
 
+
 def get_hdri_list(use_search=False):
     if os.path.exists(hdri_list_path):
         with open(hdri_list_path) as f:
@@ -675,8 +719,10 @@ def get_hdri_list(use_search=False):
     else:
         return {}
 
+
 if len(hdri_list) < 1:
     hdri_list = get_hdri_list()
+
 
 def get_variation(hdri, mode=None, var=None):
     if hdri == "":
@@ -692,6 +738,7 @@ def get_variation(hdri, mode=None, var=None):
     else:
         return "ERROR: Unsupported mode!"
 
+
 def handler_node(context, t, background=False):
 
     def warmth_node(context):
@@ -704,16 +751,16 @@ def handler_node(context, t, background=False):
 
             group_inputs = group.nodes.new('NodeGroupInput')
             group_inputs.location = (-70.08822631835938, -477.9051513671875)
-            group.inputs.new('NodeSocketColor','Image')
-            group.inputs.new('NodeSocketFloat','Temp')
-            group.inputs.new('NodeSocketFloat','Tint')
+            group.inputs.new('NodeSocketColor', 'Image')
+            group.inputs.new('NodeSocketFloat', 'Temp')
+            group.inputs.new('NodeSocketFloat', 'Tint')
             group.inputs[1].min_value = -100
             group.inputs[1].max_value = 100
             group.inputs[2].min_value = -100
             group.inputs[2].max_value = 100
             group_outputs = group.nodes.new('NodeGroupOutput')
             group_outputs.location = (1032.72119140625, -158.30892944335938)
-            group.outputs.new('NodeSocketColor','Image')
+            group.outputs.new('NodeSocketColor', 'Image')
 
             n1 = group.nodes.new('ShaderNodeMath')
             n1.operation = 'DIVIDE'
@@ -811,6 +858,7 @@ def handler_node(context, t, background=False):
 
     return n
 
+
 def set_image(context, path, node):
     if os.path.exists(path):
         img = bpy.data.images.load(path, check_existing=True)
@@ -818,6 +866,7 @@ def set_image(context, path, node):
         return True
     else:
         return False
+
 
 def uses_default_values(node, node_type):
     # Return if the node is using all it's default values (and can therefore be muted to save render time)
@@ -856,8 +905,10 @@ def uses_default_values(node, node_type):
 
     return True
 
+
 def new_link(links, from_socket, to_socket, force=False):
     if not to_socket.is_linked or force: links.new(from_socket, to_socket)
+
 
 def switch_hdri(self, context):
     gaf_props = context.scene.gaf_props
@@ -874,6 +925,7 @@ def switch_hdri(self, context):
         setup_hdri(self, context)
     show_hdrihaven()
 
+
 def setup_hdri(self, context):
     gaf_props = context.scene.gaf_props
     prefs = context.preferences.addons[__package__].preferences
@@ -888,7 +940,7 @@ def setup_hdri(self, context):
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth,
         gaf_props.hdri_use_separate_tint
-        ])
+    ])
 
     w = context.scene.world
     w.use_nodes = True
@@ -923,7 +975,6 @@ def setup_hdri(self, context):
         n_greater   = handler_node(context, "ShaderNodeMath")
         n_mix_clamp = handler_node(context, "ShaderNodeMixRGB")
         n_chsv      = handler_node(context, "ShaderNodeCombineHSV")
-
 
     # Links
     links = w.node_tree.links
@@ -964,14 +1015,13 @@ def setup_hdri(self, context):
         new_link(links, n_mix_clamp.outputs[0], n_chsv.inputs[2])
         new_link(links, n_chsv.outputs[0], n_shader.inputs[0], force=True)
 
-
     # Set Env images
     gaf_props.FileNotFoundError = not os.path.exists(gaf_props.hdri_variation)
     set_image(context, gaf_props.hdri_variation, n_img)
     if extra_nodes:
         if gaf_props.hdri_use_jpg_background:
-            jpg_path = os.path.join(jpg_dir, gaf_props.hdri+".jpg")
-            djpg_path = os.path.join(jpg_dir, gaf_props.hdri+"_dark.jpg")
+            jpg_path = os.path.join(jpg_dir, gaf_props.hdri + ".jpg")
+            djpg_path = os.path.join(jpg_dir, gaf_props.hdri + "_dark.jpg")
             if os.path.exists(jpg_path) and os.path.exists(djpg_path):
                 if gaf_props.hdri_use_darkened_jpg:
                     set_image(context, djpg_path, n_img_b)
@@ -994,6 +1044,7 @@ def setup_hdri(self, context):
     update_background_tint(self, context)
 
     return None
+
 
 def hdri_enable(self, context):
 
@@ -1025,7 +1076,7 @@ def hdri_enable(self, context):
                         if hasattr(n, 'is_active_output'):
                             n.is_active_output = False
             except:
-                print ("Failed to reset active world output (node may not exist anymore?)")
+                print("Failed to reset active world output (node may not exist anymore?)")
 
     gaf_props = context.scene.gaf_props
     if gaf_props.hdri_handler_enabled:
@@ -1037,12 +1088,13 @@ def hdri_enable(self, context):
             setup_hdri(self, context)
             prefs.ForcePreviewsRefresh = True
             if gaf_props.hdri:
-                if not os.path.exists(os.path.join(thumbnail_dir, gaf_props.hdri+"__thumb_preview.jpg")):
+                if not os.path.exists(os.path.join(thumbnail_dir, gaf_props.hdri + "__thumb_preview.jpg")):
                     prefs.RequestThumbGen = True
         else:
             gaf_props.hdri_handler_enabled = False
     else:
         restore_old_world_settings(context)
+
 
 def update_search(self, context):
     bpy.context.preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
@@ -1054,6 +1106,7 @@ def update_search(self, context):
         if hdri_list:
             # Default to first HDRI in list if the previous one isn't there.
             context.scene.gaf_props.hdri = tuple(hdri_list)[0]
+
 
 def update_variation(self, context):
     gaf_props = context.scene.gaf_props
@@ -1068,6 +1121,7 @@ def update_variation(self, context):
 
     return None
 
+
 def update_rotation(self, context):
     gaf_props = context.scene.gaf_props
     if not gaf_props.hdri_handler_enabled:
@@ -1078,12 +1132,13 @@ def update_rotation(self, context):
     n.rotation.z = radians(gaf_props.hdri_rotation)
 
     e = 2
-    n.translation.z = pow(gaf_props.hdri_horz_shift, e)*2# / (gaf_props.hdri_horz_exp+1)
-    n.scale.z = pow(1 - ((gaf_props.hdri_horz_exp*2-1) * pow(gaf_props.hdri_horz_shift, e)), e)
+    n.translation.z = pow(gaf_props.hdri_horz_shift, e) * 2
+    n.scale.z = pow(1 - ((gaf_props.hdri_horz_exp * 2 - 1) * pow(gaf_props.hdri_horz_shift, e)), e)
 
     n.mute = uses_default_values(n, "ShaderNodeMapping")
 
     return None
+
 
 def update_brightness(self, context):
     gaf_props = context.scene.gaf_props
@@ -1101,7 +1156,7 @@ def update_brightness(self, context):
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth,
         gaf_props.hdri_use_separate_tint
-        ])
+    ])
     if not gaf_props.hdri_use_separate_brightness and extra_nodes:
         if gaf_props.hdri_use_darkened_jpg:
             value *= 20  # Increase exposure by ~4 EVs
@@ -1109,6 +1164,7 @@ def update_brightness(self, context):
         n.inputs[1].default_value = value
 
     return None
+
 
 def update_contrast(self, context):
     gaf_props = context.scene.gaf_props
@@ -1127,13 +1183,14 @@ def update_contrast(self, context):
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth,
         gaf_props.hdri_use_separate_tint
-        ])
+    ])
     if not gaf_props.hdri_use_separate_contrast and extra_nodes:
         n = handler_node(context, "ShaderNodeGamma", background=True)
         n.inputs[1].default_value = value
         n.mute = uses_default_values(n, "ShaderNodeGamma")
 
     return None
+
 
 def update_saturation(self, context):
     gaf_props = context.scene.gaf_props
@@ -1152,13 +1209,14 @@ def update_saturation(self, context):
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth,
         gaf_props.hdri_use_separate_tint
-        ])
+    ])
     if not gaf_props.hdri_use_separate_saturation and extra_nodes:
         n = handler_node(context, "ShaderNodeHueSaturation", background=True)
         n.inputs[1].default_value = value
         n.mute = uses_default_values(n, "ShaderNodeHueSaturation")
 
     return None
+
 
 def update_warmth(self, context):
     gaf_props = context.scene.gaf_props
@@ -1177,13 +1235,14 @@ def update_warmth(self, context):
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth,
         gaf_props.hdri_use_separate_tint
-        ])
+    ])
     if not gaf_props.hdri_use_separate_warmth and extra_nodes:
         n = handler_node(context, "Warmth", background=True)
         n.inputs[1].default_value = value
         n.mute = uses_default_values(n, "Warmth")
 
     return None
+
 
 def update_tint(self, context):
     gaf_props = context.scene.gaf_props
@@ -1202,13 +1261,14 @@ def update_tint(self, context):
         gaf_props.hdri_use_separate_saturation,
         gaf_props.hdri_use_separate_warmth,
         gaf_props.hdri_use_separate_tint
-        ])
+    ])
     if not gaf_props.hdri_use_separate_tint and extra_nodes:
         n = handler_node(context, "Warmth", background=True)
         n.inputs[2].default_value = value
         n.mute = uses_default_values(n, "Warmth")
 
     return None
+
 
 def update_clamp(self, context):
     gaf_props = context.scene.gaf_props
@@ -1223,7 +1283,8 @@ def update_clamp(self, context):
 
     return None
 
-def update_background_brightness (self, context):
+
+def update_background_brightness(self, context):
     gaf_props = context.scene.gaf_props
     if not gaf_props.hdri_handler_enabled or not gaf_props.hdri_use_separate_brightness:
         update_brightness(self, context)
@@ -1237,7 +1298,8 @@ def update_background_brightness (self, context):
 
     return None
 
-def update_background_contrast (self, context):
+
+def update_background_contrast(self, context):
     gaf_props = context.scene.gaf_props
     if not gaf_props.hdri_handler_enabled or not gaf_props.hdri_use_separate_contrast:
         update_contrast(self, context)
@@ -1250,7 +1312,8 @@ def update_background_contrast (self, context):
 
     return None
 
-def update_background_saturation (self, context):
+
+def update_background_saturation(self, context):
     gaf_props = context.scene.gaf_props
     if not gaf_props.hdri_handler_enabled or not gaf_props.hdri_use_separate_saturation:
         update_saturation(self, context)
@@ -1263,7 +1326,8 @@ def update_background_saturation (self, context):
 
     return None
 
-def update_background_warmth (self, context):
+
+def update_background_warmth(self, context):
     gaf_props = context.scene.gaf_props
     if not gaf_props.hdri_handler_enabled or not gaf_props.hdri_use_separate_warmth:
         update_warmth(self, context)
@@ -1276,7 +1340,8 @@ def update_background_warmth (self, context):
 
     return None
 
-def update_background_tint (self, context):
+
+def update_background_tint(self, context):
     gaf_props = context.scene.gaf_props
     if not gaf_props.hdri_handler_enabled or not gaf_props.hdri_use_separate_tint:
         update_warmth(self, context)
@@ -1289,8 +1354,10 @@ def update_background_tint (self, context):
 
     return None
 
+
 def missing_thumb():
     return os.path.join(icon_dir, 'special', 'missing_thumb.png')
+
 
 def save_image(context, img, filepath, fileformat, exposure=0):
     # Saving using 'img.save_render' will apply all render color management
@@ -1312,7 +1379,7 @@ def save_image(context, img, filepath, fileformat, exposure=0):
         try:
             vs.view_transform = 'sRGB EOTF'  # Default for Filmic
         except:
-            print ("WARNING: Unable to set default for view transform.")
+            print("WARNING: Unable to set default for view transform.")
 
     settings = context.scene.render.image_settings
     old_quality = settings.quality
@@ -1321,21 +1388,23 @@ def save_image(context, img, filepath, fileformat, exposure=0):
     settings.quality = 95
     settings.file_format = fileformat
 
-    img.save_render(filepath = filepath, scene=context.scene)
+    img.save_render(filepath=filepath, scene=context.scene)
 
     settings.quality = old_quality
     settings.file_format = old_format
     for a in old_vs:
         setattr(vs, a, old_vs[a])
 
+
 def nice_hdri_name(name):
-    dont_capitalize = ['a', 'an', 'the', 'for', 'and', 'by', 'at', 'of',' from', 'on', 'with']
+    dont_capitalize = ['a', 'an', 'the', 'for', 'and', 'by', 'at', 'of', ' from', 'on', 'with']
     name = name[0] + name[1:].replace('_', ' ').replace('-', ' ').replace('.', ' ')
     #                      ^^  name = name[0] + name[1:] to ignore separator if first char
     name = ' '.join([w[0].upper() + w[1:] for w in name.split(' ')])  # Title case but only for first character
     for w in dont_capitalize:
-        name.replace(' '+w.title(), ' '+w)
+        name.replace(' ' + w.title(), ' ' + w)
     return name
+
 
 def previews_register():
     import bpy.utils.previews
@@ -1350,6 +1419,7 @@ def previews_register():
         if f.endswith(".png"):
             custom_icons.load(os.path.splitext(os.path.basename(f))[0], os.path.join(icon_dir, f), 'IMAGE')
 
+
 def previews_unregister():
     for pcoll in preview_collections.values():
         bpy.utils.previews.remove(pcoll)
@@ -1358,13 +1428,16 @@ def previews_unregister():
     global custom_icons
     bpy.utils.previews.remove(custom_icons)
 
+
 def get_icons():
     return custom_icons
+
 
 def refresh_previews():
     previews_unregister()
     previews_register()
     bpy.context.preferences.addons[__package__].preferences.ForcePreviewsRefresh = True
+
 
 def hdri_enum_previews(self, context):
     enum_items = []
@@ -1386,9 +1459,9 @@ def hdri_enum_previews(self, context):
     all_thumbs_exist = True
     for i, name in enumerate(get_hdri_list(use_search=True)):
         
-        thumb_file = os.path.join(thumbnail_dir, name+"__thumb_preview.jpg")
+        thumb_file = os.path.join(thumbnail_dir, name + "__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
-            print ("Missing thumb", name)
+            print("Missing thumb", name)
             all_thumbs_exist = False
             thumb_file = missing_thumb()
 
@@ -1398,10 +1471,11 @@ def hdri_enum_previews(self, context):
             thumb = pcoll.load(name, thumb_file, 'IMAGE')
         enum_items.append((name, name, "", thumb.icon_id, i))
 
-    prefs.RequestThumbGen = not all_thumbs_exist        
+    prefs.RequestThumbGen = not all_thumbs_exist
 
     pcoll.previews = enum_items
     return pcoll.previews
+
 
 def variation_enum_previews(self, context):
     enum_items = []
@@ -1418,6 +1492,7 @@ def variation_enum_previews(self, context):
 
     return enum_items
 
+
 def get_tags():
     if os.path.exists(tags_path):
         with open(tags_path) as f:
@@ -1425,6 +1500,7 @@ def get_tags():
         return data
     else:
         return {}
+
 
 def set_tag(name, tag, toggle=True):
     tag = tag.strip().lower()
@@ -1442,6 +1518,7 @@ def set_tag(name, tag, toggle=True):
     with open(tags_path, 'w') as f:
         f.write(json.dumps(tag_list, indent=4))
 
+
 def set_custom_tags(self, context):
     gaf_props = context.scene.gaf_props
     if gaf_props.hdri_custom_tags != "":
@@ -1455,6 +1532,7 @@ def set_custom_tags(self, context):
 
         gaf_props.hdri_custom_tags = ""
 
+
 def get_possible_tags_list():
     tags_list = get_tags()
     possible_tags = default_tags
@@ -1466,8 +1544,10 @@ def get_possible_tags_list():
     possible_tags += sorted(actual_tags)
     return possible_tags
 
+
 if len(possible_tags) < 1:
     possible_tags = get_possible_tags_list()
+
 
 def get_defaults(hdri_name):
     if os.path.exists(defaults_path):
@@ -1477,6 +1557,7 @@ def get_defaults(hdri_name):
             return data[hdri_name]
     return {}
 
+
 def set_defaults(context, hdri_name):
     defaults = {}
     if os.path.exists(defaults_path):
@@ -1485,9 +1566,10 @@ def set_defaults(context, hdri_name):
     for d in defaults_stored:
         if hdri_name not in defaults:
             defaults[hdri_name] = {}
-        defaults[hdri_name][d] = getattr(context.scene.gaf_props, 'hdri_'+d)
+        defaults[hdri_name][d] = getattr(context.scene.gaf_props, 'hdri_' + d)
     with open(defaults_path, 'w') as f:
         f.write(json.dumps(defaults, indent=4))
+
 
 def get_hdri_haven_list(force_update=False):
     ''' Get HDRI Haven list from web once per week, otherwise fetch from file'''
@@ -1501,23 +1583,23 @@ def get_hdri_haven_list(force_update=False):
         if offline_data:
             import time
             age = time.time() - os.stat(hdri_haven_list_path).st_mtime  # seconds since last modified
-            if age/60/60/24 < 7:
+            if age / 60 / 60 / 24 < 7:
                 return offline_data
 
     from requests import get as requests_get
-    print ("Getting HDRI list from HDRI Haven...")
+    print("Getting HDRI list from HDRI Haven...")
     try:
         hdrihaven_hdris = requests_get('https://hdrihaven.com/php/json_list.php', timeout=10).json()
     except:
         if force_update:
-            print ("    Can't fetch list from HDRI Haven")
+            print("    Can't fetch list from HDRI Haven")
             return {}
         else:
-            print ("    Can't fetch list from HDRI Haven, using old data")
+            print("    Can't fetch list from HDRI Haven, using old data")
             if offline_data:
                 return offline_data
             else:
-                print ("    No old data either!")
+                print("    No old data either!")
                 return {}
     else:
         for h in hdrihaven_hdris:
@@ -1527,7 +1609,17 @@ def get_hdri_haven_list(force_update=False):
             f.write(json.dumps(hdrihaven_hdris, indent=4))
 
         # Add HDRI Haven tags to tag list
-        standard_colors = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'brown', 'black', 'gray', 'white']
+        standard_colors = ['red',
+                           'green',
+                           'blue',
+                           'yellow',
+                           'orange',
+                           'purple',
+                           'pink',
+                           'brown',
+                           'black',
+                           'gray',
+                           'white']
         tag_list = get_tags()
         for h in hdrihaven_hdris:
             if h in hdri_list:
@@ -1543,8 +1635,10 @@ def get_hdri_haven_list(force_update=False):
 
         return hdrihaven_hdris
 
+
 if len(hdri_haven_list) < 1:
     hdri_haven_list = get_hdri_haven_list()
+
 
 def show_hdrihaven():
     hdri_paths = get_persistent_setting('hdri_paths')
@@ -1552,24 +1646,34 @@ def show_hdrihaven():
         if get_persistent_setting('show_hdri_haven'):
             bpy.context.scene.gaf_props.ShowHDRIHaven = True
 
+
+# Progress bar functions
+
 def _force_redraw_hack():  # Taken from Campbell's Cell Fracture addon
     return  # TODO this function crashes in 2.8, better use something like asyncio or a modal operator instead.
     _force_redraw_hack.opr(**_force_redraw_hack.arg)
 _force_redraw_hack.opr = bpy.ops.wm.redraw_timer
 _force_redraw_hack.arg = dict(type='DRAW_WIN_SWAP', iterations=1)
 
+
 def progress_begin(context):
     context.scene.gaf_props.ShowProgress = True
     _force_redraw_hack()
+
+
 def progress_update(context, value, text):
     context.scene.gaf_props.Progress = value
     context.scene.gaf_props.ProgressText = text
-    context.scene.gaf_props.ProgressBarText = str(round(value*100))+"%"
+    context.scene.gaf_props.ProgressBarText = str(round(value * 100)) + "%"
     _force_redraw_hack()
+
+
 def progress_end(context):
     context.scene.gaf_props.Progress = 0
     context.scene.gaf_props.ShowProgress = False
 
+
+# Persistent settings functions
 
 def init_persistent_settings(set_name=None, set_value=None):
     ''' Initialize persistent settings file with option to change a default value'''
@@ -1582,7 +1686,7 @@ def init_persistent_settings(set_name=None, set_value=None):
             settings = json.load(f)
 
     # First time use in 2.8, copy path from 2.7
-    if 'hdri_path' in settings and not 'hdri_paths' in settings:
+    if 'hdri_paths' not in settings and 'hdri_path' in settings:
         settings['hdri_paths'] = [settings['hdri_path']]
 
     defaults = {'show_hdri_haven': True,
@@ -1600,6 +1704,7 @@ def init_persistent_settings(set_name=None, set_value=None):
 
     return settings
 
+
 def get_persistent_setting(name):
     if os.path.exists(settings_file):
         with open(settings_file) as f:
@@ -1608,6 +1713,7 @@ def get_persistent_setting(name):
             return settings[name]
 
     return init_persistent_settings()[name]
+
 
 def set_persistent_setting(name, value):
     if not os.path.exists(settings_file):
