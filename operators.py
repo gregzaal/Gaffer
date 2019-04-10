@@ -406,7 +406,7 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
         # TODO make a function for finding the strength property.
         for item in lights:
             if item[0] != "":
-                light = scene.objects[item[0][1:-1]]  # drop the apostrophies
+                light = scene.objects[item[0][1:-1]]  # drop the apostrophes
                 if light.type == 'LIGHT':
                     material = None
                     if light.data.use_nodes:

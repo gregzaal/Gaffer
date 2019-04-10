@@ -213,6 +213,10 @@ def refresh_light_list(scene):
                                                           'o' + str(socket_index)])
                                                 break
                                             socket_index += 1
+    else:  # Unsupported engines
+        for obj in objects:
+            if obj.type == 'LIGHT':
+                m.append([obj.name, None, None])
 
     for light in m:
         obj = bpy.data.objects[light[0]]

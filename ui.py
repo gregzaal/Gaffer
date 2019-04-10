@@ -37,10 +37,11 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
         users: a list, 0th position is data name, 1st position is number of users
     '''
 
-    if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
-        row.operator(GAFFER_OT_hide_more.bl_idname, icon='TRIA_DOWN', text='', emboss=False).light = light.name
-    elif not gaf_props.MoreExpandAll:
-        row.operator(GAFFER_OT_show_more.bl_idname, icon='TRIA_RIGHT', text='', emboss=False).light = light.name
+    if bpy.context.scene.render.engine in supported_renderers:
+        if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
+            row.operator(GAFFER_OT_hide_more.bl_idname, icon='TRIA_DOWN', text='', emboss=False).light = light.name
+        elif not gaf_props.MoreExpandAll:
+            row.operator(GAFFER_OT_show_more.bl_idname, icon='TRIA_RIGHT', text='', emboss=False).light = light.name
 
     if gaf_props.SoloActive == '':
         if users[1] == 1:
@@ -127,7 +128,7 @@ def draw_cycles_UI(context, layout, lights):
     '''
     templist = []
     for item in lights_to_show:
-        light = scene.objects[item[0][1:-1]]  # drop the apostrophies
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
         if light.type == 'LIGHT':
             if ('LIGHT' + light.data.name) in duplicates:
                 duplicates['LIGHT' + light.data.name] += 1
@@ -145,7 +146,7 @@ def draw_cycles_UI(context, layout, lights):
 
     i = 0
     for item in lights_to_show:
-        light = scene.objects[item[0][1:-1]]  # drop the apostrophies
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
         doesnt_use_nodes = False
         is_portal = False
         if light.type == 'LIGHT':
@@ -340,7 +341,10 @@ def draw_cycles_UI(context, layout, lights):
         row = col.row(align=True)
 
         if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
-            row.operator(GAFFER_OT_hide_more.bl_idname, icon='TRIA_DOWN', text='', emboss=False).light = "WorldEnviroLight"
+            row.operator(GAFFER_OT_hide_more.bl_idname,
+                         icon='TRIA_DOWN',
+                         text='',
+                         emboss=False).light = "WorldEnviroLight"
         elif not gaf_props.MoreExpandAll:
             row.operator(GAFFER_OT_show_more.bl_idname,
                          text='',
@@ -473,10 +477,76 @@ def draw_cycles_UI(context, layout, lights):
                             col = worldcol.column(align=True)
                             row = col.row(align=True)
                             if gaf_props.SunObject:
-                                row.operator(GAFFER_OT_link_sky_to_sun.bl_idname, icon="LIGHT_SUN").node_name = color_node.name
+                                row.operator(GAFFER_OT_link_sky_to_sun.bl_idname,
+                                             icon="LIGHT_SUN").node_name = color_node.name
                             else:
                                 row.label(text="Link Sky Texture:")
                             row.prop_search(gaf_props, "SunObject", bpy.data, "objects", text="")
+
+
+def draw_unsupported_renderer_UI(context, layout, lights):
+    maincol = layout.column(align=False)
+    scene = context.scene
+    gaf_props = scene.gaf_props
+    prefs = context.preferences.addons[__package__].preferences
+    icons = get_icons()
+
+    lights_to_show = []
+    # Check validity of list and make list of lights to display
+    for light in lights:
+        try:
+            if light[0]:
+                a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
+                if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
+                    if ((gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, scene)) or
+                            (not gaf_props.VisibleCollectionsOnly)):
+                        if a.name not in [o.name for o in gaf_props.Blacklist]:
+                            lights_to_show.append(light)
+        except KeyError:
+            box = maincol.box()
+            row = box.row(align=True)
+            row.label(text="Light list out of date")
+            row.operator(GAFFER_OT_refresh_light_list.bl_idname, icon='FILE_REFRESH', text='')
+
+    # Don't show lights that share the same data
+    duplicates = {}
+    '''
+    duplicates:
+        A dict with the key: object type + data name (cannot use only the name in case of conflicts).
+        The values are the number of duplicates for that key.
+    '''
+    templist = []
+    for item in lights_to_show:
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+        if light.type == 'LIGHT':
+            if ('LIGHT' + light.data.name) in duplicates:
+                duplicates['LIGHT' + light.data.name] += 1
+            else:
+                templist.append(item)
+                duplicates['LIGHT' + light.data.name] = 1
+    lights_to_show = templist
+
+    i = 0
+    for item in lights_to_show:
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+
+        box = maincol.box()
+        rowmain = box.row()
+        split = rowmain.split()
+        col = split.column()
+        row = col.row(align=True)
+
+        if light.type == 'LIGHT':
+            users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
+        else:
+            users = ['MAT' + material.name, duplicates['MAT' + material.name]]
+        draw_renderer_independant(gaf_props, row, light, users)
+        i += 1
+
+    if len(lights_to_show) == 0:
+        row = maincol.row()
+        row.alignment = 'CENTER'
+        row.label(text="No lights to show :)")
 
 
 class GAFFER_PT_lights(bpy.types.Panel):
@@ -485,10 +555,6 @@ class GAFFER_PT_lights(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Gaffer"
-
-    @classmethod
-    def poll(cls, context):
-        return context.scene.render.engine in supported_renderers
 
     def draw(self, context):
         addon_updater_ops.check_for_update_background()
@@ -534,8 +600,24 @@ class GAFFER_PT_lights(bpy.types.Panel):
         if scene.render.engine == 'CYCLES':
             draw_cycles_UI(context, layout, lights)
         else:
-            # This should never run, the engine is already checked in the poll function
-            layout.label(text="Render Engine not supported!")
+            draw_unsupported_renderer_UI(context, layout, lights)
+            box = layout.box()
+            col = box.column(align=True)
+            row = col.row()
+            row.alignment = 'CENTER'
+            row.label(text="Warning", icon='ERROR')
+            row = col.row()
+            row.alignment = 'CENTER'
+            row.label(text="Render engine not fully supported.")
+            row = col.row()
+            row.alignment = 'CENTER'
+            row.label(text="Gaffer functionality is limitted.")
+            row = col.row(align=True)
+            row.alignment = 'CENTER'
+            row.label(text="Click here to add your vote:")
+            row.operator('wm.url_open',
+                         text="",
+                         icon='URL').url = "https://forms.gle/R22DphecWsXmaLAr9"
 
         addon_updater_ops.update_notice_box_ui(self, context)
 
@@ -546,10 +628,6 @@ class GAFFER_PT_tools(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Gaffer"
-
-    @classmethod
-    def poll(cls, context):
-        return True if context.scene.render.engine in supported_renderers else False
 
     def draw(self, context):
         scene = context.scene
@@ -578,25 +656,26 @@ class GAFFER_PT_tools(bpy.types.Panel):
         maincol.separator()
 
         # Draw Radius
-        box = maincol.box() if gaf_props.IsShowingRadius else maincol.column()
-        sub = box.column(align=True)
-        row = sub.row(align=True)
-        row.operator(GAFFER_OT_show_light_radius.bl_idname,
-                     text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius",
-                     icon='MESH_CIRCLE')
-        if gaf_props.IsShowingRadius:
-            row.operator(GAFFER_OT_refresh_bgl.bl_idname, text="", icon="FILE_REFRESH")
-            sub.prop(gaf_props, 'LightRadiusAlpha', slider=True)
+        if context.scene.render.engine in supported_renderers:
+            box = maincol.box() if gaf_props.IsShowingRadius else maincol.column()
+            sub = box.column(align=True)
             row = sub.row(align=True)
-            row.active = gaf_props.IsShowingRadius
-            row.prop(gaf_props, 'LightRadiusDrawType', text="")
-            row.prop(gaf_props, 'LightRadiusUseColor')
-            row = sub.row(align=True)
-            row.active = gaf_props.IsShowingRadius
-            row.prop(gaf_props, 'LightRadiusXray')
-            row.prop(gaf_props, 'LightRadiusSelectedOnly')
-            row = sub.row(align=True)
-            row.prop(gaf_props, 'DefaultRadiusColor')
+            row.operator(GAFFER_OT_show_light_radius.bl_idname,
+                        text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius",
+                        icon='MESH_CIRCLE')
+            if gaf_props.IsShowingRadius:
+                row.operator(GAFFER_OT_refresh_bgl.bl_idname, text="", icon="FILE_REFRESH")
+                sub.prop(gaf_props, 'LightRadiusAlpha', slider=True)
+                row = sub.row(align=True)
+                row.active = gaf_props.IsShowingRadius
+                row.prop(gaf_props, 'LightRadiusDrawType', text="")
+                row.prop(gaf_props, 'LightRadiusUseColor')
+                row = sub.row(align=True)
+                row.active = gaf_props.IsShowingRadius
+                row.prop(gaf_props, 'LightRadiusXray')
+                row.prop(gaf_props, 'LightRadiusSelectedOnly')
+                row = sub.row(align=True)
+                row.prop(gaf_props, 'DefaultRadiusColor')
 
         # Draw Label
         box = maincol.box() if gaf_props.IsShowingLabel else maincol.column()

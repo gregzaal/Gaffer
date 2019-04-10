@@ -167,7 +167,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
                                 row.alignment = 'CENTER'
                                 op = row.operator('wm.url_open',
                                                   text="Click here to learn how to fix this",
-                                                  icon='WORLD')
+                                                  icon='URL')
                                 op.url = "https://github.com/gregzaal/Gaffer/wiki/HDRI-Detection-and-Grouping"
                             for v in variations:
                                 col.label(text='    ' + v)
