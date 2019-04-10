@@ -237,7 +237,8 @@ class GAFFER_OT_select_light(bpy.types.Operator):
 
 class GAFFER_OT_solo(bpy.types.Operator):
 
-    'Hide all other lights but this one'
+    ("Solo: Hide all other lights but this one.\n"
+     "Click again to restore previous light visibility")
     bl_idname = 'gaffer.solo'
     bl_label = 'Solo Light'
     light: bpy.props.StringProperty()

@@ -72,13 +72,16 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
     selop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
 
     if gaf_props.SoloActive == '':
-        solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
+        sub = row.column(align=True)
+        solobtn = sub.operator("gaffer.solo", icon='EVENT_S', text='', emboss=False)
         solobtn.light = light.name
         solobtn.showhide = True
         solobtn.worldsolo = False
         solobtn.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
     elif gaf_props.SoloActive == light.name:
-        solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='', emboss=False)
+        sub = row.column(align=True)
+        sub.alert = True
+        solobtn = sub.operator("gaffer.solo", icon='EVENT_S', text='', emboss=False)
         solobtn.light = light.name
         solobtn.showhide = False
         solobtn.worldsolo = False
