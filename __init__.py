@@ -18,11 +18,11 @@
 
 bl_info = {
     "name": "Gaffer",
-    "description": "Master your lighting workflow with easy access to light properties and other tools",
+    "description": "Master your lighting workflow with easy access to light properties, HDRIs and other tools",
     "author": "Greg Zaal",
     "version": (3, 1, 0),
     "blender": (2, 80, 0),
-    "location": "3D View > Tools  &  World Settings > HDRI",
+    "location": "3D View > Sidebar  &  World Settings > HDRI",
     "warning": "",
     "wiki_url": "https://github.com/gregzaal/Gaffer/wiki",
     "tracker_url": "https://github.com/gregzaal/Gaffer/issues?q=is%3Aopen+is%3Aissue+label%3Abug",
@@ -92,7 +92,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
     # Add-on Prefs
     show_hdri_list: bpy.props.BoolProperty(
         name="Show",
-        description="List all the detected HDRIs and their variants/resolutions below",
+        description="List all the detected HDRIs and their detected resolutions/variants below",
         default=False
     )
     include_8bit: bpy.props.BoolProperty(

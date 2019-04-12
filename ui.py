@@ -831,8 +831,11 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                                      text="",
                                      icon='ADD').url = "https://hdrihaven.com/hdri/?h=" + gaf_props.hdri
 
-            vp_icon = ('TRIA_RIGHT' if gaf_props['hdri_variation'] < len(hdri_list[gaf_props.hdri]) - 1
-                       else 'TRIA_RIGHT_BAR')
+            if gaf_props.hdri in hdri_list:  # Rare case of hdri_list not being initialized
+                vp_icon = ('TRIA_RIGHT' if gaf_props['hdri_variation'] < len(hdri_list[gaf_props.hdri]) - 1
+                           else 'TRIA_RIGHT_BAR')
+            else:
+                vp_icon = 'TRIA_RIGHT'
             row.operator(GAFFER_OT_hdri_variation_paddles.bl_idname, text='', icon=vp_icon).do_next = True
             col.separator()
 
