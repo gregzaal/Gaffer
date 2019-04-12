@@ -661,8 +661,8 @@ class GAFFER_PT_tools(bpy.types.Panel):
             sub = box.column(align=True)
             row = sub.row(align=True)
             row.operator(GAFFER_OT_show_light_radius.bl_idname,
-                        text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius",
-                        icon='MESH_CIRCLE')
+                         text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius",
+                         icon='MESH_CIRCLE')
             if gaf_props.IsShowingRadius:
                 row.operator(GAFFER_OT_refresh_bgl.bl_idname, text="", icon="FILE_REFRESH")
                 sub.prop(gaf_props, 'LightRadiusAlpha', slider=True)
