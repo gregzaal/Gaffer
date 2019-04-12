@@ -985,7 +985,7 @@ class GAFFER_PT_hdris (bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.render.engine == 'CYCLES'
+        return context.scene.render.engine in ['CYCLES', 'BLENDER_EEVEE']
 
     def draw_header(self, context):
         gaf_props = context.scene.gaf_props
