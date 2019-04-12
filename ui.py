@@ -599,7 +599,8 @@ class GAFFER_PT_lights(bpy.types.Panel):
 
         row = col.row(align=True)
         row.prop(bpy.context.scene.view_settings, 'exposure', text="Global Exposure", slider=False)
-        row.operator(GAFFER_OT_apply_exposure.bl_idname, text="", icon='CHECKBOX_HLT')
+        if bpy.context.scene.render.engine in supported_renderers:
+            row.operator(GAFFER_OT_apply_exposure.bl_idname, text="", icon='CHECKBOX_HLT')
 
         if scene.render.engine == 'CYCLES':
             draw_cycles_UI(context, layout, lights)

@@ -387,8 +387,12 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
 
     'Apply Exposure\nAdjust the brightness of all lights by the exposure amount and set the exposure slider back to 0'
     bl_idname = 'gaffer.apply_exposure'
-    bl_label = 'Apply'
+    bl_label = 'Apply Exposure'
     bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.render.engine in supported_renderers
 
     def execute(self, context):
         scene = context.scene
