@@ -1403,7 +1403,8 @@ def save_image(context, img, filepath, fileformat, exposure=0):
 def nice_hdri_name(name):
     dont_capitalize = ['a', 'an', 'the', 'for', 'and', 'by', 'at', 'of', ' from', 'on', 'with']
     name = name[0] + name[1:].replace('_', ' ').replace('-', ' ').replace('.', ' ')
-    #                      ^^  name = name[0] + name[1:] to ignore separator if first char
+    #      ^^  name = name[0] + name[1:] to ignore separator if first char
+    name = " ".join(name.split())  # Merge multple spaces into one
     name = ' '.join([w[0].upper() + w[1:] for w in name.split(' ')])  # Title case but only for first character
     for w in dont_capitalize:
         name.replace(' ' + w.title(), ' ' + w)
