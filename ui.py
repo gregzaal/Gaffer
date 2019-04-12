@@ -19,7 +19,8 @@
 import bpy
 from . import addon_updater_ops
 from collections import OrderedDict
-import bgl, blf
+import bgl
+import blf
 from math import pi, cos, sin, log
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -36,246 +37,62 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
         users: a list, 0th position is data name, 1st position is number of users
     '''
 
-    if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
-        row.operator("gaffer.more_options_hide", icon='TRIA_DOWN', text='', emboss=False).light = light.name
-    elif not gaf_props.MoreExpandAll:
-        row.operator("gaffer.more_options_show", icon='TRIA_RIGHT', text='', emboss=False).light = light.name
+    if bpy.context.scene.render.engine in supported_renderers:
+        if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
+            row.operator(GAFFER_OT_hide_more.bl_idname, icon='TRIA_DOWN', text='', emboss=False).light = light.name
+        elif not gaf_props.MoreExpandAll:
+            row.operator(GAFFER_OT_show_more.bl_idname, icon='TRIA_RIGHT', text='', emboss=False).light = light.name
 
     if gaf_props.SoloActive == '':
         if users[1] == 1:
-            row.operator('gaffer.rename', text=light.name).light = light.name
+            row.operator(GAFFER_OT_rename.bl_idname, text=light.name).light = light.name
         else:
-            data_name = users[0][4:] if users[0].startswith('LAMP') else users[0][3:]
-            op = row.operator('gaffer.rename', text='[' + str(users[1]) + '] ' + data_name)
+            data_name = users[0][5:] if users[0].startswith('LIGHT') else users[0][3:]
+            op = row.operator(GAFFER_OT_rename.bl_idname, text='[' + str(users[1]) + '] ' + data_name)
             op.multiuser = users[0]
             op.light = data_name
-            # if light.type == 'LAMP':
-            #     op.multiuser = light.type
-            #     op.light = light.data.name
-            # else:
-            #     op.light = light.name
     else:
         # Don't allow names to be edited during solo, will break the record of what was originally hidden
         row.label(text=light.name)
 
-    visop = row.operator('gaffer.hide_light', text='', icon="%s" % 'RESTRICT_VIEW_ON' if light.hide else 'RESTRICT_VIEW_OFF', emboss=False)
+    visop = row.operator(GAFFER_OT_hide_show_light.bl_idname,
+                         text="",
+                         icon="%s" % 'HIDE_ON' if light.hide_viewport else 'HIDE_OFF',
+                         emboss=False)
     visop.light = light.name
     visop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
-    visop.hide = not light.hide
+    visop.hide = not light.hide_viewport
 
-    selop = row.operator("gaffer.select_light", icon="%s" % 'RESTRICT_SELECT_OFF' if light.select else 'SMALL_TRI_RIGHT_VEC', text="", emboss=False)
+    sub = row.column(align=True)
+    sub.alert = light.select_get()
+    selop = sub.operator(GAFFER_OT_select_light.bl_idname,
+                         text="",
+                         icon="%s" % 'RESTRICT_SELECT_OFF' if light.select_get() else 'RESTRICT_SELECT_ON',
+                         emboss=False)
     selop.light = light.name
     selop.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
+
     if gaf_props.SoloActive == '':
-        solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
+        sub = row.column(align=True)
+        solobtn = sub.operator(GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
         solobtn.light = light.name
         solobtn.showhide = True
         solobtn.worldsolo = False
         solobtn.dataname = users[0] if users[1] > 1 else "__SINGLE_USER__"
     elif gaf_props.SoloActive == light.name:
-        solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='', emboss=False)
+        sub = row.column(align=True)
+        sub.alert = True
+        solobtn = sub.operator(GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
         solobtn.light = light.name
         solobtn.showhide = False
         solobtn.worldsolo = False
-
-
-def draw_BI_UI(context, layout, lights):
-    maincol = layout.column(align=True)
-    scene = context.scene
-    gaf_props = scene.gaf_props
-
-    lights_to_show = []
-    # Check validity of list and make list of lights to display
-    for light in lights:
-        try:
-            if light[0]:
-                a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
-                if (gaf_props.VisibleLightsOnly and not a.hide) or (not gaf_props.VisibleLightsOnly):
-                    if (gaf_props.VisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not gaf_props.VisibleLayersOnly):
-                        if a.name not in [o.name for o in gaf_props.Blacklist]:
-                            lights_to_show.append(light)
-        except:
-            box = maincol.box()
-            row = box.row(align=True)
-            row.label("Light list out of date")
-            row.operator('gaffer.refresh_lights', icon='FILE_REFRESH', text='')
-
-    # Don't show lights that share the same data
-    duplicates = {}
-    '''
-    duplicates:
-        A dict with the key: object type + data name (cannot use only the name in case of conflicts).
-        The values are the number of duplicates for that key.
-    '''
-    templist = []
-    for item in lights_to_show:
-        light = scene.objects[item[0][1:-1]]  # drop the apostrophies
-        if ('LAMP' + light.data.name) in duplicates:
-            duplicates['LAMP' + light.data.name] += 1
-        else:
-            templist.append(item)
-            duplicates['LAMP' + light.data.name] = 1
-    lights_to_show = templist
-
-    i = 0
-    for item in lights_to_show:
-        light = scene.objects[item[0][1:-1]]  # drop the apostrophies
-
-        box = maincol.box()
-        rowmain = box.row()
-        split = rowmain.split()
-        col = split.column()
-        row = col.row(align=True)
-
-        users = ['LAMP' + light.data.name, duplicates['LAMP' + light.data.name]]
-        draw_renderer_independant(gaf_props, row, light, users)
-
-        # strength
-        row = col.row(align=True)
-        row.prop(light.data, "type", text='', icon='LAMP_%s' % light.data.type, icon_only=True, emboss=False)
-        row.separator()
-        row.prop(light.data, 'energy', text="Strength")
-
-        # color
-        subcol = row.column(align=True)
-        subrow = subcol.row(align=True)
-        subrow.scale_x = 0.3
-        subrow.prop(light.data, 'color', text='')
-
-        # More Options
-        if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
-            if light.data.type != 'HEMI':
-                if light.data.type == 'AREA':
-                    col = box.column()
-                    if light.data.shape == 'RECTANGLE':
-                        subcol = col.column(align=True)
-                        row = subcol.row(align=True)
-                        row.prop(light.data, "size", text="Size X")
-                        row.prop(light.data, "shadow_ray_samples_x", text="Samples X")
-                        row = subcol.row(align=True)
-                        row.prop(light.data, "size_y", text="Size Y")
-                        row.prop(light.data, "shadow_ray_samples_y", text="Samples Y")
-                    else:
-                        row = col.row(align=True)
-                        row.prop(light.data, "size", text="Size")
-                        row.prop(light.data, "shadow_ray_samples_x", text="Samples")
-                elif light.data.type == 'SPOT':
-                    col = box.column(align=True)
-                    row = col.row(align=True)
-                    row.prop(light.data, "spot_size", text='Spot Size')
-                    row.prop(light.data, "spot_blend", text='Blend')
-                    if light.data.shadow_method == 'RAY_SHADOW':
-                        row = col.row(align=True)
-                        row.prop(light.data, "shadow_soft_size", text="Size")
-                        row.prop(light.data, "shadow_ray_samples", text="Samples")
-                    col = box.column()
-                else:
-                    if light.data.shadow_method == 'RAY_SHADOW':
-                        col = box.column()
-                        row = col.row(align=True)
-                        row.prop(light.data, "shadow_soft_size", text="Size")
-                        row.prop(light.data, "shadow_ray_samples", text="Samples")
-
-                col.prop(light.data, "shadow_method", text="")
-
-                row = col.row(align=True)
-                row.prop(light.data, "use_diffuse", toggle=True)
-                row.prop(light.data, "use_specular", toggle=True)
-            else:
-                row = col.row(align=True)
-                row.prop(light.data, "use_diffuse", toggle=True)
-                row.prop(light.data, "use_specular", toggle=True)
-            if light.data.type in ['SPOT', 'POINT']:
-                col.prop(light.data, "falloff_type", text="Falloff")
-
-    if len(lights_to_show) == 0:
-        row = maincol.row()
-        row.alignment = 'CENTER'
-        row.label("No lights to show :)")
-
-    # World
-    if context.scene.world:
-        world = context.scene.world
-        box = layout.box()
-        worldcol = box.column(align=True)
-        col = worldcol.column(align=True)
-
-        row = col.row(align=True)
-
-        if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
-            row.operator("gaffer.more_options_hide", icon='TRIA_DOWN', text='', emboss=False).light = "WorldEnviroLight"
-        elif not gaf_props.MoreExpandAll:
-            row.operator("gaffer.more_options_show", icon='TRIA_RIGHT', text='', emboss=False).light = "WorldEnviroLight"
-
-        row.label(text="World")
-        if gaf_props.SoloActive == '':
-            solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
-            solobtn.light = "WorldEnviroLight"
-            solobtn.showhide = True
-            solobtn.worldsolo = True
-        elif gaf_props.SoloActive == "WorldEnviroLight":
-            solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='', emboss=False)
-            solobtn.light = "WorldEnviroLight"
-            solobtn.showhide = False
-            solobtn.worldsolo = True
-
-        col = worldcol.column()
-        row = col.row(align=True)
-
-        row.label(text="", icon='WORLD')
-        row.separator()
-
-        row.prop(world, 'horizon_color', text='')
-        if world.use_sky_blend:
-            row.prop(world, 'zenith_color', text='')
-
-        if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
-            col = worldcol.column()
-            row = col.row(align=True)
-            row.prop(world, 'use_sky_blend')
-            if world.use_sky_blend:
-                row.prop(world, 'use_sky_paper', text="Paper", toggle=True)
-                row.prop(world, 'use_sky_real', text="Real", toggle=True)
-
-            row = col.row(align=True)
-            row.prop(world.light_settings, "use_ambient_occlusion", text="Ambient Occlusion")
-            if world.light_settings.use_ambient_occlusion:
-                row.prop(world.light_settings, "ao_blend_type", text="")
-            if world.light_settings.use_ambient_occlusion:
-                row = col.row(align=True)
-                row.prop(world.light_settings, "ao_factor")
-                row.prop(world.light_settings, "distance")
-
-            col.prop(world.light_settings, "use_environment_light", text="Environment Lighting")
-            if world.light_settings.use_environment_light:
-                col.prop(world.light_settings, "environment_energy", text='Energy')
-
-            if world.light_settings.use_environment_light or world.light_settings.use_ambient_occlusion:
-                if world.light_settings.gather_method == 'APPROXIMATE':
-                    col.prop(world.light_settings, "use_indirect_light", text="Indirect Lighting")
-                    if world.light_settings.use_indirect_light:
-                        row = col.row(align=True)
-                        row.prop(world.light_settings, "indirect_factor")
-                        row.prop(world.light_settings, "indirect_bounces")
-
-                worldcol.separator()
-                col = worldcol.column(align=True)
-                row = col.row(align=True)
-                row.prop(world.light_settings, "gather_method", expand=True)
-
-                if world.light_settings.gather_method == 'APPROXIMATE':
-                    col.prop(world.light_settings, "passes")
-                    col.prop(world.light_settings, "error_threshold")
-                    col.prop(world.light_settings, "correction")
-                else:
-                    col.prop(world.light_settings, "samples")
 
 
 def draw_cycles_UI(context, layout, lights):
     maincol = layout.column(align=False)
     scene = context.scene
     gaf_props = scene.gaf_props
-    prefs = context.user_preferences.addons[__package__].preferences
+    prefs = context.preferences.addons[__package__].preferences
     icons = get_icons()
 
     lights_to_show = []
@@ -283,23 +100,24 @@ def draw_cycles_UI(context, layout, lights):
     for light in lights:
         try:
             if light[0]:
-                a = bpy.data.objects[light[0][1:-1]]  # will cause exception if obj no longer exists
-                if (gaf_props.VisibleLightsOnly and not a.hide) or (not gaf_props.VisibleLightsOnly):
-                    if a.type != 'LAMP':
+                a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
+                if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
+                    if a.type != 'LIGHT':
                         b = bpy.data.materials[light[1][1:-1]]
                         if b.use_nodes:
                             c = b.node_tree.nodes[light[2][1:-1]]
                     else:
                         if a.data.use_nodes:
                             c = a.data.node_tree.nodes[light[2][1:-1]]
-                    if (gaf_props.VisibleLayersOnly and isOnVisibleLayer(a, scene)) or (not gaf_props.VisibleLayersOnly):
+                    if ((gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, scene)) or
+                            (not gaf_props.VisibleCollectionsOnly)):
                         if a.name not in [o.name for o in gaf_props.Blacklist]:
                             lights_to_show.append(light)
-        except:
+        except KeyError:
             box = maincol.box()
             row = box.row(align=True)
-            row.label("Light list out of date")
-            row.operator('gaffer.refresh_lights', icon='FILE_REFRESH', text='')
+            row.label(text="Light list out of date")
+            row.operator(GAFFER_OT_refresh_light_list.bl_idname, icon='FILE_REFRESH', text='')
 
     # Don't show lights that share the same data
     duplicates = {}
@@ -310,13 +128,13 @@ def draw_cycles_UI(context, layout, lights):
     '''
     templist = []
     for item in lights_to_show:
-        light = scene.objects[item[0][1:-1]]  # drop the apostrophies
-        if light.type == 'LAMP':
-            if ('LAMP' + light.data.name) in duplicates:
-                duplicates['LAMP' + light.data.name] += 1
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+        if light.type == 'LIGHT':
+            if ('LIGHT' + light.data.name) in duplicates:
+                duplicates['LIGHT' + light.data.name] += 1
             else:
                 templist.append(item)
-                duplicates['LAMP' + light.data.name] = 1
+                duplicates['LIGHT' + light.data.name] = 1
         else:
             mat = bpy.data.materials[item[1][1:-1]]
             if ('MAT' + mat.name) in duplicates:
@@ -328,10 +146,10 @@ def draw_cycles_UI(context, layout, lights):
 
     i = 0
     for item in lights_to_show:
-        light = scene.objects[item[0][1:-1]]  # drop the apostrophies
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
         doesnt_use_nodes = False
         is_portal = False
-        if light.type == 'LAMP':
+        if light.type == 'LIGHT':
             material = None
             if light.data.use_nodes:
                 node_strength = light.data.node_tree.nodes[item[2][1:-1]]
@@ -350,9 +168,9 @@ def draw_cycles_UI(context, layout, lights):
         if doesnt_use_nodes:
             box = maincol.box()
             row = box.row()
-            row.label("\"" + light.name + "\" doesn't use nodes!")
-            if light.type == 'LAMP':
-                row.operator('gaffer.lamp_use_nodes', icon='NODETREE', text='').light = light.name
+            row.label(text="\"" + light.name + "\" doesn't use nodes!")
+            if light.type == 'LIGHT':
+                row.operator(GAFFER_OT_light_use_nodes.bl_idname, icon='NODETREE', text='').light = light.name
         else:
             if item[3].startswith("'"):
                 socket_strength_str = str(item[3][1:-1])
@@ -375,8 +193,8 @@ def draw_cycles_UI(context, layout, lights):
             col = split.column()
             row = col.row(align=True)
 
-            if light.type == 'LAMP':
-                users = ['LAMP' + light.data.name, duplicates['LAMP' + light.data.name]]
+            if light.type == 'LIGHT':
+                users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
             else:
                 users = ['MAT' + material.name, duplicates['MAT' + material.name]]
             draw_renderer_independant(gaf_props, row, light, users)
@@ -387,24 +205,23 @@ def draw_cycles_UI(context, layout, lights):
                 strength_sockets = node_strength.inputs
                 if socket_strength_type == 'o':
                     strength_sockets = node_strength.outputs
-                if light.type == 'LAMP':
-                    row.prop(light.data, "type", text='', icon='LAMP_%s' % light.data.type, icon_only=True, emboss=False)
+                if light.type == 'LIGHT':
+                    row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True)
                 else:
                     row.label(text='', icon='MESH_GRID')
 
-                row.separator()
                 try:
-                    if ((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) \
-                    or (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) \
-                    and hasattr(strength_sockets[socket_strength], "default_value"):
+                    if (((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) or
+                            (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) and
+                            hasattr(strength_sockets[socket_strength], "default_value")):
                         row.prop(strength_sockets[socket_strength], 'default_value', text='Strength')
                     else:
-                        row.label("  Node Invalid")
+                        row.label(text="  Node Invalid")
                 except:
-                    row.label("  Node Invalid")
+                    row.label(text="  Node Invalid")
 
                 # color
-                if light.type == 'LAMP':
+                if light.type == 'LIGHT':
                     nodes = light.data.node_tree.nodes
                 else:
                     nodes = material.node_tree.nodes
@@ -435,13 +252,15 @@ def draw_cycles_UI(context, layout, lights):
                         elif from_node.type == 'BLACKBODY':
                             row.prop(from_node.inputs[0], 'default_value', text='Temperature')
                             if gaf_props.ColTempExpand and gaf_props.LightUIIndex == i:
-                                row.operator('gaffer.col_temp_hide', text='', icon='TRIA_UP')
+                                row.operator(GAFFER_OT_hide_temp_list.bl_idname, text='', icon='TRIA_UP')
                                 col = col.column(align=True)
                                 col.separator()
-                                col.label("Color Temp. Presets:")
+                                col.label(text="Color Temp. Presets:")
                                 ordered_col_temps = OrderedDict(sorted(col_temp.items()))
                                 for temp in ordered_col_temps:
-                                    op = col.operator('gaffer.col_temp_preset', text=temp[3:], icon_value=icons[str(col_temp[temp])].icon_id)  # temp[3:] removes number used for ordering
+                                    op = col.operator(GAFFER_OT_set_temp.bl_idname,
+                                                      text=temp[3:],
+                                                      icon_value=icons[str(col_temp[temp])].icon_id)
                                     op.temperature = temp
                                     op.light = light.name
                                     if material:
@@ -450,7 +269,7 @@ def draw_cycles_UI(context, layout, lights):
                                         op.node = node_color.name
                                 col.separator()
                             else:
-                                row.operator('gaffer.col_temp_show', text='', icon='COLOR').l_index = i
+                                row.operator(GAFFER_OT_show_temp_list.bl_idname, text='', icon='COLOR').l_index = i
                         elif from_node.type == 'WAVELENGTH':
                             row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
 
@@ -458,7 +277,7 @@ def draw_cycles_UI(context, layout, lights):
             if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
                 col = box.column()
                 row = col.row(align=True)
-                if light.type == 'LAMP':
+                if light.type == 'LIGHT':
                     if light.data.type == 'AREA':
                         if light.data.shape == 'RECTANGLE':
                             row.prop(light.data, 'size')
@@ -493,14 +312,16 @@ def draw_cycles_UI(context, layout, lights):
                     row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
                 if hasattr(light, "GafferFalloff"):
                     drawfalloff = True
-                    if light.type == 'LAMP':
-                        if light.data.type == 'SUN' or light.data.type == 'HEMI' or (light.data.type == 'AREA' and light.data.cycles.is_portal):
+                    if light.type == 'LIGHT':
+                        if (light.data.type == 'SUN' or
+                                light.data.type == 'HEMI' or
+                                (light.data.type == 'AREA' and light.data.cycles.is_portal)):
                             drawfalloff = False
                     if drawfalloff:
                         col.prop(light, "GafferFalloff", text="Falloff")
                         if node_strength.type != 'LIGHT_FALLOFF' and light.GafferFalloff != 'quadratic':
-                            col.label("Light Falloff node is missing", icon="ERROR")
-                if light.type == 'LAMP':
+                            col.label(text="Light Falloff node is missing", icon="ERROR")
+                if light.type == 'LIGHT':
                     if light.data.type == 'AREA':
                         col.prop(light.data.cycles, 'is_portal', "Portal")
             i += 1
@@ -508,7 +329,7 @@ def draw_cycles_UI(context, layout, lights):
     if len(lights_to_show) == 0:
         row = maincol.row()
         row.alignment = 'CENTER'
-        row.label("No lights to show :)")
+        row.label(text="No lights to show :)")
 
     # World
     if context.scene.world:
@@ -520,20 +341,29 @@ def draw_cycles_UI(context, layout, lights):
         row = col.row(align=True)
 
         if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
-            row.operator("gaffer.more_options_hide", icon='TRIA_DOWN', text='', emboss=False).light = "WorldEnviroLight"
+            row.operator(GAFFER_OT_hide_more.bl_idname,
+                         icon='TRIA_DOWN',
+                         text='',
+                         emboss=False).light = "WorldEnviroLight"
         elif not gaf_props.MoreExpandAll:
-            row.operator("gaffer.more_options_show", icon='TRIA_RIGHT', text='', emboss=False).light = "WorldEnviroLight"
+            row.operator(GAFFER_OT_show_more.bl_idname,
+                         text='',
+                         icon='TRIA_RIGHT',
+                         emboss=False).light = "WorldEnviroLight"
 
         row.label(text="World")
-        row.prop(gaf_props, "WorldVis", text="", icon='%s' % 'RESTRICT_VIEW_OFF' if gaf_props.WorldVis else 'RESTRICT_VIEW_ON', emboss=False)
+        row.prop(gaf_props, "WorldVis",
+                 text="",
+                 icon='%s' % 'HIDE_OFF' if gaf_props.WorldVis else 'HIDE_ON',
+                 emboss=False)
 
         if gaf_props.SoloActive == '':
-            solobtn = row.operator("gaffer.solo", icon='ZOOM_SELECTED', text='', emboss=False)
+            solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='ZOOM_SELECTED', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = True
             solobtn.worldsolo = True
         elif gaf_props.SoloActive == "WorldEnviroLight":
-            solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='', emboss=False)
+            solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='ZOOM_PREVIOUS', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = False
             solobtn.worldsolo = True
@@ -565,7 +395,7 @@ def draw_cycles_UI(context, layout, lights):
                         current_node = background.inputs[1].links[0].from_node
                         temp_current_node = None
                         i = 0  # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
-                        while strength_node == None and i < 100:  # limitted to 100 chained nodes
+                        while strength_node is None and i < 1000:  # limitted to 100 chained nodes
                             i += 1
                             connected_inputs = False
                             if temp_current_node:
@@ -590,7 +420,7 @@ def draw_cycles_UI(context, layout, lights):
                     if background.inputs[0].is_linked:
                         current_node = background.inputs[0].links[0].from_node
                         i = 0  # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
-                        while color_node == None and i < 100:  # limitted to 100 chained nodes
+                        while color_node is None and i < 100:  # limitted to 100 chained nodes
                             i += 1
                             connected_inputs = False
                             for socket in current_node.inputs:
@@ -614,7 +444,7 @@ def draw_cycles_UI(context, layout, lights):
                     else:
                         row.prop(background.inputs[0], "default_value", text="")
                 else:
-                    row.label("No node found!")
+                    row.label(text="No node found!")
             else:
                 row.prop(world, 'horizon_color', text='')
 
@@ -644,44 +474,109 @@ def draw_cycles_UI(context, layout, lights):
                 if color_node:
                     if color_node.type == 'TEX_SKY':
                         if world.node_tree and world.use_nodes:
-                            col = worldcol.column(align = True)
-                            row = col.row(align = True)
+                            col = worldcol.column(align=True)
+                            row = col.row(align=True)
                             if gaf_props.SunObject:
-                                row.operator('gaffer.link_sky_to_sun', icon="LAMP_SUN").node_name = color_node.name
+                                row.operator(GAFFER_OT_link_sky_to_sun.bl_idname,
+                                             icon="LIGHT_SUN").node_name = color_node.name
                             else:
-                                row.label("Link Sky Texture:")
+                                row.label(text="Link Sky Texture:")
                             row.prop_search(gaf_props, "SunObject", bpy.data, "objects", text="")
 
 
-class GafferPanelLights(bpy.types.Panel):
+def draw_unsupported_renderer_UI(context, layout, lights):
+    maincol = layout.column(align=False)
+    scene = context.scene
+    gaf_props = scene.gaf_props
+    prefs = context.preferences.addons[__package__].preferences
+    icons = get_icons()
+
+    lights_to_show = []
+    # Check validity of list and make list of lights to display
+    for light in lights:
+        try:
+            if light[0]:
+                a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
+                if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
+                    if ((gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, scene)) or
+                            (not gaf_props.VisibleCollectionsOnly)):
+                        if a.name not in [o.name for o in gaf_props.Blacklist]:
+                            lights_to_show.append(light)
+        except KeyError:
+            box = maincol.box()
+            row = box.row(align=True)
+            row.label(text="Light list out of date")
+            row.operator(GAFFER_OT_refresh_light_list.bl_idname, icon='FILE_REFRESH', text='')
+
+    # Don't show lights that share the same data
+    duplicates = {}
+    '''
+    duplicates:
+        A dict with the key: object type + data name (cannot use only the name in case of conflicts).
+        The values are the number of duplicates for that key.
+    '''
+    templist = []
+    for item in lights_to_show:
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+        if light.type == 'LIGHT':
+            if ('LIGHT' + light.data.name) in duplicates:
+                duplicates['LIGHT' + light.data.name] += 1
+            else:
+                templist.append(item)
+                duplicates['LIGHT' + light.data.name] = 1
+    lights_to_show = templist
+
+    i = 0
+    for item in lights_to_show:
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+
+        box = maincol.box()
+        rowmain = box.row()
+        split = rowmain.split()
+        col = split.column()
+        row = col.row(align=True)
+
+        if light.type == 'LIGHT':
+            users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
+        else:
+            users = ['MAT' + material.name, duplicates['MAT' + material.name]]
+        draw_renderer_independant(gaf_props, row, light, users)
+        i += 1
+
+    if len(lights_to_show) == 0:
+        row = maincol.row()
+        row.alignment = 'CENTER'
+        row.label(text="No lights to show :)")
+
+
+class GAFFER_PT_lights(bpy.types.Panel):
 
     bl_label = "Lights"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "TOOLS"
+    bl_region_type = "UI"
     bl_category = "Gaffer"
 
-    @classmethod
-    def poll(cls, context):
-        return True if context.scene.render.engine in supported_renderers else False
-
     def draw(self, context):
-        addon_updater_ops.check_for_update_background(context)
+        addon_updater_ops.check_for_update_background()
 
         scene = context.scene
         gaf_props = scene.gaf_props
         lights_str = gaf_props.Lights
         lights = stringToNestedList(lights_str)
         layout = self.layout
-
         col = layout.column(align=True)
+
         row = col.row(align=True)
         if gaf_props.SoloActive != "":  # if in solo mode
-            solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='')
+            solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='ZOOM_PREVIOUS', text='')
             solobtn.light = "None"
             solobtn.showhide = False
             solobtn.worldsolo = False
-        row.operator('gaffer.refresh_lights', text="Refresh", icon='FILE_REFRESH')  # may not be needed if drawing errors are cought correctly (eg newly added lights)
-        row.prop(gaf_props, "VisibleLayersOnly", text='', icon='LAYER_ACTIVE')
+
+        # may not be needed if drawing errors are cought correctly (eg newly added lights):
+        row.operator(GAFFER_OT_refresh_light_list.bl_idname, text="Refresh", icon='FILE_REFRESH')
+
+        row.prop(gaf_props, "VisibleCollectionsOnly", text='', icon='LAYER_ACTIVE')
         row.prop(gaf_props, "VisibleLightsOnly", text='', icon='VISIBLE_IPO_ON')
         row.prop(gaf_props, "MoreExpandAll", text='', icon='PREFERENCES')
 
@@ -693,31 +588,46 @@ class GafferPanelLights(bpy.types.Panel):
                     # In case solo'd light changes name, theres no other way to exit solo mode
                     col.separator()
                     row = col.row()
-                    row.label("       ")
-                    solobtn = row.operator("gaffer.solo", icon='ZOOM_PREVIOUS', text='Reset Solo')
+                    row.label(text="       ")
+                    solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='ZOOM_PREVIOUS', text='Reset Solo')
                     solobtn.showhide = False
-                    row.label("       ")
+                    row.label(text="       ")
 
-        if scene.render.engine == 'BLENDER_RENDER':
-            draw_BI_UI(context, layout, lights)
-        elif scene.render.engine == 'CYCLES':
+        row = col.row(align=True)
+        row.prop(bpy.context.scene.view_settings, 'exposure', text="Global Exposure", slider=False)
+        row.operator(GAFFER_OT_apply_exposure.bl_idname, text="", icon='CHECKBOX_HLT')
+
+        if scene.render.engine == 'CYCLES':
             draw_cycles_UI(context, layout, lights)
         else:
-            layout.label ("Render Engine not supported!")
+            draw_unsupported_renderer_UI(context, layout, lights)
+            box = layout.box()
+            col = box.column(align=True)
+            row = col.row()
+            row.alignment = 'CENTER'
+            row.label(text="Warning", icon='ERROR')
+            row = col.row()
+            row.alignment = 'CENTER'
+            row.label(text="Render engine not fully supported.")
+            row = col.row()
+            row.alignment = 'CENTER'
+            row.label(text="Gaffer functionality is limitted.")
+            row = col.row(align=True)
+            row.alignment = 'CENTER'
+            row.label(text="Click here to add your vote:")
+            row.operator('wm.url_open',
+                         text="",
+                         icon='URL').url = "https://forms.gle/R22DphecWsXmaLAr9"
 
         addon_updater_ops.update_notice_box_ui(self, context)
 
 
-class GafferPanelTools(bpy.types.Panel):
+class GAFFER_PT_tools(bpy.types.Panel):
 
     bl_label = "Tools"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "TOOLS"
+    bl_region_type = "UI"
     bl_category = "Gaffer"
-
-    @classmethod
-    def poll(cls, context):
-        return True if context.scene.render.engine in supported_renderers else False
 
     def draw(self, context):
         scene = context.scene
@@ -727,42 +637,55 @@ class GafferPanelTools(bpy.types.Panel):
         maincol = layout.column()
 
         # Aiming
-        col = maincol.column(align = True)
-        col.label("Aim:", icon='MAN_TRANS')
-        col.operator('gaffer.aim', text="Selection at 3D cursor").target_type = 'CURSOR'
-        col.operator('gaffer.aim', text="Selected at active").target_type = 'ACTIVE'
-        col.operator('gaffer.aim', text="Active at selected").target_type = 'SELECTED'
+        maincol.separator()
+        box = maincol.box()
+        subcol = box.column(align=True)
+        row = subcol.row()
+        row.alignment = 'CENTER'
+        row.label(text="Aim:", icon='LIGHT_AREA')
+        row = subcol.row()
+        col = row.column(align=True)
+        col.label(text="Selected:")
+        col.operator(GAFFER_OT_aim_light.bl_idname, text="at 3D cursor", icon='PIVOT_CURSOR').target_type = 'CURSOR'
+        col.operator(GAFFER_OT_aim_light.bl_idname, text="at active", icon='FULLSCREEN_EXIT').target_type = 'ACTIVE'
+        col = row.column(align=True)
+        col.label(text="Active:")
+        col.operator(GAFFER_OT_aim_light.bl_idname, text="at selected", icon='PARTICLES').target_type = 'SELECTED'
+        col.operator(GAFFER_OT_aim_light_with_view.bl_idname, text="w/ 3D View", icon='VIEW_CAMERA')
 
         maincol.separator()
 
         # Draw Radius
-        box = maincol.box() if gaf_props.IsShowingRadius else maincol.column()
-        sub = box.column(align=True)
-        row = sub.row(align=True)
-        row.operator('gaffer.show_radius', text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius", icon='META_EMPTY')
-        if gaf_props.IsShowingRadius:
-            row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
-            sub.prop(gaf_props, 'LightRadiusAlpha', slider=True)
+        if context.scene.render.engine in supported_renderers:
+            box = maincol.box() if gaf_props.IsShowingRadius else maincol.column()
+            sub = box.column(align=True)
             row = sub.row(align=True)
-            row.active = gaf_props.IsShowingRadius
-            row.prop(gaf_props, 'LightRadiusDrawType', text="")
-            row.prop(gaf_props, 'LightRadiusUseColor')
-            row = sub.row(align=True)
-            row.active = gaf_props.IsShowingRadius
-            row.prop(gaf_props, 'LightRadiusXray')
-            row.prop(gaf_props, 'LightRadiusSelectedOnly')
-            row = sub.row(align=True)
-            row.prop(gaf_props, 'DefaultRadiusColor')
-
-        maincol.separator()
+            row.operator(GAFFER_OT_show_light_radius.bl_idname,
+                         text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius",
+                         icon='MESH_CIRCLE')
+            if gaf_props.IsShowingRadius:
+                row.operator(GAFFER_OT_refresh_bgl.bl_idname, text="", icon="FILE_REFRESH")
+                sub.prop(gaf_props, 'LightRadiusAlpha', slider=True)
+                row = sub.row(align=True)
+                row.active = gaf_props.IsShowingRadius
+                row.prop(gaf_props, 'LightRadiusDrawType', text="")
+                row.prop(gaf_props, 'LightRadiusUseColor')
+                row = sub.row(align=True)
+                row.active = gaf_props.IsShowingRadius
+                row.prop(gaf_props, 'LightRadiusXray')
+                row.prop(gaf_props, 'LightRadiusSelectedOnly')
+                row = sub.row(align=True)
+                row.prop(gaf_props, 'DefaultRadiusColor')
 
         # Draw Label
         box = maincol.box() if gaf_props.IsShowingLabel else maincol.column()
         sub = box.column(align=True)
         row = sub.row(align=True)
-        row.operator('gaffer.show_label', text="Show Label" if not gaf_props.IsShowingLabel else "Hide Label", icon='LONGDISPLAY')
+        row.operator(GAFFER_OT_show_light_label.bl_idname,
+                     text="Show Label" if not gaf_props.IsShowingLabel else "Hide Label",
+                     icon='ALIGN_LEFT')
         if gaf_props.IsShowingLabel:
-            row.operator('gaffer.refresh_bgl', text="", icon="FILE_REFRESH")
+            row.operator(GAFFER_OT_refresh_bgl.bl_idname, text="", icon="FILE_REFRESH")
             label_draw_type = gaf_props.LabelDrawType
             sub.prop(gaf_props, 'LabelAlpha', slider=True)
             sub.prop(gaf_props, 'LabelFontSize')
@@ -785,12 +708,12 @@ class GafferPanelTools(bpy.types.Panel):
         # Blacklist
         box = maincol.box()
         sub = box.column(align=True)
-        sub.label('Blacklist:')
+        sub.label(text='Blacklist:')
         if gaf_props.Blacklist:
             sub.template_list("OBJECT_UL_object_list", "", gaf_props, "Blacklist", gaf_props, "BlacklistIndex", rows=2)
         row = sub.row(align=True)
-        row.operator('gaffer.blacklist_add', icon='ZOOMIN')
-        row.operator('gaffer.blacklist_remove', icon='ZOOMOUT')
+        row.operator(GAFFER_OT_add_blacklisted.bl_idname, icon='ADD')
+        row.operator(GAFFER_OT_remove_blacklisted.bl_idname, icon='REMOVE')
 
 
 def draw_progress_bar(gaf_props, layout):
@@ -798,111 +721,137 @@ def draw_progress_bar(gaf_props, layout):
         layout.separator()
         b = layout.box()
         col = b.column(align=True)
-        col.label(gaf_props.ProgressText)
-        split = col.split(percentage=max(0.01, gaf_props.Progress), align=True)
+        col.label(text=gaf_props.ProgressText)
+        split = col.split(factor=max(0.01, gaf_props.Progress), align=True)
         r = split.row()
-        r.alert=True
-        r.prop(gaf_props, 'ProgressBarText', "")
+        r.alert = True
+        r.prop(gaf_props, 'ProgressBarText', text="")
         r = split.row()
-        r.label("")
+        r.label(text="")
         c = b.column(align=True)
-        c.label("Large HDRI files may take a while")
-        c.label("You can stop this any time by closing Blender")
+        c.label(text="Large HDRI files may take a while")
+        c.label(text="You can stop this any time by closing Blender")
         layout.separator()
+
 
 def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
     if gaf_props.hdri:
         col = layout.column(align=True)
 
-        if gaf_props.hdri_search:
-            row = col.row(align=True)
-            row.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
-            row.operator('gaffer.clear_search', text="", icon='X')
-            subrow = row.row(align=True)
-            subrow.alignment = 'RIGHT'
-            subrow.label(str(len(hdri_enum_previews(gaf_props, context))) + ' matches')
-        else:
-            col.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
+        if not toolbar or "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
 
-        col = layout.column(align=True)
-
-        row = col.row(align=True)
-
-        tmpc = row.column(align=True)
-        tmpcc = tmpc.column(align=True)
-        tmpcc.scale_y=8 if not toolbar else 3.5
-        tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_LEFT').do_next=False
-        tmpr = tmpc.column(align=True)
-        tmpr.scale_y=1
-        tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
-
-        tmpc = row.column()
-        tmpc.scale_y=1.5 / (2 if toolbar else 1)
-        window_size_multiplier = (context.window.width/1920)/dpifac()
-        tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=8*window_size_multiplier)
-
-        tmpc = row.column(align=True)
-        tmpcc = tmpc.column(align=True)
-        tmpcc.scale_y=8 if not toolbar else 3.5
-        tmpcc.operator('gaffer.hdri_paddles', text='', icon='TRIA_RIGHT').do_next=True
-        tmpr = tmpc.column(align=True)
-        tmpr.scale_y=1
-        tmpr.operator('gaffer.hdri_random', text='', icon_value=icons['random'].icon_id)
-
-        if gaf_props.hdri_show_tags_ui:
-            col.separator()
-            box = col.box()
-            tags_col = box.column(align=True)
-            tags_col.label("Choose some tags:")
-            tags_col.separator()
-
-            current_tags = get_tags()
-            if gaf_props.hdri in current_tags:
-                current_tags = current_tags[gaf_props.hdri]
+            if gaf_props.hdri_search:
+                row = col.row(align=True)
+                row.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
+                row.operator(GAFFER_OT_hdri_clear_search.bl_idname, text="", icon='X')
+                subrow = row.row(align=True)
+                subrow.alignment = 'RIGHT'
+                subrow.label(text=str(len(hdri_enum_previews(gaf_props, context))) + ' matches')
             else:
-                current_tags = []
+                col.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
 
-            i = 0
-            for t in possible_tags:
-                if i % 4 == 0 or t == '##split##':  # Split tags into columns
-                    row = tags_col.row(align=True)
-                if t != '##split##':
+            col = layout.column(align=True)
 
-                    op = row.operator('gaffer.add_tag', t.title(), icon='FILE_TICK' if t in current_tags else 'NONE')
-                    op.hdri = gaf_props.hdri
-                    op.tag = t
-                    i += 1
-                else:
-                    i = 0
-            tags_col.prop(gaf_props, 'hdri_custom_tags', icon_value=icons['text-cursor'].icon_id)
-            tags_col.separator()
-            tags_col.prop(gaf_props, 'hdri_show_tags_ui', text="Done", toggle=True)
-            col.separator()
-
-        col = layout.column(align=True)
-
-        if prefs.RequestThumbGen:
             row = col.row(align=True)
-            row.alignment = 'CENTER'
-            row.operator('gaffer.generate_hdri_thumbs', icon='IMAGE_COL')
+
+            tmpc = row.column(align=True)
+            tmpr = tmpc.column(align=True)
+            tmpr.scale_y = 1
+            tmpr.operator(GAFFER_OT_hdri_save.bl_idname, text='', icon='FILE_TICK').hdri = gaf_props.hdri
+            tmpcc = tmpc.column(align=True)
+            tmpcc.scale_y = 9 if not toolbar else 3.5
+            tmpcc.operator(GAFFER_OT_hdri_paddles.bl_idname, text='', icon='TRIA_LEFT').do_next = False
+            tmpr = tmpc.column(align=True)
+            tmpr.scale_y = 1
+            tmpr.operator(GAFFER_OT_hdri_reset.bl_idname, text='', icon='FILE_REFRESH').hdri = gaf_props.hdri
+
+            tmpc = row.column()
+            tmpc.scale_y = 1 / (2 if toolbar else 1)
+            tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=11)
+
+            tmpc = row.column(align=True)
+            tmpr = tmpc.column(align=True)
+            tmpr.scale_y = 1
+            tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
+            tmpcc = tmpc.column(align=True)
+            tmpcc.scale_y = 9 if not toolbar else 3.5
+            tmpcc.operator(GAFFER_OT_hdri_paddles.bl_idname, text='', icon='TRIA_RIGHT').do_next = True
+            tmpr = tmpc.column(align=True)
+            tmpr.scale_y = 1
+            tmpr.operator(GAFFER_OT_hdri_random.bl_idname, text='', icon_value=icons['random'].icon_id)
+
+            if gaf_props.hdri_show_tags_ui:
+                col.separator()
+                box = col.box()
+                tags_col = box.column(align=True)
+                tags_col.label(text="Choose some tags:")
+                tags_col.separator()
+
+                current_tags = get_tags()
+                if gaf_props.hdri in current_tags:
+                    current_tags = current_tags[gaf_props.hdri]
+                else:
+                    current_tags = []
+
+                i = 0
+                for t in possible_tags:
+                    if i % 4 == 0 or t == '##split##':  # Split tags into columns
+                        row = tags_col.row(align=True)
+                    if t != '##split##':
+
+                        op = row.operator(GAFFER_OT_hdri_add_tag.bl_idname,
+                                          text=t.title(),
+                                          icon='CHECKBOX_HLT' if t in current_tags else 'NONE')
+                        op.hdri = gaf_props.hdri
+                        op.tag = t
+                        i += 1
+                    else:
+                        i = 0
+                tags_col.prop(gaf_props, 'hdri_custom_tags', icon_value=icons['text-cursor'].icon_id)
+                tags_col.separator()
+                tags_col.prop(gaf_props, 'hdri_show_tags_ui', text="Done", toggle=True)
+                col.separator()
+
+            col = layout.column(align=True)
+
+            if prefs.RequestThumbGen:
+                row = col.row(align=True)
+                row.alignment = 'CENTER'
+                row.operator(GAFFER_OT_hdri_thumb_gen.bl_idname, icon='IMAGE')
+                col.separator()
+
+            row = col.row(align=True)
+            vp_icon = 'TRIA_LEFT' if gaf_props['hdri_variation'] != 0 else 'TRIA_LEFT_BAR'
+            row.operator(GAFFER_OT_hdri_variation_paddles.bl_idname, text='', icon=vp_icon).do_next = False
+            row.prop(gaf_props, "hdri_variation", text="")
+            if hdri_haven_list and hdri_list:
+                if gaf_props.hdri in hdri_haven_list and gaf_props.hdri in hdri_list:
+                    if not any(("_16k" in h or "_8k" in h) for h in hdri_list[gaf_props.hdri]):
+                        row.operator(GAFFER_OT_open_hdrihaven.bl_idname,
+                                     text="",
+                                     icon='ADD').url = "https://hdrihaven.com/hdri/?h=" + gaf_props.hdri
+
+            vp_icon = ('TRIA_RIGHT' if gaf_props['hdri_variation'] < len(hdri_list[gaf_props.hdri]) - 1
+                       else 'TRIA_RIGHT_BAR')
+            row.operator(GAFFER_OT_hdri_variation_paddles.bl_idname, text='', icon=vp_icon).do_next = True
             col.separator()
 
-        row = col.row(align=True)
-        row.prop(gaf_props, "hdri_variation", text="")
-        if hdri_haven_list and hdri_list:
-            if gaf_props.hdri in hdri_haven_list and gaf_props.hdri in hdri_list:
-                if not any(("_16k" in h or "_8k" in h or "_4k" in h) for h in hdri_list[gaf_props.hdri]):
-                    row.operator('gaffer.go_hdri_haven', text="", icon_value=icons['hdri_haven'].icon_id).url="https://hdrihaven.com/hdri/?h="+gaf_props.hdri
+            if gaf_props.FileNotFoundError:
+                row = col.row(align=True)
+                row.scale_y = 1.5
+                row.alert = True
+                row.alignment = 'CENTER'
+                row.label(text="File not found. Try refreshing your HDRI list:", icon='ERROR')
+                row.operator(GAFFER_OT_detect_hdris.bl_idname, text="Refresh", icon="FILE_REFRESH")
 
-        col.separator()
-        col.separator()
+            col.separator()
         col.prop(gaf_props, 'hdri_rotation', slider=True)
         col.separator()
-        row = col.row(align = True)
+        row = col.row(align=True)
         row.prop(gaf_props, 'hdri_brightness', slider=True)
         if not toolbar or "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
             row.prop(gaf_props, 'hdri_saturation', slider=True)
-            row = col.row(align = True)
+            row = col.row(align=True)
             row.prop(gaf_props, 'hdri_contrast', slider=True)
             row.prop(gaf_props, 'hdri_warmth', slider=True)
 
@@ -911,13 +860,13 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             col.separator()
             col.separator()
             if wc.sampling_method == 'NONE':
-                col.label("Importance sampling is disabled", icon="ERROR")
+                col.label(text="Importance sampling is disabled", icon="ERROR")
             else:
-                col.label("Sampling resolution is low", icon="ERROR")
+                col.label(text="Sampling resolution is low", icon="ERROR")
             row = col.row()
-            row.alignment="LEFT"
-            row.label("Your renders may be noisy")
-            row.operator('gaffer.fix_mis')
+            row.alignment = "LEFT"
+            row.label(text="Your renders may be noisy")
+            row.operator(GAFFER_OT_fix_mis.bl_idname)
             col.separator()
 
         if not toolbar:
@@ -925,17 +874,25 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             col.separator()
 
             box = col.box()
-            col = box.column(align = True)
+            col = box.column(align=True)
             row = col.row(align=True)
             row.alignment = 'LEFT'
-            row.prop(gaf_props, 'hdri_advanced', icon="TRIA_DOWN" if gaf_props.hdri_advanced else "TRIA_RIGHT", emboss=False, toggle=True)
+            row.prop(gaf_props, 'hdri_advanced',
+                     icon="TRIA_DOWN" if gaf_props.hdri_advanced else "TRIA_RIGHT",
+                     emboss=False,
+                     toggle=True)
             if gaf_props.hdri_advanced:
-                col = box.column(align = True)
+                col = box.column(align=True)
                 col.prop(gaf_props, 'hdri_tint', slider=True)
                 col.prop(gaf_props, 'hdri_clamp', slider=True)
+                split = col.split(factor=0.75, align=True)
+                r = split.row(align=True)
+                r.prop(gaf_props, 'hdri_horz_shift', slider=True)
+                r = split.row(align=True)
+                r.prop(gaf_props, 'hdri_horz_exp', slider=False)
                 col.separator()
 
-                col.label("Control background separately:")
+                col.label(text="Control background separately:")
                 row = col.row(align=True)
                 row.prop(gaf_props, 'hdri_use_separate_brightness', toggle=True)
                 sub = row.row(align=True)
@@ -977,42 +934,41 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 sub = row.row(align=True)
                 sub.active = gaf_props.hdri_use_jpg_background
                 sub.prop(gaf_props, 'hdri_use_darkened_jpg')
-                if (gaf_props.hdri_use_jpg_background and gaf_props.hdri_use_bg_reflections) and not gaf_props.hdri_use_darkened_jpg:
-                    col.label("Enabling 'Pre-Darkened' is recommended to")
-                    col.label("get more accurate reflections.")
+                if ((gaf_props.hdri_use_jpg_background and gaf_props.hdri_use_bg_reflections) and not
+                        gaf_props.hdri_use_darkened_jpg):
+                    col.label(text="Enabling 'Pre-Darkened' is recommended to")
+                    col.label(text="get more accurate reflections.")
                 if gaf_props.RequestJPGGen and gaf_props.hdri_use_jpg_background:
                     col.separator()
                     col.separator()
-                    col.label("No JPGs have been created yet,", icon='ERROR')
-                    col.label("please click 'Generate JPGs' below.")
-                    col.label("Note: This may take a while for high-res images")
-                    col.operator('gaffer.generate_jpgs')
+                    col.label(text="No JPGs have been created yet,", icon='ERROR')
+                    col.label(text="please click 'Generate JPGs' below.")
+                    col.label(text="Note: This may take a while for high-res images")
+                    col.operator(GAFFER_OT_hdri_jpg_gen.bl_idname)
                     col.prop(gaf_props, 'hdri_jpg_gen_all')
                     if gaf_props.hdri_jpg_gen_all:
-                        col.label("This is REALLY going to take a while.")
-                        col.label("See the console for progress.")
+                        col.label(text="This is REALLY going to take a while.")
+                        col.label(text="See the console for progress.")
                     col.separator()
     elif gaf_props.hdri_search:
         prefs.ForcePreviewsRefresh = True
         row = layout.row(align=True)
         row.prop(gaf_props, 'hdri_search', text="", icon='VIEWZOOM')
-        row.operator('gaffer.clear_search', text="", icon='X')
+        row.operator(GAFFER_OT_hdri_clear_search.bl_idname, text="", icon='X')
         subrow = row.row(align=True)
         subrow.alignment = 'RIGHT'
-        subrow.label("No matches")
+        subrow.label(text="No matches")
     else:
         prefs.ForcePreviewsRefresh = True
         row = layout.row()
-        row.alignment='CENTER'
-        row.label("No HDRIs found")
+        row.alignment = 'CENTER'
+        row.label(text="No HDRIs found")
         row = layout.row()
-        row.alignment='CENTER'
-        row.label("Please put some in the HDRI folder:")
-        row = layout.row()
-        row.alignment='CENTER'
-        row.label(prefs.hdri_path)
+        row.alignment = 'CENTER'
+        row.label(text="Please put some in the HDRI folder:")
 
-class GafferPanelHDRIs (bpy.types.Panel):
+
+class GAFFER_PT_hdris (bpy.types.Panel):
 
     bl_label = " "
     bl_space_type = "PROPERTIES"
@@ -1025,20 +981,19 @@ class GafferPanelHDRIs (bpy.types.Panel):
 
     def draw_header(self, context):
         gaf_props = context.scene.gaf_props
-        prefs = context.user_preferences.addons[__package__].preferences
+        prefs = context.preferences.addons[__package__].preferences
 
         layout = self.layout
         row = layout.row(align=True)
-        if prefs.hdri_path and os.path.exists(prefs.hdri_path):
-            row.prop(gaf_props, 'hdri_handler_enabled', text="")
+        row.prop(gaf_props, 'hdri_handler_enabled', text="")
         if gaf_props.hdri and gaf_props.hdri_handler_enabled:
-            row.label("HDRI: " + nice_hdri_name(gaf_props.hdri))
+            row.label(text="HDRI: " + nice_hdri_name(gaf_props.hdri))
         else:
-            row.label("HDRI")
+            row.label(text="HDRI")
 
     def draw(self, context):
         gaf_props = context.scene.gaf_props
-        prefs = context.user_preferences.addons[__package__].preferences
+        prefs = context.preferences.addons[__package__].preferences
         icons = get_icons()
 
         layout = self.layout
@@ -1046,13 +1001,14 @@ class GafferPanelHDRIs (bpy.types.Panel):
         draw_progress_bar(gaf_props, layout)
 
         col = layout.column()
-        if not os.path.exists(prefs.hdri_path):
+        hdri_paths = get_persistent_setting('hdri_paths')
+        if not os.path.exists(hdri_paths[0]):
             row = col.row()
             row.alignment = 'CENTER'
-            row.label("Select a folder in the Add-on User Preferences")
+            row.label(text="Select a folder in the Add-on User Preferences")
             row = col.row()
             row.alignment = 'CENTER'
-            row.label("Ctrl-Alt-U > Add-ons > Gaffer > HDRI Folder")
+            row.label(text="Preferences > Add-ons > Gaffer > HDRI Folder")
         else:
             if gaf_props.hdri_handler_enabled:
                 draw_hdri_handler(context, col, gaf_props, prefs, icons)
@@ -1060,19 +1016,19 @@ class GafferPanelHDRIs (bpy.types.Panel):
                 if gaf_props.ShowHDRIHaven:
                     layout.separator()
                     row = layout.row(align=True)
-                    row.alignment='CENTER'
+                    row.alignment = 'CENTER'
                     row.scale_y = 1.5
                     row.scale_x = 1.5
-                    row.operator('gaffer.get_hdri_haven', icon_value=icons['hdri_haven'].icon_id)
-                    row.operator('gaffer.hide_hdri_haven', text="", icon='X')
+                    row.operator(GAFFER_OT_get_hdrihaven.bl_idname, icon_value=icons['hdri_haven'].icon_id)
+                    row.operator(GAFFER_OT_hide_hdrihaven.bl_idname, text="", icon='X')
             else:
                 col = layout.column()
                 row = col.row()
                 row.alignment = 'CENTER'
-                row.label("Gaffer's HDRI handler is disabled.")
+                row.label(text="Gaffer's HDRI handler is disabled.")
                 row = col.row()
                 row.alignment = 'CENTER'
-                row.label("Enable it with the checkbox in this panel's header")
+                row.label(text="Enable it with the checkbox in this panel's header")
 
 
 class OBJECT_UL_object_list(bpy.types.UIList):
@@ -1086,4 +1042,4 @@ def gaffer_node_menu_func(self, context):
         light_dict = dictOfLights()
         if context.object.name in light_dict:
             layout = self.layout
-            layout.operator('gaffer.node_set_strength')
+            layout.operator(GAFFER_OT_node_set_strength.bl_idname)
