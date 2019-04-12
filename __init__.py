@@ -118,6 +118,8 @@ class GafferPreferences(bpy.types.AddonPreferences):
 
         main_col = layout.column()
 
+        ui.draw_trial(main_col)
+
         hdri_paths = functions.get_persistent_setting('hdri_paths')
         row = main_col.row(align=True)
         row.label(text="HDRI Folders:")
@@ -184,7 +186,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         row.alignment = 'RIGHT'
         row.prop(self, 'include_8bit')
 
-        addon_updater_ops.update_settings_ui(self, context)
+        # addon_updater_ops.update_settings_ui(self, context)
 
         box = layout.box()
         col = box.column()

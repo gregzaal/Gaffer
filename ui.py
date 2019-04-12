@@ -31,6 +31,19 @@ from .functions import *
 from .operators import *
 
 
+def draw_trial(col):
+    row = col.row(align=True)
+    row.alignment = 'RIGHT'
+    row.alert = True
+    row.label(text="Trial Version")
+    row.alert = False
+    row.operator('wm.url_open',
+                 text="",
+                 icon='URL',
+                 emboss=False).url = "http://bit.ly/gafpanel-trial"
+    col.separator()
+
+
 def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stuff that's shown for all renderers
     '''
         Parameters:
@@ -569,6 +582,8 @@ class GAFFER_PT_lights(bpy.types.Panel):
         layout = self.layout
         col = layout.column(align=True)
 
+        draw_trial(col)
+
         row = col.row(align=True)
         if gaf_props.SoloActive != "":  # if in solo mode
             sub = row.column(align=True)
@@ -1009,6 +1024,7 @@ class GAFFER_PT_hdris (bpy.types.Panel):
         draw_progress_bar(gaf_props, layout)
 
         col = layout.column()
+        draw_trial(col)
         hdri_paths = get_persistent_setting('hdri_paths')
         if not os.path.exists(hdri_paths[0]):
             row = col.row()

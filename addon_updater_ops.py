@@ -1378,7 +1378,7 @@ def register(bl_info):
 	# the addon's web page to download, specifically: updater.website
 	# Useful if only wanting to get notification of updates but not
 	# directly install.
-	updater.manual_only = False
+	updater.manual_only = True
 
 	# Used for development only, "pretend" to install an update to test
 	# reloading conditions
