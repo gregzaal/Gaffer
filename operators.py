@@ -843,7 +843,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
         for item in self.objects:
             obj = item[0]
-            if not scene.gaf_props.LightRadiusSelectedOnly or obj.select:
+            if not scene.gaf_props.LightRadiusSelectedOnly or obj.select_get():
                 if obj:
                     if obj.data:
                         if obj.data.type in ['POINT', 'SUN', 'SPOT']:  # in case user changes the type while running
