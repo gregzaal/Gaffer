@@ -358,12 +358,15 @@ def draw_cycles_UI(context, layout, lights):
                  emboss=False)
 
         if gaf_props.SoloActive == '':
-            solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='ZOOM_SELECTED', text='', emboss=False)
+            sub = row.column(align=True)
+            solobtn = sub.operator(GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = True
             solobtn.worldsolo = True
         elif gaf_props.SoloActive == "WorldEnviroLight":
-            solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='ZOOM_PREVIOUS', text='', emboss=False)
+            sub = row.column(align=True)
+            sub.alert = True
+            solobtn = sub.operator(GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = False
             solobtn.worldsolo = True
@@ -568,7 +571,9 @@ class GAFFER_PT_lights(bpy.types.Panel):
 
         row = col.row(align=True)
         if gaf_props.SoloActive != "":  # if in solo mode
-            solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='ZOOM_PREVIOUS', text='')
+            sub = row.column(align=True)
+            sub.alert = True
+            solobtn = sub.operator(GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='')
             solobtn.light = "None"
             solobtn.showhide = False
             solobtn.worldsolo = False
@@ -588,10 +593,9 @@ class GAFFER_PT_lights(bpy.types.Panel):
                     # In case solo'd light changes name, theres no other way to exit solo mode
                     col.separator()
                     row = col.row()
-                    row.label(text="       ")
-                    solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='ZOOM_PREVIOUS', text='Reset Solo')
+                    row.alert = True
+                    solobtn = row.operator(GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='Light not found, reset Solo')
                     solobtn.showhide = False
-                    row.label(text="       ")
 
         row = col.row(align=True)
         row.prop(bpy.context.scene.view_settings, 'exposure', text="Global Exposure", slider=False)
