@@ -32,10 +32,6 @@ from .operators import *
 
 
 def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stuff that's shown for all renderers
-    '''
-        Parameters:
-        users: a list, 0th position is data name, 1st position is number of users
-    '''
 
     if bpy.context.scene.render.engine in supported_renderers:
         if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
@@ -550,6 +546,30 @@ def draw_unsupported_renderer_UI(context, layout, lights):
         row = maincol.row()
         row.alignment = 'CENTER'
         row.label(text="No lights to show :)")
+
+    # World
+    if context.scene.world and gaf_props.hdri_handler_enabled and context.scene.render.engine in ['BLENDER_EEVEE']:
+        world = context.scene.world
+        box = layout.box()
+        worldcol = box.column(align=True)
+        col = worldcol.column(align=True)
+
+        row = col.row(align=True)
+
+        if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
+            row.operator(GAFFER_OT_hide_more.bl_idname,
+                         icon='TRIA_DOWN',
+                         text='',
+                         emboss=False).light = "WorldEnviroLight"
+        elif not gaf_props.MoreExpandAll:
+            row.operator(GAFFER_OT_show_more.bl_idname,
+                         text='',
+                         icon='TRIA_RIGHT',
+                         emboss=False).light = "WorldEnviroLight"
+
+        row.label(text="World")
+        col = worldcol.column()
+        draw_hdri_handler(context, col, gaf_props, prefs, icons, toolbar=True)
 
 
 class GAFFER_PT_lights(bpy.types.Panel):
