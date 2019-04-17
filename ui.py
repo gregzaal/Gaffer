@@ -319,7 +319,7 @@ def draw_cycles_UI(context, layout, lights):
                             col.label(text="Light Falloff node is missing", icon="ERROR")
                 if light.type == 'LIGHT':
                     if light.data.type == 'AREA':
-                        col.prop(light.data.cycles, 'is_portal', "Portal")
+                        col.prop(light.data.cycles, 'is_portal')
             i += 1
 
     if len(lights_to_show) == 0:
