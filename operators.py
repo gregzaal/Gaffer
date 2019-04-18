@@ -838,7 +838,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
         region = context.region
         shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-        if context.space_data.shading.type == 'RENDERED':
+        if not context.space_data.overlay.show_overlays:
             return
 
         for item in self.objects:
@@ -1058,7 +1058,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
     def draw_callback_label(self, context):
         scene = context.scene
 
-        if context.space_data.shading.type == 'RENDERED':
+        if not context.space_data.overlay.show_overlays:
             return
 
         # font_size_factor is used to scale the rectangles based on the font size and DPI,
