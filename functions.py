@@ -366,13 +366,26 @@ def getHiddenStatus(scene, lights):
     scene.gaf_props.LightsHiddenRecord = str(statelist)
 
 
-def isInVisibleCollection(obj, scene):
+def visibleCollections():
+
+    def check_child(c, vis_cols):
+        if c.is_visible:
+            vis_cols.append(c.collection)
+            for sc in c.children:
+                vis_cols = check_child(sc, vis_cols)
+        return vis_cols
+
+    vis_cols = [bpy.context.scene.collection]
+
+    for c in bpy.context.window.view_layer.layer_collection.children:
+        check_child(c, vis_cols)
+
+    return vis_cols
+                
+
+def isInVisibleCollection(obj, vis_cols):
     for oc in obj.users_collection:
-        for child in bpy.context.window.view_layer.layer_collection.children:
-            if child.is_visible and child.collection == oc:
-                return True
-    for o in scene.collection.objects:  # Master collection can't be hidden
-        if obj == o:
+        if oc in vis_cols:
             return True
     return False
 

@@ -93,6 +93,7 @@ def draw_cycles_UI(context, layout, lights):
 
     lights_to_show = []
     # Check validity of list and make list of lights to display
+    vis_cols = visibleCollections()
     for light in lights:
         try:
             if light[0]:
@@ -105,7 +106,7 @@ def draw_cycles_UI(context, layout, lights):
                     else:
                         if a.data.use_nodes:
                             c = a.data.node_tree.nodes[light[2][1:-1]]
-                    if ((gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, scene)) or
+                    if ((gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, vis_cols)) or
                             (not gaf_props.VisibleCollectionsOnly)):
                         if a.name not in [o.name for o in gaf_props.Blacklist]:
                             lights_to_show.append(light)
@@ -492,12 +493,13 @@ def draw_unsupported_renderer_UI(context, layout, lights):
 
     lights_to_show = []
     # Check validity of list and make list of lights to display
+    vis_cols = visibleCollections()
     for light in lights:
         try:
             if light[0]:
                 a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
                 if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
-                    if ((gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, scene)) or
+                    if ((gaf_props.VisibleCollectionsOnly and isInVisibleCollection(a, vis_cols)) or
                             (not gaf_props.VisibleCollectionsOnly)):
                         if a.name not in [o.name for o in gaf_props.Blacklist]:
                             lights_to_show.append(light)
