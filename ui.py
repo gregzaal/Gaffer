@@ -604,7 +604,7 @@ class GAFFER_PT_lights(bpy.types.Panel):
         row.operator(GAFFER_OT_refresh_light_list.bl_idname, text="Refresh", icon='FILE_REFRESH')
 
         row.prop(gaf_props, "VisibleCollectionsOnly", text='', icon='LAYER_ACTIVE')
-        row.prop(gaf_props, "VisibleLightsOnly", text='', icon='VISIBLE_IPO_ON')
+        row.prop(gaf_props, "VisibleLightsOnly", text='', icon='HIDE_OFF')
         row.prop(gaf_props, "MoreExpandAll", text='', icon='PREFERENCES')
 
         if gaf_props.SoloActive != '':
