@@ -119,7 +119,7 @@ def refresh_light_list(scene):
                     else:
                         current_node = s.links[0].from_node
         return found_node, found_socket
-    
+
     m = []
 
     if not hasattr(bpy.types.Object, "GafferFalloff"):
@@ -381,7 +381,7 @@ def visibleCollections():
         check_child(c, vis_cols)
 
     return vis_cols
-                
+
 
 def isInVisibleCollection(obj, vis_cols):
     for oc in obj.users_collection:
@@ -575,7 +575,7 @@ def draw_corner(shader, x, y, r, corner):
         cosine = r * cos(i * 2 * pi / sides) + x
         sine = r * sin(i * 2 * pi / sides) + y
         verts.append((cosine, sine))
-    
+
     indices = []
     for i in range(r2 - r1):
         indices.append((0, i + 1, i + 2))
@@ -640,7 +640,7 @@ def detect_hdris(self, context):
 
     def check_folder_for_HDRIs(path):
         prefs = bpy.context.preferences.addons[__package__].preferences
-        
+
         l_allowed_file_types = allowed_file_types
         if not prefs.include_8bit:
             l_allowed_file_types = hdr_file_types
@@ -1476,7 +1476,7 @@ def hdri_enum_previews(self, context):
 
     all_thumbs_exist = True
     for i, name in enumerate(get_hdri_list(use_search=True)):
-        
+
         thumb_file = os.path.join(thumbnail_dir, name + "__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
             print("Missing thumb", name)
@@ -1596,7 +1596,7 @@ def get_hdri_haven_list(force_update=False):
     if os.path.exists(hdri_haven_list_path):
         with open(hdri_haven_list_path) as f:
             offline_data = json.load(f)
-    
+
     if not force_update:
         if offline_data:
             import time
