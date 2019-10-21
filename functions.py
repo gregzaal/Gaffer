@@ -32,6 +32,9 @@ from bpy.app.handlers import persistent
 
 from .constants import *
 
+# New mapping node with dynamic inputs (https://developer.blender.org/rBbaaa89a0bc54)
+NMN = bpy.app.version >= (2, 81, 8)
+
 
 # Utils
 
@@ -852,15 +855,15 @@ def handler_node(context, t, background=False):
 
     y_offset = 220 if background else 0
     positions = {
-        "ShaderNodeTexCoord": (-1021.785, 118.4),
-        "ShaderNodeMapping": (-831.785, 138.4),
-        "ShaderNodeTexEnvironment": (-461.785, 90.465 - y_offset),
+        "ShaderNodeTexCoord": (-951.031, 100.387),
+        "ShaderNodeMapping": (-759.744, 140.973),
+        "ShaderNodeTexEnvironment": (-567.9, 91.765 - y_offset),
         "ShaderNodeGamma": (-71.785, 59.522 - y_offset),
         "ShaderNodeHueSaturation": (118.214, 81.406 - y_offset),
         "Warmth": (-262.389, 72.821 - y_offset),
         "ShaderNodeBackground": (318.214, 48.494 - y_offset),
         "ShaderNodeMixShader": (523.77, 59.349),
-        "ShaderNodeLightPath": (123.77, 362.16),
+        "ShaderNodeLightPath": (123.77, 426.489),
         "ShaderNodeMath": (318.213, 309.207) if background else (110.564, -501.938),
         "ShaderNodeSeparateHSV": (-94.990, -404.268),
         "ShaderNodeValue": (-94.990, -540.5),
@@ -910,13 +913,20 @@ def uses_default_values(node, node_type):
             "_socket_2": 0,
         },
     }
+    if NMN:
+        defaults_dict['ShaderNodeMapping']['_socket_1'] = defaults_dict['ShaderNodeMapping']['translation']
+        defaults_dict['ShaderNodeMapping']['_socket_2'] = defaults_dict['ShaderNodeMapping']['rotation']
+        defaults_dict['ShaderNodeMapping']['_socket_3'] = defaults_dict['ShaderNodeMapping']['scale']
 
     defaults = defaults_dict[node_type]
     for d in defaults:
         if d.startswith("_"):
             node_value = node.inputs[int(d[-1])].default_value
         else:
-            node_value = getattr(node, d)
+            try:
+                node_value = getattr(node, d)
+            except AttributeError:
+                continue  # API changed, attribute no longer exists, can be ignored
         if defaults[d] != node_value:
             return False
 
@@ -1146,11 +1156,19 @@ def update_rotation(self, context):
 
     n = handler_node(context, "ShaderNodeMapping")
 
-    n.rotation.z = radians(gaf_props.hdri_rotation)
-
     e = 2
-    n.translation.z = pow(gaf_props.hdri_horz_shift, e) * 2
-    n.scale.z = pow(1 - ((gaf_props.hdri_horz_exp * 2 - 1) * pow(gaf_props.hdri_horz_shift, e)), e)
+    rot = radians(gaf_props.hdri_rotation)
+    loc = pow(gaf_props.hdri_horz_shift, e) * 2
+    sca = pow(1 - ((gaf_props.hdri_horz_exp * 2 - 1) * pow(gaf_props.hdri_horz_shift, e)), e)
+
+    if NMN:
+        n.inputs['Location'].default_value.z = loc
+        n.inputs['Rotation'].default_value.z = rot
+        n.inputs['Scale'].default_value.z = sca
+    else:
+        n.translation.z = loc
+        n.rotation.z = rot
+        n.scale.z = sca
 
     n.mute = uses_default_values(n, "ShaderNodeMapping")
 
