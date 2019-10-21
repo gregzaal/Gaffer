@@ -848,7 +848,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                     if obj.data:
                         if obj.data.type in ['POINT', 'SUN', 'SPOT']:  # in case user changes the type while running
                             # TODO check if this is still needed for Eevee
-                            if not (scene.render.engine != 'CYCLES' and obj.data.shadow_method == 'NOSHADOW'):
+                            if not (scene.render.engine != 'CYCLES'):
                                 if (obj in context.visible_objects and
                                         obj.name not in [o.name for o in scene.gaf_props.Blacklist]):
                                     if scene.gaf_props.LightRadiusUseColor:
