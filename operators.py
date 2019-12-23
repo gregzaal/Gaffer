@@ -41,7 +41,7 @@ def load_handler(dummy):
         otherwise a crapton of errors about the class being removed is printed
         (If a blend is saved with the draw handler running, then it's loaded
         with it running, but the class called for drawing no longer exists)
-    
+
         Ideally we should recreate the handler when loading the scene if it
         was enabled when it was saved - however this function is called
         before the blender UI finishes loading, and thus no 3D view exists yet.
@@ -53,7 +53,7 @@ def load_handler(dummy):
     bpy.context.scene.gaf_props.IsShowingRadius = False
     bpy.context.scene.gaf_props.IsShowingLabel = False
 
-    
+
 class GAFFER_OT_rename(bpy.types.Operator):
 
     'Rename this light'
@@ -375,7 +375,7 @@ class GAFFER_OT_refresh_light_list(bpy.types.Operator):
         scene = context.scene
 
         refresh_light_list(scene)
-        
+
         self.report({'INFO'}, "Light list refreshed")
         if scene.gaf_props.SoloActive == '':
             getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
@@ -517,7 +517,7 @@ class GAFFER_OT_create_enviro_widget(bpy.types.Operator):
     # TODO add op to delete widget and drivers
     # TODO add op to select widget (poll if it exists)
     # TODO poll for supported vector input, uses nodes, widget doesn't already exist
-    
+
     '''
         This is an experimental function.
         It's barely usable at present, but blender lacks a few important things to make it really useful:
@@ -848,7 +848,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                     if obj.data:
                         if obj.data.type in ['POINT', 'SUN', 'SPOT']:  # in case user changes the type while running
                             # TODO check if this is still needed for Eevee
-                            if not (scene.render.engine != 'CYCLES' and obj.data.shadow_method == 'NOSHADOW'):
+                            if not (scene.render.engine != 'CYCLES'):
                                 if (obj in context.visible_objects and
                                         obj.name not in [o.name for o in scene.gaf_props.Blacklist]):
                                     if scene.gaf_props.LightRadiusUseColor:
@@ -860,7 +860,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                                             color = item[1]
                                     else:
                                         color = scene.gaf_props.DefaultRadiusColor
-                                    
+
                                     bgl.glEnable(bgl.GL_BLEND)
                                     # Anti-aliasing; Gives bad results in 2.8, leaving here in case of future fix.
                                     # bgl.glEnable(bgl.GL_POLYGON_SMOOTH)
@@ -943,7 +943,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
                                     bgl.glDisable(bgl.GL_BLEND)
                                     # bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
-    
+
     def modal(self, context, event):
         if context.scene.gaf_props.IsShowingRadius:
             if context.area:
@@ -967,7 +967,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
             return {'FINISHED'}
         elif context.area.type == 'VIEW_3D':
             scene.gaf_props.IsShowingRadius = True
-            
+
             context.window_manager.modal_handler_add(self)
 
             GAFFER_OT_show_light_radius.handle_add(self, context)
@@ -1146,7 +1146,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                         blf.position(font_id, x, y_sub, 0)
                         blf.size(font_id, int(scene.gaf_props.LabelFontSize * 0.8), context.preferences.system.dpi)
                         blf.draw(font_id, obj.name)
-    
+
     def modal(self, context, event):
         if context.scene.gaf_props.IsShowingLabel:
             if context.area:
@@ -1170,7 +1170,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
             return {'FINISHED'}
         elif context.area.type == 'VIEW_3D':
             scene.gaf_props.IsShowingLabel = True
-            
+
             context.window_manager.modal_handler_add(self)
 
             GAFFER_OT_show_light_label.handle_add(self, context)
@@ -1365,7 +1365,7 @@ class GAFFER_OT_hdri_path_add(bpy.types.Operator, ImportHelper):
                     "The folder you selected is a subfolder of another HDRI folder, so it will be scanned already."
                 )
                 return {'CANCELLED'}
-        
+
         hdri_paths.append(self.directory)
         set_persistent_setting('hdri_paths', hdri_paths)
         update_hdri_path(self, context)
@@ -1480,7 +1480,7 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
         if not os.path.exists(thumb_file):
             filesize = os.path.getsize(chosen_file) / 1024 / 1024
             log('    ' + name + ": " + chosen_file + "  " + str(ceil(filesize)) + " MB", also_print=True)
-            
+
             if filesize < self.size_limit or not self.skip_huge_files:
                 cmd = [bpy.app.binary_path]
                 cmd.append("--background")
@@ -1610,7 +1610,7 @@ class GAFFER_OT_hdri_clear_search(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.gaf_props.hdri_search = ""
-        
+
         return {'FINISHED'}
 
 
@@ -1673,7 +1673,7 @@ class GAFFER_OT_hdri_add_tag(bpy.types.Operator):
 
     def execute(self, context):
         set_tag(self.hdri, self.tag)
-        
+
         return {'FINISHED'}
 
 
@@ -1698,7 +1698,7 @@ class GAFFER_OT_hdri_random(bpy.types.Operator):
             random_hdri = choice(list(hdris))
 
         gaf_props.hdri = random_hdri
-        
+
         return {'FINISHED'}
 
 
@@ -1716,7 +1716,7 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
     def execute(self, context):
         defaults = get_defaults(self.hdri)
         rna_props = context.scene.gaf_props.bl_rna.properties
-        
+
         for d in defaults_stored:
             v = 0
             if d in defaults and not self.factory:
@@ -1727,7 +1727,7 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
 
             if "hdri_" + d in rna_props.keys():
                 setattr(context.scene.gaf_props, 'hdri_' + d, v)
-        
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -1812,7 +1812,7 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
                 print("    Failed to download " + filename + " (" + str(sys.exc_info()[0]) + ")")
         else:
             print("Skipping " + filename + ", you already have it")
-                    
+
     def execute(self, context):
         hdrihaven_hdris = get_hdri_haven_list(force_update=True)
         num_hdris = len(hdrihaven_hdris)
@@ -1927,7 +1927,7 @@ class GAFFER_OT_hdri_open_data_folder(bpy.types.Operator):
                 subprocess.check_call(['explorer', data_dir])
         except:
             self.report({'WARNING'}, "This might not have worked :( Navigate to the path manually: " + data_dir)
-        
+
         return {'FINISHED'}
 
 
@@ -1980,7 +1980,7 @@ class GAFFER_OT_debug_upload_hdri_list(bpy.types.Operator):
     def execute(self, context):
 
         file_list = []
-        
+
         def get_file_list(p):
             for f in os.listdir(p):
                 if os.path.isfile(os.path.join(p, f)):
