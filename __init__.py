@@ -103,6 +103,12 @@ class GafferPreferences(bpy.types.AddonPreferences):
         default=False,
         update=functions.update_hdri_path
     )
+    panel_category: bpy.props.StringProperty(
+        name="Panel Category/Tab",
+        description=("Select which sidebar category/tab to place Gaffer's panels in"),
+        default="Gaffer",
+        update=ui.update_category
+    )
 
     show_debug: bpy.props.BoolProperty(
         name="Show Debug Tools",
@@ -183,6 +189,10 @@ class GafferPreferences(bpy.types.AddonPreferences):
         row = main_col.row()
         row.alignment = 'RIGHT'
         row.prop(self, 'include_8bit')
+
+        row = main_col.row()
+        row.alignment = 'RIGHT'
+        row.prop(self, 'panel_category')
 
         addon_updater_ops.update_settings_ui(self, context)
 
@@ -620,8 +630,6 @@ classes = [
     operators.GAFFER_OT_debug_delete_thumbs,
     operators.GAFFER_OT_debug_upload_hdri_list,
     operators.GAFFER_OT_debug_upload_logs,
-    ui.GAFFER_PT_lights,
-    ui.GAFFER_PT_tools,
     ui.GAFFER_PT_hdris,
     ui.OBJECT_UL_object_list,
 ]
@@ -638,6 +646,7 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
+    ui.update_category(bpy.context.preferences.addons[__name__].preferences, bpy.context)
 
     bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
     bpy.app.handlers.load_post.append(operators.load_handler)

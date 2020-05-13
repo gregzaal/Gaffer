@@ -31,6 +31,19 @@ from .functions import *
 from .operators import *
 
 
+def update_category(self, context):
+    classes = [GAFFER_PT_lights, GAFFER_PT_tools]
+    for panel in classes:
+        try:
+            bpy.utils.unregister_class(panel)
+        except RuntimeError:
+            # Not yet registered
+            pass
+        panel.bl_category = self.panel_category
+        bpy.utils.register_class(panel)
+
+
+
 def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stuff that's shown for all renderers
 
     if bpy.context.scene.render.engine in supported_renderers:
