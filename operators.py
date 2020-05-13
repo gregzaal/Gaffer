@@ -408,15 +408,17 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
 
         # Almost all of this is copy pasted from ui.draw_cycles_UI.
         # TODO make a function for finding the strength property.
+        completed_sockets = []  # Store list of completed sockets to avoid duplicate work on multi-user data
         for item in lights:
             if item[0] != "":
                 light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+                use_nodes = True
                 if light.type == 'LIGHT':
                     material = None
                     if light.data.use_nodes:
                         node_strength = light.data.node_tree.nodes[item[2][1:-1]]
                     else:
-                        doesnt_use_nodes = True
+                        use_nodes = False
 
                     if light.data.type == 'AREA' and light.data.cycles.is_portal:
                         is_portal = True
@@ -425,9 +427,9 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
                     if material.use_nodes:
                         node_strength = material.node_tree.nodes[item[2][1:-1]]
                     else:
-                        doesnt_use_nodes = True
+                        use_nodes = False
 
-                if light.data.use_nodes:
+                if use_nodes:
                     if item[3].startswith("'"):
                         socket_strength_str = str(item[3][1:-1])
                     else:
@@ -447,10 +449,14 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
                     if socket_strength_type == 'o':
                         strength_sockets = node_strength.outputs
                     try:
-                        if (((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) or
-                            (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) and
-                                hasattr(strength_sockets[socket_strength], "default_value")):
+                        skt = strength_sockets[socket_strength]
+                        if skt in completed_sockets:
+                            continue
+                        if (((socket_strength_type == 'i' and not skt.is_linked) or
+                            (socket_strength_type == 'o' and skt.is_linked)) and
+                                hasattr(skt, "default_value")):
                             strength_sockets[socket_strength].default_value *= exposure
+                            completed_sockets.append(skt)
                         else:
                             self.report({'ERROR'},
                                         item[0] + " does not have a valid node. Try refreshing the light list.")
