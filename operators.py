@@ -411,12 +411,13 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
         for item in lights:
             if item[0] != "":
                 light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+                use_nodes = True
                 if light.type == 'LIGHT':
                     material = None
                     if light.data.use_nodes:
                         node_strength = light.data.node_tree.nodes[item[2][1:-1]]
                     else:
-                        doesnt_use_nodes = True
+                        use_nodes = False
 
                     if light.data.type == 'AREA' and light.data.cycles.is_portal:
                         is_portal = True
@@ -425,9 +426,9 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
                     if material.use_nodes:
                         node_strength = material.node_tree.nodes[item[2][1:-1]]
                     else:
-                        doesnt_use_nodes = True
+                        use_nodes = False
 
-                if light.data.use_nodes:
+                if use_nodes:
                     if item[3].startswith("'"):
                         socket_strength_str = str(item[3][1:-1])
                     else:
