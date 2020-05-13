@@ -654,7 +654,7 @@ def detect_hdris(self, context):
                 if os.path.isfile(os.path.join(path, f)):
                     fn, ext = os.path.splitext(f)
                     if not any([fn.lower().endswith(b) for b in thumb_endings]):
-                        if ext.lower() in l_allowed_file_types:
+                        if ext.lower() in l_allowed_file_types and not fn.startswith('.'):
                             files.append(f)
                 else:
                     if f != "_MACOSX":
