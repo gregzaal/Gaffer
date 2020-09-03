@@ -6,8 +6,8 @@ A portion of every sale is donated to the [Blender Development Fund] too.
 
 Documentation can be found in [the wiki], and a list of changes in the [commit logs] or on the [Releases page].
 
-[Gaffer]:http://cgcookiemarkets.com/blender/all-products/gaffer-light-manager/
-[purchasing it from the Blender Market]:http://cgcookiemarkets.com/blender/all-products/gaffer-light-manager/
+[Gaffer]:https://blendermarket.com/products/gaffer-light-manager
+[purchasing it from the Blender Market]:https://blendermarket.com/products/gaffer-light-manager
 [Blender Development Fund]:https://www.blender.org/foundation/development-fund/
 [the wiki]:https://github.com/gregzaal/Gaffer/wiki
 [commit logs]:https://github.com/gregzaal/Gaffer/commits/master
