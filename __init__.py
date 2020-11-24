@@ -41,15 +41,8 @@ else:
 
 import bpy
 import os
-import json
-import bgl
-import blf
 from . import addon_updater_ops
 from collections import OrderedDict
-from math import pi, cos, sin, log
-from mathutils import Vector, Matrix
-from bpy_extras.view3d_utils import location_3d_to_region_2d
-from bpy.app.handlers import persistent
 
 
 class GafferPreferences(bpy.types.AddonPreferences):
@@ -583,6 +576,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     FileNotFoundError: bpy.props.BoolProperty(default=False, options={'HIDDEN'})
     Blacklist: bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
+
 classes = [
     GafferPreferences,
     BlacklistedObject,
@@ -673,6 +667,7 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
+
 
 if __name__ == "__main__":
     register()
