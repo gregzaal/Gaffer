@@ -25,7 +25,7 @@ from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
 
-supported_renderers = ['CYCLES']
+supported_renderers = ['CYCLES', 'BLENDER_EEVEE']
 
 col_temp = {"01_Flame (1700)": 1700,
             "02_Tungsten (3200)": 3200,
@@ -34,7 +34,7 @@ col_temp = {"01_Flame (1700)": 1700,
             "05_Shade (8000)": 8000,
             "06_LCD (10500)": 10500,
             "07_Sky (12000)": 12000}
-            
+
 # List of RGB values that correlate to the 380-780 wavelength range. Even though this
 # is the exact list from the Cycles code, for some reason it doesn't always match :(
 wavelength_list = ((0.0014, 0.0000, 0.0065), (0.0022, 0.0001, 0.0105), (0.0042, 0.0001, 0.0201),

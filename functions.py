@@ -141,7 +141,7 @@ def refresh_light_list(scene):
 
     objects = sorted(scene.objects, key=lambda x: x.name)
 
-    if scene.render.engine == 'CYCLES':
+    if scene.render.engine in ['CYCLES', 'BLENDER_EEVEE']:
         for obj in objects:
             light_mats = []
             if obj.type == 'LIGHT':

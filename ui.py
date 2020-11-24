@@ -97,6 +97,58 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
 
 
 def draw_cycles_UI(context, layout, lights):
+
+    def draw_more_options():
+        col = box.column()
+        row = col.row(align=True)
+        if light.type == 'LIGHT':
+            if light.data.type == 'AREA':
+                if light.data.shape == 'RECTANGLE':
+                    row.prop(light.data, 'size')
+                    row.prop(light.data, 'size_y')
+                    row = col.row(align=True)
+                else:
+                    row.prop(light.data, 'size')
+            else:
+                row.prop(light.data, 'shadow_soft_size', text='Size')
+
+            if scene.cycles.progressive == 'BRANCHED_PATH':
+                row.prop(light.data.cycles, "samples")
+
+            if not is_portal:
+                row = col.row(align=True)
+                row.prop(light.data.cycles, "use_multiple_importance_sampling", text='MIS', toggle=True)
+                row.prop(light.data.cycles, "cast_shadow", text='Shadows', toggle=True)
+                row.separator()
+                row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
+                row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
+
+            if light.data.type == 'SPOT':
+                row = col.row(align=True)
+                row.prop(light.data, "spot_size", text='Spot Size')
+                row.prop(light.data, "spot_blend", text='Blend')
+
+        else:  # MESH light
+            row.prop(material.cycles, "sample_as_light", text='MIS', toggle=True)
+            row.separator()
+            row.prop(light.cycles_visibility, "camera", text='Cam', toggle=True)
+            row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
+            row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
+        if hasattr(light, "GafferFalloff"):
+            drawfalloff = True
+            if light.type == 'LIGHT':
+                if (light.data.type == 'SUN' or
+                        light.data.type == 'HEMI' or
+                        (light.data.type == 'AREA' and light.data.cycles.is_portal)):
+                    drawfalloff = False
+            if drawfalloff:
+                col.prop(light, "GafferFalloff", text="Falloff")
+                if node_strength.type != 'LIGHT_FALLOFF' and light.GafferFalloff != 'quadratic':
+                    col.label(text="Light Falloff node is missing", icon="ERROR")
+        if light.type == 'LIGHT':
+            if light.data.type == 'AREA':
+                col.prop(light.data.cycles, 'is_portal')
+
     maincol = layout.column(align=False)
     scene = context.scene
     gaf_props = scene.gaf_props
@@ -155,6 +207,7 @@ def draw_cycles_UI(context, layout, lights):
 
     i = 0
     for item in lights_to_show:
+        print(item)
         light = scene.objects[item[0][1:-1]]  # drop the apostrophes
         doesnt_use_nodes = False
         is_portal = False
@@ -208,8 +261,8 @@ def draw_cycles_UI(context, layout, lights):
                 users = ['MAT' + material.name, duplicates['MAT' + material.name]]
             draw_renderer_independant(gaf_props, row, light, users)
 
-            # strength
             if not is_portal:
+                # strength
                 row = col.row(align=True)
                 strength_sockets = node_strength.inputs
                 if socket_strength_type == 'o':
@@ -284,55 +337,7 @@ def draw_cycles_UI(context, layout, lights):
 
             # More Options
             if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
-                col = box.column()
-                row = col.row(align=True)
-                if light.type == 'LIGHT':
-                    if light.data.type == 'AREA':
-                        if light.data.shape == 'RECTANGLE':
-                            row.prop(light.data, 'size')
-                            row.prop(light.data, 'size_y')
-                            row = col.row(align=True)
-                        else:
-                            row.prop(light.data, 'size')
-                    else:
-                        row.prop(light.data, 'shadow_soft_size', text='Size')
-
-                    if scene.cycles.progressive == 'BRANCHED_PATH':
-                        row.prop(light.data.cycles, "samples")
-
-                    if not is_portal:
-                        row = col.row(align=True)
-                        row.prop(light.data.cycles, "use_multiple_importance_sampling", text='MIS', toggle=True)
-                        row.prop(light.data.cycles, "cast_shadow", text='Shadows', toggle=True)
-                        row.separator()
-                        row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
-                        row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
-
-                    if light.data.type == 'SPOT':
-                        row = col.row(align=True)
-                        row.prop(light.data, "spot_size", text='Spot Size')
-                        row.prop(light.data, "spot_blend", text='Blend')
-
-                else:  # MESH light
-                    row.prop(material.cycles, "sample_as_light", text='MIS', toggle=True)
-                    row.separator()
-                    row.prop(light.cycles_visibility, "camera", text='Cam', toggle=True)
-                    row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
-                    row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
-                if hasattr(light, "GafferFalloff"):
-                    drawfalloff = True
-                    if light.type == 'LIGHT':
-                        if (light.data.type == 'SUN' or
-                                light.data.type == 'HEMI' or
-                                (light.data.type == 'AREA' and light.data.cycles.is_portal)):
-                            drawfalloff = False
-                    if drawfalloff:
-                        col.prop(light, "GafferFalloff", text="Falloff")
-                        if node_strength.type != 'LIGHT_FALLOFF' and light.GafferFalloff != 'quadratic':
-                            col.label(text="Light Falloff node is missing", icon="ERROR")
-                if light.type == 'LIGHT':
-                    if light.data.type == 'AREA':
-                        col.prop(light.data.cycles, 'is_portal')
+                draw_more_options()
             i += 1
 
     if len(lights_to_show) == 0:
@@ -637,6 +642,8 @@ class GAFFER_PT_lights(bpy.types.Panel):
             row.operator(GAFFER_OT_apply_exposure.bl_idname, text="", icon='CHECKBOX_HLT')
 
         if scene.render.engine == 'CYCLES':
+            draw_cycles_UI(context, layout, lights)
+        elif scene.render.engine == 'BLENDER_EEVEE':
             draw_cycles_UI(context, layout, lights)
         else:
             draw_unsupported_renderer_UI(context, layout, lights)
