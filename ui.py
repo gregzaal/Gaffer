@@ -430,14 +430,14 @@ def draw_cycles_UI(context, layout, lights):
     i = 0
     for item in lights_to_show:
         light = scene.objects[item[0][1:-1]]  # drop the apostrophes
-        doesnt_use_nodes = False
+        light_uses_nodes = True
         is_portal = False
         if light.type == 'LIGHT':
             material = None
             if light.data.use_nodes:
                 node_strength = light.data.node_tree.nodes[item[2][1:-1]]
             else:
-                doesnt_use_nodes = True
+                light_uses_nodes = False
 
             if light.data.type == 'AREA' and light.data.cycles.is_portal:
                 is_portal = True
@@ -446,15 +446,15 @@ def draw_cycles_UI(context, layout, lights):
             if material.use_nodes:
                 node_strength = material.node_tree.nodes[item[2][1:-1]]
             else:
-                doesnt_use_nodes = True
+                light_uses_nodes = False
 
-        if doesnt_use_nodes:
+        if light_uses_nodes:
             box = maincol.box()
-            row = box.row()
-            row.label(text="\"" + light.name + "\" doesn't use nodes!")
-            if light.type == 'LIGHT':
-                row.operator(ops.GAFFER_OT_light_use_nodes.bl_idname, icon='NODETREE', text='').light = light.name
-        else:
+            rowmain = box.row()
+            split = rowmain.split()
+            col = split.column()
+            row = col.row(align=True)
+
             if item[3].startswith("'"):
                 socket_strength_str = str(item[3][1:-1])
             else:
@@ -470,12 +470,6 @@ def draw_cycles_UI(context, layout, lights):
                 socket_strength_type = 'i'
                 socket_strength = int(socket_strength_str)
 
-            box = maincol.box()
-            rowmain = box.row()
-            split = rowmain.split()
-            col = split.column()
-            row = col.row(align=True)
-
             if light.type == 'LIGHT':
                 users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
             else:
@@ -490,6 +484,12 @@ def draw_cycles_UI(context, layout, lights):
             if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
                 draw_more_options(box, scene, light, material, node_strength, is_portal)
             i += 1
+        else:
+            box = maincol.box()
+            row = box.row()
+            row.label(text="\"" + light.name + "\" doesn't use nodes!")
+            if light.type == 'LIGHT':
+                row.operator(ops.GAFFER_OT_light_use_nodes.bl_idname, icon='NODETREE', text='').light = light.name
 
     if len(lights_to_show) == 0:
         row = maincol.row()
