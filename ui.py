@@ -93,7 +93,80 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
 
 def draw_cycles_UI(context, layout, lights):
 
-    def draw_more_options():
+    def draw_strength(col, light, node_strength, socket_strength_type, socket_strength):
+        row = col.row(align=True)
+        strength_sockets = node_strength.inputs
+        if socket_strength_type == 'o':
+            strength_sockets = node_strength.outputs
+        if light.type == 'LIGHT':
+            row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True)
+        else:
+            row.label(text='', icon='MESH_GRID')
+
+        try:
+            if (((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) or
+                    (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) and
+                    hasattr(strength_sockets[socket_strength], "default_value")):
+                row.prop(strength_sockets[socket_strength], 'default_value', text='Strength')
+            else:
+                row.label(text="  Node Invalid")
+        except:
+            row.label(text="  Node Invalid")
+
+    def draw_color(gaf_props, i, icons, col, row, light, material):
+        if light.type == 'LIGHT':
+            nodes = light.data.node_tree.nodes
+        else:
+            nodes = material.node_tree.nodes
+        socket_color = 0
+        node_color = None
+        emissions = []  # make a list of all linked Emission shaders, use the right-most one
+        for node in nodes:
+            if node.type == 'EMISSION':
+                if node.outputs[0].is_linked:
+                    emissions.append(node)
+        if emissions:
+            node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
+
+            if not node_color.inputs[socket_color].is_linked:
+                subcol = row.column(align=True)
+                subrow = subcol.row(align=True)
+                subrow.scale_x = 0.3
+                subrow.prop(node_color.inputs[socket_color], 'default_value', text='')
+            else:
+                from_node = node_color.inputs[socket_color].links[0].from_node
+                if from_node.type == 'RGB':
+                    subcol = row.column(align=True)
+                    subrow = subcol.row(align=True)
+                    subrow.scale_x = 0.3
+                    subrow.prop(from_node.outputs[0], 'default_value', text='')
+                elif from_node.type == 'TEX_IMAGE' or from_node.type == 'TEX_ENVIRONMENT':
+                    row.prop(from_node, 'image', text='')
+                elif from_node.type == 'BLACKBODY':
+                    row.prop(from_node.inputs[0], 'default_value', text='Temperature')
+                    if gaf_props.ColTempExpand and gaf_props.LightUIIndex == i:
+                        row.operator(ops.GAFFER_OT_hide_temp_list.bl_idname, text='', icon='TRIA_UP')
+                        col = col.column(align=True)
+                        col.separator()
+                        col.label(text="Color Temp. Presets:")
+                        ordered_col_temps = OrderedDict(sorted(const.col_temp.items()))
+                        for temp in ordered_col_temps:
+                            op = col.operator(ops.GAFFER_OT_set_temp.bl_idname,
+                                              text=temp[3:],
+                                              icon_value=icons[str(const.col_temp[temp])].icon_id)
+                            op.temperature = temp
+                            op.light = light.name
+                            if material:
+                                op.material = material.name
+                            if node_color:
+                                op.node = node_color.name
+                        col.separator()
+                    else:
+                        row.operator(ops.GAFFER_OT_show_temp_list.bl_idname, text='', icon='COLOR').l_index = i
+                elif from_node.type == 'WAVELENGTH':
+                    row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
+
+    def draw_more_options(box, scene, light, material, node_strength, is_portal):
         col = box.column()
         row = col.row(align=True)
         if light.type == 'LIGHT':
@@ -144,203 +217,7 @@ def draw_cycles_UI(context, layout, lights):
             if light.data.type == 'AREA':
                 col.prop(light.data.cycles, 'is_portal')
 
-    maincol = layout.column(align=False)
-    scene = context.scene
-    gaf_props = scene.gaf_props
-    prefs = context.preferences.addons[__package__].preferences
-    icons = fn.get_icons()
-
-    lights_to_show = []
-    # Check validity of list and make list of lights to display
-    vis_cols = fn.visibleCollections()
-    for light in lights:
-        try:
-            if light[0]:
-                a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
-                if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
-                    if a.type != 'LIGHT':
-                        b = bpy.data.materials[light[1][1:-1]]
-                        if b.use_nodes:
-                            b.node_tree.nodes[light[2][1:-1]]
-                    else:
-                        if a.data.use_nodes:
-                            a.data.node_tree.nodes[light[2][1:-1]]
-                    if ((gaf_props.VisibleCollectionsOnly and fn.isInVisibleCollection(a, vis_cols)) or
-                            (not gaf_props.VisibleCollectionsOnly)):
-                        if a.name not in [o.name for o in gaf_props.Blacklist]:
-                            lights_to_show.append(light)
-        except KeyError:
-            box = maincol.box()
-            row = box.row(align=True)
-            row.label(text="Light list out of date")
-            row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname, icon='FILE_REFRESH', text='')
-
-    # Don't show lights that share the same data
-    duplicates = {}
-    '''
-    duplicates:
-        A dict with the key: object type + data name (cannot use only the name in case of conflicts).
-        The values are the number of duplicates for that key.
-    '''
-    templist = []
-    for item in lights_to_show:
-        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
-        if light.type == 'LIGHT':
-            if ('LIGHT' + light.data.name) in duplicates:
-                duplicates['LIGHT' + light.data.name] += 1
-            else:
-                templist.append(item)
-                duplicates['LIGHT' + light.data.name] = 1
-        else:
-            mat = bpy.data.materials[item[1][1:-1]]
-            if ('MAT' + mat.name) in duplicates:
-                duplicates['MAT' + mat.name] += 1
-            else:
-                templist.append(item)
-                duplicates['MAT' + mat.name] = 1
-    lights_to_show = templist
-
-    i = 0
-    for item in lights_to_show:
-        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
-        doesnt_use_nodes = False
-        is_portal = False
-        if light.type == 'LIGHT':
-            material = None
-            if light.data.use_nodes:
-                node_strength = light.data.node_tree.nodes[item[2][1:-1]]
-            else:
-                doesnt_use_nodes = True
-
-            if light.data.type == 'AREA' and light.data.cycles.is_portal:
-                is_portal = True
-        else:
-            material = bpy.data.materials[item[1][1:-1]]
-            if material.use_nodes:
-                node_strength = material.node_tree.nodes[item[2][1:-1]]
-            else:
-                doesnt_use_nodes = True
-
-        if doesnt_use_nodes:
-            box = maincol.box()
-            row = box.row()
-            row.label(text="\"" + light.name + "\" doesn't use nodes!")
-            if light.type == 'LIGHT':
-                row.operator(ops.GAFFER_OT_light_use_nodes.bl_idname, icon='NODETREE', text='').light = light.name
-        else:
-            if item[3].startswith("'"):
-                socket_strength_str = str(item[3][1:-1])
-            else:
-                socket_strength_str = str(item[3])
-
-            if socket_strength_str.startswith('o'):
-                socket_strength_type = 'o'
-                socket_strength = int(socket_strength_str[1:])
-            elif socket_strength_str.startswith('i'):
-                socket_strength_type = 'i'
-                socket_strength = int(socket_strength_str[1:])
-            else:
-                socket_strength_type = 'i'
-                socket_strength = int(socket_strength_str)
-
-            box = maincol.box()
-            rowmain = box.row()
-            split = rowmain.split()
-            col = split.column()
-            row = col.row(align=True)
-
-            if light.type == 'LIGHT':
-                users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
-            else:
-                users = ['MAT' + material.name, duplicates['MAT' + material.name]]
-            draw_renderer_independant(gaf_props, row, light, users)
-
-            if not is_portal:
-                # strength
-                row = col.row(align=True)
-                strength_sockets = node_strength.inputs
-                if socket_strength_type == 'o':
-                    strength_sockets = node_strength.outputs
-                if light.type == 'LIGHT':
-                    row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True)
-                else:
-                    row.label(text='', icon='MESH_GRID')
-
-                try:
-                    if (((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) or
-                            (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) and
-                            hasattr(strength_sockets[socket_strength], "default_value")):
-                        row.prop(strength_sockets[socket_strength], 'default_value', text='Strength')
-                    else:
-                        row.label(text="  Node Invalid")
-                except:
-                    row.label(text="  Node Invalid")
-
-                # color
-                if light.type == 'LIGHT':
-                    nodes = light.data.node_tree.nodes
-                else:
-                    nodes = material.node_tree.nodes
-                socket_color = 0
-                node_color = None
-                emissions = []  # make a list of all linked Emission shaders, use the right-most one
-                for node in nodes:
-                    if node.type == 'EMISSION':
-                        if node.outputs[0].is_linked:
-                            emissions.append(node)
-                if emissions:
-                    node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
-
-                    if not node_color.inputs[socket_color].is_linked:
-                        subcol = row.column(align=True)
-                        subrow = subcol.row(align=True)
-                        subrow.scale_x = 0.3
-                        subrow.prop(node_color.inputs[socket_color], 'default_value', text='')
-                    else:
-                        from_node = node_color.inputs[socket_color].links[0].from_node
-                        if from_node.type == 'RGB':
-                            subcol = row.column(align=True)
-                            subrow = subcol.row(align=True)
-                            subrow.scale_x = 0.3
-                            subrow.prop(from_node.outputs[0], 'default_value', text='')
-                        elif from_node.type == 'TEX_IMAGE' or from_node.type == 'TEX_ENVIRONMENT':
-                            row.prop(from_node, 'image', text='')
-                        elif from_node.type == 'BLACKBODY':
-                            row.prop(from_node.inputs[0], 'default_value', text='Temperature')
-                            if gaf_props.ColTempExpand and gaf_props.LightUIIndex == i:
-                                row.operator(ops.GAFFER_OT_hide_temp_list.bl_idname, text='', icon='TRIA_UP')
-                                col = col.column(align=True)
-                                col.separator()
-                                col.label(text="Color Temp. Presets:")
-                                ordered_col_temps = OrderedDict(sorted(const.col_temp.items()))
-                                for temp in ordered_col_temps:
-                                    op = col.operator(ops.GAFFER_OT_set_temp.bl_idname,
-                                                      text=temp[3:],
-                                                      icon_value=icons[str(const.col_temp[temp])].icon_id)
-                                    op.temperature = temp
-                                    op.light = light.name
-                                    if material:
-                                        op.material = material.name
-                                    if node_color:
-                                        op.node = node_color.name
-                                col.separator()
-                            else:
-                                row.operator(ops.GAFFER_OT_show_temp_list.bl_idname, text='', icon='COLOR').l_index = i
-                        elif from_node.type == 'WAVELENGTH':
-                            row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
-
-            # More Options
-            if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
-                draw_more_options()
-            i += 1
-
-    if len(lights_to_show) == 0:
-        row = maincol.row()
-        row.alignment = 'CENTER'
-        row.label(text="No lights to show :)")
-
-    # World
-    if context.scene.world:
+    def draw_world(context, layout, gaf_props, scene, prefs, icons):
         world = context.scene.world
         box = layout.box()
         worldcol = box.column(align=True)
@@ -493,6 +370,134 @@ def draw_cycles_UI(context, layout, lights):
                             else:
                                 row.label(text="Link Sky Texture:")
                             row.prop_search(gaf_props, "SunObject", bpy.data, "objects", text="")
+
+    maincol = layout.column(align=False)
+    scene = context.scene
+    gaf_props = scene.gaf_props
+    prefs = context.preferences.addons[__package__].preferences
+    icons = fn.get_icons()
+
+    lights_to_show = []
+    # Check validity of list and make list of lights to display
+    vis_cols = fn.visibleCollections()
+    for light in lights:
+        try:
+            if light[0]:
+                a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
+                if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
+                    if a.type != 'LIGHT':
+                        b = bpy.data.materials[light[1][1:-1]]
+                        if b.use_nodes:
+                            b.node_tree.nodes[light[2][1:-1]]
+                    else:
+                        if a.data.use_nodes:
+                            a.data.node_tree.nodes[light[2][1:-1]]
+                    if ((gaf_props.VisibleCollectionsOnly and fn.isInVisibleCollection(a, vis_cols)) or
+                            (not gaf_props.VisibleCollectionsOnly)):
+                        if a.name not in [o.name for o in gaf_props.Blacklist]:
+                            lights_to_show.append(light)
+        except KeyError:
+            box = maincol.box()
+            row = box.row(align=True)
+            row.label(text="Light list out of date")
+            row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname, icon='FILE_REFRESH', text='')
+
+    # Don't show lights that share the same data
+    duplicates = {}
+    '''
+    duplicates:
+        A dict with the key: object type + data name (cannot use only the name in case of conflicts).
+        The values are the number of duplicates for that key.
+    '''
+    templist = []
+    for item in lights_to_show:
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+        if light.type == 'LIGHT':
+            if ('LIGHT' + light.data.name) in duplicates:
+                duplicates['LIGHT' + light.data.name] += 1
+            else:
+                templist.append(item)
+                duplicates['LIGHT' + light.data.name] = 1
+        else:
+            mat = bpy.data.materials[item[1][1:-1]]
+            if ('MAT' + mat.name) in duplicates:
+                duplicates['MAT' + mat.name] += 1
+            else:
+                templist.append(item)
+                duplicates['MAT' + mat.name] = 1
+    lights_to_show = templist
+
+    i = 0
+    for item in lights_to_show:
+        light = scene.objects[item[0][1:-1]]  # drop the apostrophes
+        doesnt_use_nodes = False
+        is_portal = False
+        if light.type == 'LIGHT':
+            material = None
+            if light.data.use_nodes:
+                node_strength = light.data.node_tree.nodes[item[2][1:-1]]
+            else:
+                doesnt_use_nodes = True
+
+            if light.data.type == 'AREA' and light.data.cycles.is_portal:
+                is_portal = True
+        else:
+            material = bpy.data.materials[item[1][1:-1]]
+            if material.use_nodes:
+                node_strength = material.node_tree.nodes[item[2][1:-1]]
+            else:
+                doesnt_use_nodes = True
+
+        if doesnt_use_nodes:
+            box = maincol.box()
+            row = box.row()
+            row.label(text="\"" + light.name + "\" doesn't use nodes!")
+            if light.type == 'LIGHT':
+                row.operator(ops.GAFFER_OT_light_use_nodes.bl_idname, icon='NODETREE', text='').light = light.name
+        else:
+            if item[3].startswith("'"):
+                socket_strength_str = str(item[3][1:-1])
+            else:
+                socket_strength_str = str(item[3])
+
+            if socket_strength_str.startswith('o'):
+                socket_strength_type = 'o'
+                socket_strength = int(socket_strength_str[1:])
+            elif socket_strength_str.startswith('i'):
+                socket_strength_type = 'i'
+                socket_strength = int(socket_strength_str[1:])
+            else:
+                socket_strength_type = 'i'
+                socket_strength = int(socket_strength_str)
+
+            box = maincol.box()
+            rowmain = box.row()
+            split = rowmain.split()
+            col = split.column()
+            row = col.row(align=True)
+
+            if light.type == 'LIGHT':
+                users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
+            else:
+                users = ['MAT' + material.name, duplicates['MAT' + material.name]]
+            draw_renderer_independant(gaf_props, row, light, users)
+
+            if not is_portal:
+                draw_strength(col, light, node_strength, socket_strength_type, socket_strength)
+
+                draw_color(gaf_props, i, icons, col, row, light, material)
+
+            if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
+                draw_more_options(box, scene, light, material, node_strength, is_portal)
+            i += 1
+
+    if len(lights_to_show) == 0:
+        row = maincol.row()
+        row.alignment = 'CENTER'
+        row.label(text="No lights to show :)")
+
+    if context.scene.world:
+        draw_world(context, layout, gaf_props, scene, prefs, icons)
 
 
 def draw_unsupported_renderer_UI(context, layout, lights):
