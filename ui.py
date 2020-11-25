@@ -224,7 +224,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     drawfalloff = False
                 if not light.data.use_nodes:
                     drawfalloff = False
-            if drawfalloff:
+            if drawfalloff and node_strength is not None:
                 col.prop(light, "GafferFalloff", text="Falloff")
                 if node_strength.type != 'LIGHT_FALLOFF' and light.GafferFalloff != 'quadratic':
                     col.label(text="Light Falloff node is missing", icon="ERROR")
@@ -556,7 +556,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
 
             if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
                 if scene.render.engine == 'CYCLES':
-                    draw_more_options_cycles(box, scene, light, material, node_strength, is_portal)
+                    draw_more_options_cycles(box, scene, light, material, None, is_portal)
                 else:
                     draw_more_options_eevee(box, scene, light)
             i += 1
