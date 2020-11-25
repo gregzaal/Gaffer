@@ -170,7 +170,7 @@ def refresh_light_list(scene):
                                 socket_index += 1
                 else:
                     m.append([obj.name, None, None])
-            elif obj.type == 'MESH' and len(obj.material_slots) > 0:
+            elif obj.type == 'MESH' and len(obj.material_slots) > 0 and scene.render.engine == 'CYCLES':
                 slot_break = False
                 for slot in obj.material_slots:
                     if slot_break:
