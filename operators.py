@@ -406,61 +406,60 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
 
         scene.view_settings.exposure = 0
 
-        # Almost all of this is copy pasted from ui.draw_cycles_UI.
+        # Almost all of this is copy pasted from ui.draw_cycles_eevee_UI.
         # TODO make a function for finding the strength property.
-        completed_sockets = []  # Store list of completed sockets to avoid duplicate work on multi-user data
+        completed_lights = []  # Store list of completed sockets to avoid duplicate work on multi-user data
         for item in lights:
             if item[0] != "":
                 light = scene.objects[item[0][1:-1]]  # drop the apostrophes
-                use_nodes = True
                 if light.type == 'LIGHT':
-                    material = None
-                    if light.data.use_nodes:
-                        node_strength = light.data.node_tree.nodes[item[2][1:-1]]
-                    else:
-                        use_nodes = False
+                    if light in completed_lights:
+                        continue
+                    light.data.energy *= exposure
+                    completed_lights.append(light)
                 else:
+                    use_nodes = True
                     material = bpy.data.materials[item[1][1:-1]]
                     if material.use_nodes:
                         node_strength = material.node_tree.nodes[item[2][1:-1]]
                     else:
                         use_nodes = False
 
-                if use_nodes:
-                    if item[3].startswith("'"):
-                        socket_strength_str = str(item[3][1:-1])
-                    else:
-                        socket_strength_str = str(item[3])
-
-                    if socket_strength_str.startswith('o'):
-                        socket_strength_type = 'o'
-                        socket_strength = int(socket_strength_str[1:])
-                    elif socket_strength_str.startswith('i'):
-                        socket_strength_type = 'i'
-                        socket_strength = int(socket_strength_str[1:])
-                    else:
-                        socket_strength_type = 'i'
-                        socket_strength = int(socket_strength_str)
-
-                    strength_sockets = node_strength.inputs
-                    if socket_strength_type == 'o':
-                        strength_sockets = node_strength.outputs
-                    try:
-                        skt = strength_sockets[socket_strength]
-                        if skt in completed_sockets:
-                            continue
-                        if (((socket_strength_type == 'i' and not skt.is_linked) or
-                            (socket_strength_type == 'o' and skt.is_linked)) and
-                                hasattr(skt, "default_value")):
-                            strength_sockets[socket_strength].default_value *= exposure
-                            completed_sockets.append(skt)
+                    if use_nodes:
+                        if item[3].startswith("'"):
+                            socket_strength_str = str(item[3][1:-1])
                         else:
-                            self.report({'ERROR'},
-                                        item[0] + " does not have a valid node. Try refreshing the light list.")
-                    except:
-                        self.report({'ERROR'}, item[0] + " does not have a valid node. Try refreshing the light list.")
-                else:
-                    self.report({'WARNING'}, item[0] + " does not use nodes and can't be adjusted.")
+                            socket_strength_str = str(item[3])
+
+                        if socket_strength_str.startswith('o'):
+                            socket_strength_type = 'o'
+                            socket_strength = int(socket_strength_str[1:])
+                        elif socket_strength_str.startswith('i'):
+                            socket_strength_type = 'i'
+                            socket_strength = int(socket_strength_str[1:])
+                        else:
+                            socket_strength_type = 'i'
+                            socket_strength = int(socket_strength_str)
+
+                        strength_sockets = node_strength.inputs
+                        if socket_strength_type == 'o':
+                            strength_sockets = node_strength.outputs
+                        try:
+                            skt = strength_sockets[socket_strength]
+                            if skt in completed_lights:
+                                continue
+                            if (((socket_strength_type == 'i' and not skt.is_linked) or
+                                (socket_strength_type == 'o' and skt.is_linked)) and
+                                    hasattr(skt, "default_value")):
+                                strength_sockets[socket_strength].default_value *= exposure
+                                completed_lights.append(skt)
+                            else:
+                                self.report({'ERROR'},
+                                            item[0] + " does not have a valid node. Try refreshing the light list.")
+                        except:
+                            self.report({'ERROR'}, item[0] + " does not have a valid node. Try refreshing the light list.")
+                    else:
+                        self.report({'WARNING'}, item[0] + " does not use nodes and can't be adjusted.")
 
         # World
         if gaf_props.hdri_handler_enabled:

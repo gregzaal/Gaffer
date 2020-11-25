@@ -91,9 +91,9 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
         solobtn.worldsolo = False
 
 
-def draw_cycles_UI(context, layout, lights):
+def draw_cycles_eevee_UI(context, layout, lights):
 
-    def draw_strength(col, light, node_strength, socket_strength_type, socket_strength):
+    def draw_strength_cycles(col, light, node_strength, socket_strength_type, socket_strength):
         row = col.row(align=True)
         strength_sockets = node_strength.inputs
         if socket_strength_type == 'o':
@@ -113,7 +113,12 @@ def draw_cycles_UI(context, layout, lights):
         except:
             row.label(text="  Node Invalid")
 
-    def draw_color(gaf_props, i, icons, col, row, light, material):
+    def draw_strength_eevee(col, light):
+        row = col.row(align=True)
+        row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True)
+        row.prop(light.data, 'energy', text='Strength')
+
+    def draw_color_cycles(gaf_props, i, icons, col, row, light, material):
         if light.type == 'LIGHT':
             nodes = light.data.node_tree.nodes
         else:
@@ -166,12 +171,18 @@ def draw_cycles_UI(context, layout, lights):
                 elif from_node.type == 'WAVELENGTH':
                     row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
 
-    def draw_more_options(box, scene, light, material, node_strength, is_portal):
+    def draw_color_eevee(row, light):
+        subcol = row.column(align=True)
+        subrow = subcol.row(align=True)
+        subrow.scale_x = 0.3
+        subrow.prop(light.data, 'color', text='')
+
+    def draw_more_options_cycles(box, scene, light, material, node_strength, is_portal):
         col = box.column()
         row = col.row(align=True)
         if light.type == 'LIGHT':
             if light.data.type == 'AREA':
-                if light.data.shape == 'RECTANGLE':
+                if light.data.shape in ['RECTANGLE', 'ELLIPSE']:
                     row.prop(light.data, 'size')
                     row.prop(light.data, 'size_y')
                     row = col.row(align=True)
@@ -195,6 +206,7 @@ def draw_cycles_UI(context, layout, lights):
                 row = col.row(align=True)
                 row.prop(light.data, "spot_size", text='Spot Size')
                 row.prop(light.data, "spot_blend", text='Blend')
+                row.prop(light.data, "show_cone", text='', toggle=True, icon='CONE')
 
         else:  # MESH light
             row.prop(material.cycles, "sample_as_light", text='MIS', toggle=True)
@@ -202,20 +214,53 @@ def draw_cycles_UI(context, layout, lights):
             row.prop(light.cycles_visibility, "camera", text='Cam', toggle=True)
             row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
             row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
-        if hasattr(light, "GafferFalloff"):
+
+        if hasattr(light, "GafferFalloff") and scene.render.engine == 'CYCLES':
             drawfalloff = True
             if light.type == 'LIGHT':
                 if (light.data.type == 'SUN' or
                         light.data.type == 'HEMI' or
                         (light.data.type == 'AREA' and light.data.cycles.is_portal)):
                     drawfalloff = False
+                if not light.data.use_nodes:
+                    drawfalloff = False
             if drawfalloff:
                 col.prop(light, "GafferFalloff", text="Falloff")
                 if node_strength.type != 'LIGHT_FALLOFF' and light.GafferFalloff != 'quadratic':
                     col.label(text="Light Falloff node is missing", icon="ERROR")
+
         if light.type == 'LIGHT':
             if light.data.type == 'AREA':
                 col.prop(light.data.cycles, 'is_portal')
+
+    def draw_more_options_eevee(box, scene, light):
+        col = box.column()
+        row = col.row(align=True)
+
+        if light.data.type == 'AREA':
+            if light.data.shape in ['RECTANGLE', 'ELLIPSE']:
+                row.prop(light.data, 'size')
+                row.prop(light.data, 'size_y')
+                row = col.row(align=True)
+            else:
+                row.prop(light.data, 'size')
+        else:
+            row.prop(light.data, 'shadow_soft_size', text='Size')
+
+        row = col.row(align=True)
+        row.prop(light.data, "use_shadow", text='Shadows', toggle=True)
+        if light.data.use_shadow:
+            row.prop(light.data, "use_contact_shadow", text='Contact', toggle=True)
+            if light.data.use_contact_shadow:
+                row.prop(light.data, "contact_shadow_thickness")
+        row.separator()
+        row.prop(light.data, "specular_factor")
+
+        if light.data.type == 'SPOT':
+            row = col.row(align=True)
+            row.prop(light.data, "spot_size", text='Spot Size')
+            row.prop(light.data, "spot_blend", text='Blend')
+            row.prop(light.data, "show_cone", text='', toggle=True, icon='CONE')
 
     def draw_world(context, layout, gaf_props, scene, prefs, icons):
         world = context.scene.world
@@ -237,10 +282,11 @@ def draw_cycles_UI(context, layout, lights):
                          emboss=False).light = "WorldEnviroLight"
 
         row.label(text="World")
-        row.prop(gaf_props, "WorldVis",
-                 text="",
-                 icon='%s' % 'HIDE_OFF' if gaf_props.WorldVis else 'HIDE_ON',
-                 emboss=False)
+        if scene.render.engine == 'CYCLES':
+            row.prop(gaf_props, "WorldVis",
+                     text="",
+                     icon='%s' % 'HIDE_OFF' if gaf_props.WorldVis else 'HIDE_ON',
+                     emboss=False)
 
         if gaf_props.SoloActive == '':
             sub = row.column(align=True)
@@ -340,23 +386,32 @@ def draw_cycles_UI(context, layout, lights):
         if "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
             worldcol.separator()
             col = worldcol.column()
-            row = col.row()
-            row.prop(world.cycles, "sampling_method", text="")
-            row.prop(gaf_props, "WorldReflOnly", text="Refl Only")
-            if world.cycles.sampling_method != 'NONE':
-                col = worldcol.column()
-                row = col.row(align=True)
-                if world.cycles.sampling_method == 'MANUAL':
-                    row.prop(world.cycles, "sample_map_resolution", text="MIS res")
-                if scene.cycles.progressive == 'BRANCHED_PATH':
-                    row.prop(world.cycles, "samples", text="Samples")
-            worldcol.separator()
-            col = worldcol.column(align=True)
-            col.prop(world.light_settings, "use_ambient_occlusion", text="Ambient Occlusion")
-            if world.light_settings.use_ambient_occlusion:
-                row = col.row(align=True)
-                row.prop(world.light_settings, "ao_factor")
-                row.prop(world.light_settings, "distance")
+            if scene.render.engine == 'CYCLES':
+                row = col.row()
+                row.prop(world.cycles, "sampling_method", text="")
+                row.prop(gaf_props, "WorldReflOnly", text="Refl Only")
+                if world.cycles.sampling_method != 'NONE':
+                    col = worldcol.column()
+                    row = col.row(align=True)
+                    if world.cycles.sampling_method == 'MANUAL':
+                        row.prop(world.cycles, "sample_map_resolution", text="MIS res")
+                    if scene.cycles.progressive == 'BRANCHED_PATH':
+                        row.prop(world.cycles, "samples", text="Samples")
+                worldcol.separator()
+                col = worldcol.column(align=True)
+                col.prop(world.light_settings, "use_ambient_occlusion", text="Ambient Occlusion")
+                if world.light_settings.use_ambient_occlusion:
+                    row = col.row(align=True)
+                    row.prop(world.light_settings, "ao_factor")
+                    row.prop(world.light_settings, "distance")
+            else:
+                worldcol.separator()
+                col = worldcol.column(align=True)
+                col.prop(scene.eevee, "use_gtao", text="Ambient Occlusion")
+                if world.light_settings.use_ambient_occlusion:
+                    row = col.row(align=True)
+                    row.prop(scene.eevee, "gtao_factor")
+                    row.prop(scene.eevee, "gtao_distance")
 
             if not gaf_props.hdri_handler_enabled:
                 if color_node:
@@ -439,7 +494,7 @@ def draw_cycles_UI(context, layout, lights):
             else:
                 light_uses_nodes = False
 
-            if light.data.type == 'AREA' and light.data.cycles.is_portal:
+            if light.data.type == 'AREA' and light.data.cycles.is_portal and scene.render.engine == 'CYCLES':
                 is_portal = True
         else:
             material = bpy.data.materials[item[1][1:-1]]
@@ -448,7 +503,12 @@ def draw_cycles_UI(context, layout, lights):
             else:
                 light_uses_nodes = False
 
-        if light_uses_nodes:
+        if light.type == 'LIGHT':
+            users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
+        else:
+            users = ['MAT' + material.name, duplicates['MAT' + material.name]]
+
+        if light_uses_nodes and scene.render.engine == 'CYCLES':
             box = maincol.box()
             rowmain = box.row()
             split = rowmain.split()
@@ -470,26 +530,36 @@ def draw_cycles_UI(context, layout, lights):
                 socket_strength_type = 'i'
                 socket_strength = int(socket_strength_str)
 
-            if light.type == 'LIGHT':
-                users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
-            else:
-                users = ['MAT' + material.name, duplicates['MAT' + material.name]]
             draw_renderer_independant(gaf_props, row, light, users)
 
             if not is_portal:
-                draw_strength(col, light, node_strength, socket_strength_type, socket_strength)
+                draw_strength_cycles(col, light, node_strength, socket_strength_type, socket_strength)
 
-                draw_color(gaf_props, i, icons, col, row, light, material)
+                draw_color_cycles(gaf_props, i, icons, col, row, light, material)
 
             if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
-                draw_more_options(box, scene, light, material, node_strength, is_portal)
+                draw_more_options_cycles(box, scene, light, material, node_strength, is_portal)
             i += 1
-        else:
+        elif light.type == 'LIGHT':
             box = maincol.box()
-            row = box.row()
-            row.label(text="\"" + light.name + "\" doesn't use nodes!")
-            if light.type == 'LIGHT':
-                row.operator(ops.GAFFER_OT_light_use_nodes.bl_idname, icon='NODETREE', text='').light = light.name
+            rowmain = box.row()
+            split = rowmain.split()
+            col = split.column()
+            row = col.row(align=True)
+
+            draw_renderer_independant(gaf_props, row, light, users)
+
+            if not is_portal:
+                draw_strength_eevee(col, light)
+
+                draw_color_eevee(row, light)
+
+            if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
+                if scene.render.engine == 'CYCLES':
+                    draw_more_options_cycles(box, scene, light, material, node_strength, is_portal)
+                else:
+                    draw_more_options_eevee(box, scene, light)
+            i += 1
 
     if len(lights_to_show) == 0:
         row = maincol.row()
@@ -642,9 +712,9 @@ class GAFFER_PT_lights(bpy.types.Panel):
             row.operator(ops.GAFFER_OT_apply_exposure.bl_idname, text="", icon='CHECKBOX_HLT')
 
         if scene.render.engine == 'CYCLES':
-            draw_cycles_UI(context, layout, lights)
+            draw_cycles_eevee_UI(context, layout, lights)
         elif scene.render.engine == 'BLENDER_EEVEE':
-            draw_cycles_UI(context, layout, lights)
+            draw_cycles_eevee_UI(context, layout, lights)
         else:
             draw_unsupported_renderer_UI(context, layout, lights)
             box = layout.box()
@@ -905,7 +975,9 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             row.prop(gaf_props, 'hdri_warmth', slider=True)
 
         wc = context.scene.world.cycles
-        if wc.sampling_method == 'NONE' or (wc.sampling_method == 'MANUAL' and wc.sample_map_resolution < 1000):
+        if context.scene.render.engine == 'CYCLES' and (wc.sampling_method == 'NONE' or
+                                                        (wc.sampling_method == 'MANUAL' and
+                                                         wc.sample_map_resolution < 1000)):
             col.separator()
             col.separator()
             if wc.sampling_method == 'NONE':
