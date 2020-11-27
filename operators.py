@@ -17,12 +17,12 @@
 # END GPL LICENSE BLOCK #####
 
 import bpy
-import json
 import bgl
 import blf
 import gpu
+import os
 from gpu_extras.batch import batch_for_shader
-from math import pi, cos, sin, log, ceil
+from math import pi, cos, sin, ceil
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from bpy.app.handlers import persistent
@@ -30,8 +30,8 @@ from bpy_extras.io_utils import ImportHelper
 from time import sleep
 from subprocess import run
 
-from .constants import *
-from .functions import *
+from . import constants as const
+from . import functions as fn
 
 
 @persistent
@@ -85,7 +85,7 @@ class GAFFER_OT_rename(bpy.types.Operator):
             bpy.data.materials[self.oldname].name = self.light
         else:
             context.scene.objects[self.oldname].name = self.light
-        refresh_light_list(context.scene)
+        fn.refresh_light_list(context.scene)
         return {'FINISHED'}
 
 
@@ -105,7 +105,7 @@ class GAFFER_OT_set_temp(bpy.types.Operator):
             node = light.data.node_tree.nodes[self.node]
         else:
             node = bpy.data.materials[self.material].node_tree.nodes[self.node]
-        node.inputs[0].links[0].from_node.inputs[0].default_value = col_temp[self.temperature]
+        node.inputs[0].links[0].from_node.inputs[0].default_value = const.col_temp[self.temperature]
         return {'FINISHED'}
 
 
@@ -272,19 +272,19 @@ class GAFFER_OT_solo(bpy.types.Operator):
                             if slot.material == mat:
                                 linked_lights.append(obj.name)
 
-        statelist = stringToNestedList(scene.gaf_props.LightsHiddenRecord, True)
+        statelist = fn.stringToNestedList(scene.gaf_props.LightsHiddenRecord, True)
 
         if showhide:  # Enter Solo mode
             bpy.ops.gaffer.refresh_lights()
             scene.gaf_props.SoloActive = light
-            getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
+            fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
             for l in statelist:  # first check if lights still exist
                 if l[0] != "WorldEnviroLight":
                     try:
                         obj = bpy.data.objects[l[0]]
                     except:
                         # TODO not sure if this ever happens, if it does, doesn't it break?
-                        getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
+                        fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
                         bpy.ops.gaffer.solo()
                         # If one of the lights has been deleted/changed, update the list and dont restore visibility
                         return {'FINISHED'}
@@ -318,16 +318,16 @@ class GAFFER_OT_solo(bpy.types.Operator):
                     except:
                         # TODO not sure if this ever happens, if it does, doesn't it break?
                         bpy.ops.gaffer.refresh_lights()
-                        getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
+                        fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
                         scene.gaf_props.SoloActive = oldlight
                         bpy.ops.gaffer.solo()
                         return {'FINISHED'}
                     if obj.name not in blacklist:
-                        obj.hide_viewport = castBool(l[1])
-                        obj.hide_render = castBool(l[2])
+                        obj.hide_viewport = fn.castBool(l[1])
+                        obj.hide_render = fn.castBool(l[2])
                 elif context.scene.render.engine == 'CYCLES':
-                    scene.gaf_props.WorldVis = castBool(l[1])
-                    scene.gaf_props.WorldReflOnly = castBool(l[2])
+                    scene.gaf_props.WorldVis = fn.castBool(l[1])
+                    scene.gaf_props.WorldReflOnly = fn.castBool(l[2])
 
         return {'FINISHED'}
 
@@ -361,7 +361,7 @@ class GAFFER_OT_node_set_strength(bpy.types.Operator):
             return False
 
     def execute(self, context):
-        setGafferNode(context, 'STRENGTH')
+        fn.setGafferNode(context, 'STRENGTH')
         return {'FINISHED'}
 
 
@@ -374,12 +374,12 @@ class GAFFER_OT_refresh_light_list(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
 
-        refresh_light_list(scene)
+        fn.refresh_light_list(scene)
 
         self.report({'INFO'}, "Light list refreshed")
         if scene.gaf_props.SoloActive == '':
-            getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
-        refresh_bgl()  # update the radius/label as well
+            fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
+        fn.refresh_bgl()  # update the radius/label as well
         return {'FINISHED'}
 
 
@@ -392,78 +392,74 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.render.engine in supported_renderers
+        return context.scene.render.engine in const.supported_renderers
 
     def execute(self, context):
         scene = context.scene
-        refresh_light_list(scene)
+        fn.refresh_light_list(scene)
         gaf_props = scene.gaf_props
         lights_str = gaf_props.Lights
-        lights = stringToNestedList(lights_str)
+        lights = fn.stringToNestedList(lights_str)
 
         evs = scene.view_settings.exposure  # CM exposure is set in EVs/stops
         exposure = pow(2, evs)  # Linear exposure adjustment
 
         scene.view_settings.exposure = 0
 
-        # Almost all of this is copy pasted from ui.draw_cycles_UI.
+        # Almost all of this is copy pasted from ui.draw_cycles_eevee_UI.
         # TODO make a function for finding the strength property.
-        completed_sockets = []  # Store list of completed sockets to avoid duplicate work on multi-user data
+        completed_lights = []  # Store list of completed sockets to avoid duplicate work on multi-user data
         for item in lights:
             if item[0] != "":
                 light = scene.objects[item[0][1:-1]]  # drop the apostrophes
-                use_nodes = True
                 if light.type == 'LIGHT':
-                    material = None
-                    if light.data.use_nodes:
-                        node_strength = light.data.node_tree.nodes[item[2][1:-1]]
-                    else:
-                        use_nodes = False
-
-                    if light.data.type == 'AREA' and light.data.cycles.is_portal:
-                        is_portal = True
+                    if light in completed_lights:
+                        continue
+                    light.data.energy *= exposure
+                    completed_lights.append(light)
                 else:
+                    use_nodes = True
                     material = bpy.data.materials[item[1][1:-1]]
                     if material.use_nodes:
                         node_strength = material.node_tree.nodes[item[2][1:-1]]
                     else:
                         use_nodes = False
 
-                if use_nodes:
-                    if item[3].startswith("'"):
-                        socket_strength_str = str(item[3][1:-1])
-                    else:
-                        socket_strength_str = str(item[3])
-
-                    if socket_strength_str.startswith('o'):
-                        socket_strength_type = 'o'
-                        socket_strength = int(socket_strength_str[1:])
-                    elif socket_strength_str.startswith('i'):
-                        socket_strength_type = 'i'
-                        socket_strength = int(socket_strength_str[1:])
-                    else:
-                        socket_strength_type = 'i'
-                        socket_strength = int(socket_strength_str)
-
-                    strength_sockets = node_strength.inputs
-                    if socket_strength_type == 'o':
-                        strength_sockets = node_strength.outputs
-                    try:
-                        skt = strength_sockets[socket_strength]
-                        if skt in completed_sockets:
-                            continue
-                        if (((socket_strength_type == 'i' and not skt.is_linked) or
-                            (socket_strength_type == 'o' and skt.is_linked)) and
-                                hasattr(skt, "default_value")):
-                            strength_sockets[socket_strength].default_value *= exposure
-                            completed_sockets.append(skt)
+                    if use_nodes:
+                        if item[3].startswith("'"):
+                            socket_strength_str = str(item[3][1:-1])
                         else:
-                            self.report({'ERROR'},
-                                        item[0] + " does not have a valid node. Try refreshing the light list.")
-                    except:
-                        self.report({'ERROR'}, item[0] + " does not have a valid node. Try refreshing the light list.")
-                else:
-                    self.report({'WARNING'}, item[0] + " does not use nodes and can't be adjusted.")
+                            socket_strength_str = str(item[3])
+
+                        if socket_strength_str.startswith('o'):
+                            socket_strength_type = 'o'
+                            socket_strength = int(socket_strength_str[1:])
+                        elif socket_strength_str.startswith('i'):
+                            socket_strength_type = 'i'
+                            socket_strength = int(socket_strength_str[1:])
+                        else:
+                            socket_strength_type = 'i'
+                            socket_strength = int(socket_strength_str)
+
+                        strength_sockets = node_strength.inputs
+                        if socket_strength_type == 'o':
+                            strength_sockets = node_strength.outputs
+                        try:
+                            skt = strength_sockets[socket_strength]
+                            if skt in completed_lights:
+                                continue
+                            if (((socket_strength_type == 'i' and not skt.is_linked) or
+                                (socket_strength_type == 'o' and skt.is_linked)) and
+                                    hasattr(skt, "default_value")):
+                                strength_sockets[socket_strength].default_value *= exposure
+                                completed_lights.append(skt)
+                            else:
+                                self.report({'ERROR'},
+                                            item[0] + " does not have a valid node. Try refreshing the light list.")
+                        except:
+                            self.report({'ERROR'}, item[0] + " does not have a valid node. Try refreshing the light list.")
+                    else:
+                        self.report({'WARNING'}, item[0] + " does not use nodes and can't be adjusted.")
 
         # World
         if gaf_props.hdri_handler_enabled:
@@ -490,7 +486,6 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
                         i = 0  # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
                         while strength_node is None and i < 1000:  # limitted to 100 chained nodes
                             i += 1
-                            connected_inputs = False
                             if temp_current_node:
                                 current_node = temp_current_node
                             for socket in current_node.inputs:
@@ -841,7 +836,6 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
     def draw_callback_radius(self, context):
         scene = context.scene
-        region = context.region
         shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
         if not context.space_data.overlay.show_overlays:
@@ -859,9 +853,9 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                                         obj.name not in [o.name for o in scene.gaf_props.Blacklist]):
                                     if scene.gaf_props.LightRadiusUseColor:
                                         if item[1][0] == 'BLACKBODY':
-                                            color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
+                                            color = fn.convert_temp_to_RGB(item[1][1].inputs[0].default_value)
                                         elif item[1][0] == 'WAVELENGTH':
-                                            color = convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
+                                            color = fn.convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
                                         else:
                                             color = item[1]
                                     else:
@@ -873,12 +867,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                                     if scene.gaf_props.LightRadiusXray:
                                         bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
 
-                                    rv3d = context.region_data
-                                    view = rv3d.view_matrix
-                                    persp = rv3d.perspective_matrix
-
                                     radius = obj.data.shadow_soft_size
-                                    obj_matrix_world = obj.matrix_world
                                     origin = obj.matrix_world.translation
 
                                     view_mat = context.space_data.region_3d.view_matrix
@@ -986,7 +975,6 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                         color = scene.gaf_props.DefaultRadiusColor
                         if scene.render.engine == 'CYCLES' and obj.data.use_nodes:
                             nodes = obj.data.node_tree.nodes
-                            socket_color = 0
                             node_color = None
                             emissions = []  # make a list of all linked Emission shaders, use the right-most one
                             for node in nodes:
@@ -1079,9 +1067,9 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
             obj = item[0]
             if obj in context.visible_objects and obj.name not in [o.name for o in scene.gaf_props.Blacklist]:
                 if item[1][0] == 'BLACKBODY':
-                    color = convert_temp_to_RGB(item[1][1].inputs[0].default_value)
+                    color = fn.convert_temp_to_RGB(item[1][1].inputs[0].default_value)
                 elif item[1][0] == 'WAVELENGTH':
-                    color = convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
+                    color = fn.convert_wavelength_to_RGB(item[1][1].inputs[0].default_value)
                 else:
                     color = item[1]
 
@@ -1129,7 +1117,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                             y1 = y - (8 * font_size_factor) - height * 0.8 - 4
                             y2 = y1 + height + height * 0.8 + 4
 
-                        draw_rounded_rect(shader, x1, y1, x2, y2, 20 * font_size_factor)
+                        fn.draw_rounded_rect(shader, x1, y1, x2, y2, 20 * font_size_factor)
 
                         bgl.glDisable(bgl.GL_BLEND)
 
@@ -1246,7 +1234,7 @@ class GAFFER_OT_refresh_bgl(bpy.types.Operator):
         return context.scene.gaf_props.IsShowingRadius or context.scene.gaf_props.IsShowingLabel
 
     def execute(self, context):
-        refresh_bgl()
+        fn.refresh_bgl()
         return {'FINISHED'}
 
 
@@ -1304,7 +1292,7 @@ class GAFFER_OT_detect_hdris(bpy.types.Operator):
     bl_label = 'Detect HDRIs'
 
     def execute(self, context):
-        detect_hdris(self, context)
+        fn.detect_hdris(self, context)
         return {'FINISHED'}
 
 
@@ -1324,7 +1312,7 @@ class GAFFER_OT_hdri_path_edit(bpy.types.Operator, ImportHelper):
     folder_index: bpy.props.IntProperty(default=0)
 
     def execute(self, context):
-        hdri_paths = get_persistent_setting('hdri_paths')
+        hdri_paths = fn.get_persistent_setting('hdri_paths')
 
         if self.directory in hdri_paths:
             self.report({'ERROR'}, "You've already added this folder")
@@ -1339,8 +1327,8 @@ class GAFFER_OT_hdri_path_edit(bpy.types.Operator, ImportHelper):
                 return {'CANCELLED'}
 
         hdri_paths[self.folder_index] = self.directory
-        set_persistent_setting('hdri_paths', hdri_paths)
-        update_hdri_path(self, context)
+        fn.set_persistent_setting('hdri_paths', hdri_paths)
+        fn.update_hdri_path(self, context)
         return {'FINISHED'}
 
 
@@ -1358,7 +1346,7 @@ class GAFFER_OT_hdri_path_add(bpy.types.Operator, ImportHelper):
         description='Folder to search in for image files')
 
     def execute(self, context):
-        hdri_paths = get_persistent_setting('hdri_paths')
+        hdri_paths = fn.get_persistent_setting('hdri_paths')
 
         if self.directory in hdri_paths:
             self.report({'ERROR'}, "You've already added this folder")
@@ -1373,8 +1361,8 @@ class GAFFER_OT_hdri_path_add(bpy.types.Operator, ImportHelper):
                 return {'CANCELLED'}
 
         hdri_paths.append(self.directory)
-        set_persistent_setting('hdri_paths', hdri_paths)
-        update_hdri_path(self, context)
+        fn.set_persistent_setting('hdri_paths', hdri_paths)
+        fn.update_hdri_path(self, context)
         return {'FINISHED'}
 
 
@@ -1394,14 +1382,14 @@ class GAFFER_OT_hdri_path_remove(bpy.types.Operator):
         row.label(text="Are you sure you want to delete this path?", icon="ERROR")
 
     def execute(self, context):
-        hdri_paths = get_persistent_setting('hdri_paths')
+        hdri_paths = fn.get_persistent_setting('hdri_paths')
         del(hdri_paths[self.folder_index])
-        set_persistent_setting('hdri_paths', hdri_paths)
-        update_hdri_path(self, context)
+        fn.set_persistent_setting('hdri_paths', hdri_paths)
+        fn.update_hdri_path(self, context)
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=250 * dpifac())
+        return context.window_manager.invoke_props_dialog(self, width=250 * fn.dpifac())
 
 
 class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
@@ -1444,15 +1432,13 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
             col.label(text="You may wish to disable 'Skip big files', but first read its tooltip.")
 
     def generate_thumb(self, name, files):
-        context = bpy.context
-        prefs = context.preferences.addons[__package__].preferences
-
         chosen_file = ''
 
         # Check if thumb file came with HDRI
         d = os.path.dirname(files[0])
         for f in os.listdir(d):
-            if any(os.path.splitext(f)[0].lower().endswith(e) and name == get_hdri_basename(f) for e in thumb_endings):
+            if any(os.path.splitext(f)[0].lower().endswith(e) and
+                   name == fn.get_hdri_basename(f) for e in const.thumb_endings):
                 chosen_file = os.path.join(d, f)
                 break
 
@@ -1474,7 +1460,7 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
                 if not chosen_file:
                     file_sizes = {}
                     for f in files:
-                        if os.path.splitext(f)[1].lower() in allowed_file_types:
+                        if os.path.splitext(f)[1].lower() in const.allowed_file_types:
                             if not os.path.splitext(f)[0].lower().endswith('env'):
                                 file_sizes[f] = os.path.getsize(f)
                     chosen_file = min(file_sizes, key=file_sizes.get)
@@ -1482,10 +1468,10 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
             chosen_file = files[0]  # Safety fallback
 
         # Create thumbnail
-        thumb_file = os.path.join(thumbnail_dir, name + "__thumb_preview.jpg")
+        thumb_file = os.path.join(const.thumbnail_dir, name + "__thumb_preview.jpg")
         if not os.path.exists(thumb_file):
             filesize = os.path.getsize(chosen_file) / 1024 / 1024
-            log('    ' + name + ": " + chosen_file + "  " + str(ceil(filesize)) + " MB", also_print=True)
+            fn.log('    ' + name + ": " + chosen_file + "  " + str(ceil(filesize)) + " MB", also_print=True)
 
             if filesize < self.size_limit or not self.skip_huge_files:
                 cmd = [bpy.app.binary_path]
@@ -1499,18 +1485,18 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
                 cmd.append(thumb_file)
                 run(cmd)
             else:
-                log("    Too big", timestamp=False, also_print=True)
+                fn.log("    Too big", timestamp=False, also_print=True)
                 bpy.context.scene.gaf_props.ThumbnailsBigHDRIFound = True
 
     def execute(self, context):
-        log("OP: Generate Thumbnails")
+        fn.log("OP: Generate Thumbnails")
         if not self.skip_huge_files:
-            log("Large files included", timestamp=False)
+            fn.log("Large files included", timestamp=False)
 
         context.preferences.addons[__package__].preferences.RequestThumbGen = False
-        hdris = get_hdri_list()
+        hdris = fn.get_hdri_list()
 
-        progress_begin(context)
+        fn.progress_begin(context)
 
         num_hdris = len(hdris)
         threaded = True  # Set to False for debugging
@@ -1531,33 +1517,31 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
                         num_finished += 1
                         if tt.result() is not None:
                             errors.append(tt.result())
-                progress_update(context,
-                                num_finished / num_hdris,
-                                "Generating thumbnail: " + str(num_finished + 1) + '/' + str(num_hdris))
+                fn.progress_update(context,
+                                   num_finished / num_hdris,
+                                   "Generating thumbnail: " + str(num_finished + 1) + '/' + str(num_hdris))
                 sleep(2)
         else:
             for num_finished, h in enumerate(hdris):
                 self.generate_thumb(h, hdris[h])
-                progress_update(context,
-                                num_finished / num_hdris,
-                                "Generating thumbnail: " + str(num_finished + 1) + '/' + str(num_hdris))
+                fn.progress_update(context,
+                                   num_finished / num_hdris,
+                                   "Generating thumbnail: " + str(num_finished + 1) + '/' + str(num_hdris))
 
         if errors:
             for e in errors:
                 print(e)
-        else:
-            success = True
 
-        progress_end(context)
+        fn.progress_end(context)
 
-        log("Successfully finished generating thumbnails")
+        fn.log("Successfully finished generating thumbnails")
 
-        refresh_previews()
+        fn.refresh_previews()
 
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=420 * dpifac())
+        return context.window_manager.invoke_props_dialog(self, width=420 * fn.dpifac())
 
 
 class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
@@ -1568,19 +1552,17 @@ class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def generate_jpgs(self, context, name):
-        gaf_props = context.scene.gaf_props
-
-        fp = get_variation(name, mode="biggest")
+        fp = fn.get_variation(name, mode="biggest")
 
         img_exists = False
         for m in ['', '_dark']:  # Run twice, once for normal JPG and once for darkened JPG
-            jpg_path = os.path.join(jpg_dir, name + m + ".jpg")
+            jpg_path = os.path.join(const.jpg_dir, name + m + ".jpg")
             if not os.path.exists(jpg_path):
                 if not img_exists:
                     img = bpy.data.images.load(fp, check_existing=False)
                     img_exists = True
                 darkened = m == '_dark'
-                save_image(context, img, jpg_path, 'JPEG', -4 if darkened else 0)
+                fn.save_image(context, img, jpg_path, 'JPEG', -4 if darkened else 0)
         if img_exists:
             bpy.data.images.remove(img)
 
@@ -1590,19 +1572,19 @@ class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
         gen_all = gaf_props.hdri_jpg_gen_all
 
         if gen_all:
-            hdris = get_hdri_list()
+            hdris = fn.get_hdri_list()
             num_hdris = len(hdris)
-            progress_begin(context)
+            fn.progress_begin(context)
             for i, hdri in enumerate(hdris):
-                progress_update(context, i / num_hdris, "Generating JPG: " + str(i + 1) + '/' + str(num_hdris))
+                fn.progress_update(context, i / num_hdris, "Generating JPG: " + str(i + 1) + '/' + str(num_hdris))
                 print('(' + str(i + 1) + '/' + str(num_hdris) + ') Generating JPG for ' + hdri + ' ...')
                 self.generate_jpgs(context, hdri)
             print("Done!")
-            progress_end(context)
+            fn.progress_end(context)
         else:
             self.generate_jpgs(context, gaf_props.hdri)
 
-        setup_hdri(self, context)
+        fn.setup_hdri(self, context)
 
         return {'FINISHED'}
 
@@ -1630,7 +1612,7 @@ class GAFFER_OT_hdri_paddles(bpy.types.Operator):
 
     def execute(self, context):
         gaf_props = context.scene.gaf_props
-        hdris = get_hdri_list(use_search=True)
+        hdris = fn.get_hdri_list(use_search=True)
         current_hdri = gaf_props.hdri
         current_index = -1
         list_hdris = list(hdris)
@@ -1659,12 +1641,12 @@ class GAFFER_OT_hdri_variation_paddles(bpy.types.Operator):
 
     def execute(self, context):
         gaf_props = context.scene.gaf_props
-        variations = get_hdri_list()[gaf_props.hdri]
+        variations = fn.get_hdri_list()[gaf_props.hdri]
         last_var = len(variations) - 1
         adj = 1 if self.do_next else -1
 
         gaf_props['hdri_variation'] = min(last_var, max(0, gaf_props['hdri_variation'] + adj))
-        update_variation(self, context)
+        fn.update_variation(self, context)
         return {'FINISHED'}
 
 
@@ -1678,7 +1660,7 @@ class GAFFER_OT_hdri_add_tag(bpy.types.Operator):
     tag: bpy.props.StringProperty()
 
     def execute(self, context):
-        set_tag(self.hdri, self.tag)
+        fn.set_tag(self.hdri, self.tag)
 
         return {'FINISHED'}
 
@@ -1692,7 +1674,7 @@ class GAFFER_OT_hdri_random(bpy.types.Operator):
 
     def execute(self, context):
         gaf_props = context.scene.gaf_props
-        hdris = get_hdri_list(use_search=True)
+        hdris = fn.get_hdri_list(use_search=True)
 
         if len(hdris) <= 1:
             self.report({'WARNING'}, "No more HDRIs found")
@@ -1720,10 +1702,10 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
     factory: bpy.props.BoolProperty()
 
     def execute(self, context):
-        defaults = get_defaults(self.hdri)
+        defaults = fn.get_defaults(self.hdri)
         rna_props = context.scene.gaf_props.bl_rna.properties
 
-        for d in defaults_stored:
+        for d in const.defaults_stored:
             v = 0
             if d in defaults and not self.factory:
                 v = defaults[d]
@@ -1751,9 +1733,9 @@ class GAFFER_OT_hdri_save(bpy.types.Operator):
     hdri: bpy.props.StringProperty()
 
     def execute(self, context):
-        set_defaults(context, self.hdri)
+        fn.set_defaults(context, self.hdri)
         self.report({'INFO'},
-                    "Saved defaults for " + nice_hdri_name(context.scene.gaf_props.hdri))
+                    "Saved defaults for " + fn.nice_hdri_name(context.scene.gaf_props.hdri))
         return {'FINISHED'}
 
 
@@ -1778,8 +1760,8 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
 
     def draw(self, context):
         num_hdris = 50  # Assume 50, but check the actual number if possible
-        if hdri_haven_list:
-            num_hdris = len(hdri_haven_list)
+        if const.hdri_haven_list:
+            num_hdris = len(const.hdri_haven_list)
         download_size = 1.6 * num_hdris
 
         layout = self.layout
@@ -1812,7 +1794,6 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
             try:
                 url = 'https://hdrihaven.com/files/hdris/' + filename
                 req.urlretrieve(url, filepath)
-                success = True
             except:
                 import sys
                 print("    Failed to download " + filename + " (" + str(sys.exc_info()[0]) + ")")
@@ -1820,15 +1801,15 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
             print("Skipping " + filename + ", you already have it")
 
     def execute(self, context):
-        hdrihaven_hdris = get_hdri_haven_list(force_update=True)
+        hdrihaven_hdris = fn.get_hdri_haven_list(force_update=True)
         num_hdris = len(hdrihaven_hdris)
         success = False
         if hdrihaven_hdris:
-            hdri_list = get_hdri_list()
+            hdri_list = fn.get_hdri_list()
 
-            progress_begin(context)
+            fn.progress_begin(context)
 
-            hdri_paths = get_persistent_setting('hdri_paths')
+            hdri_paths = fn.get_persistent_setting('hdri_paths')
             out_folder = os.path.join(hdri_paths[0], 'HDRI Haven')
             if not os.path.exists(out_folder):
                 os.makedirs(out_folder)
@@ -1860,9 +1841,9 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
                         num_finished += 1
                         if tt.result() is not None:
                             errors.append(tt.result())
-                progress_update(context,
-                                num_finished / num_hdris,
-                                "Downloading: " + str(num_finished + 1) + '/' + str(num_hdris))
+                fn.progress_update(context,
+                                   num_finished / num_hdris,
+                                   "Downloading: " + str(num_finished + 1) + '/' + str(num_hdris))
                 sleep(2)
 
             if errors:
@@ -1871,7 +1852,7 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
             else:
                 success = True
 
-            progress_end(context)
+            fn.progress_end(context)
         else:
             self.report({'ERROR'},
                         ("Cannot connect to HDRI Haven website, check your internet connection or try again later. "
@@ -1881,11 +1862,11 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
         if success:
             context.scene.gaf_props.ShowHDRIHaven = False
 
-        detect_hdris(self, context)
+        fn.detect_hdris(self, context)
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=500 * dpifac())
+        return context.window_manager.invoke_props_dialog(self, width=500 * fn.dpifac())
 
 
 class GAFFER_OT_hide_hdrihaven(bpy.types.Operator):
@@ -1896,7 +1877,7 @@ class GAFFER_OT_hide_hdrihaven(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        set_persistent_setting('show_hdri_haven', False)
+        fn.set_persistent_setting('show_hdri_haven', False)
         context.scene.gaf_props.ShowHDRIHaven = False
         return {'FINISHED'}
 
@@ -1926,13 +1907,13 @@ class GAFFER_OT_hdri_open_data_folder(bpy.types.Operator):
 
         try:
             if sys.platform == 'darwin':
-                subprocess.check_call(['open', '--', data_dir])
+                subprocess.check_call(['open', '--', const.data_dir])
             elif sys.platform == 'linux2':
-                subprocess.check_call(['xdg-open', '--', data_dir])
+                subprocess.check_call(['xdg-open', '--', const.data_dir])
             elif sys.platform == 'win32':
-                subprocess.check_call(['explorer', data_dir])
+                subprocess.check_call(['explorer', const.data_dir])
         except:
-            self.report({'WARNING'}, "This might not have worked :( Navigate to the path manually: " + data_dir)
+            self.report({'WARNING'}, "This might not have worked :( Navigate to the path manually: " + const.data_dir)
 
         return {'FINISHED'}
 
@@ -1953,10 +1934,10 @@ class GAFFER_OT_debug_delete_thumbs(bpy.types.Operator):
         row.label(text="You will need to generate them again.")
 
     def execute(self, context):
-        if os.path.exists(thumbnail_dir):
-            files = os.listdir(thumbnail_dir)
+        if os.path.exists(const.thumbnail_dir):
+            files = os.listdir(const.thumbnail_dir)
             for f in files:
-                p = os.path.join(thumbnail_dir, f)
+                p = os.path.join(const.thumbnail_dir, f)
                 os.remove(p)
             self.report({'INFO'}, "Deleted %s files" % len(files))
             return {'FINISHED'}
@@ -1965,7 +1946,7 @@ class GAFFER_OT_debug_delete_thumbs(bpy.types.Operator):
             return {'CANCELLED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=340 * dpifac())
+        return context.window_manager.invoke_props_dialog(self, width=340 * fn.dpifac())
 
 
 class GAFFER_OT_debug_upload_hdri_list(bpy.types.Operator):
@@ -1990,24 +1971,24 @@ class GAFFER_OT_debug_upload_hdri_list(bpy.types.Operator):
         def get_file_list(p):
             for f in os.listdir(p):
                 if os.path.isfile(os.path.join(p, f)):
-                    if os.path.splitext(f)[1].lower() in allowed_file_types:
+                    if os.path.splitext(f)[1].lower() in const.allowed_file_types:
                         file_list.append(f)
                 else:
                     get_file_list(os.path.join(p, f))
 
-        if os.path.exists(hdri_list_path):
-            hdri_paths = get_persistent_setting('hdri_paths')
+        if os.path.exists(const.hdri_list_path):
+            hdri_paths = fn.get_persistent_setting('hdri_paths')
             for hp in hdri_paths:
                 get_file_list(hp)
             file_list = sorted(file_list, key=lambda x: x.lower())
-            hastebin_file(hdri_list_path, extra_string="    Actual files:\n" + '\n'.join(file_list))
+            fn.hastebin_file(const.hdri_list_path, extra_string="    Actual files:\n" + '\n'.join(file_list))
             return {'FINISHED'}
         else:
             self.report({'ERROR'}, "File does not exist")
             return {'CANCELLED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=300 * dpifac())
+        return context.window_manager.invoke_props_dialog(self, width=300 * fn.dpifac())
 
 
 class GAFFER_OT_debug_upload_logs(bpy.types.Operator):
@@ -2026,12 +2007,12 @@ class GAFFER_OT_debug_upload_logs(bpy.types.Operator):
         row.label(text="and then open the public URL in your browser.")
 
     def execute(self, context):
-        if os.path.exists(log_file):
-            hastebin_file(log_file)
+        if os.path.exists(const.log_file):
+            fn.hastebin_file(const.log_file)
             return {'FINISHED'}
         else:
             self.report({'ERROR'}, "File does not exist")
             return {'CANCELLED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=300 * dpifac())
+        return context.window_manager.invoke_props_dialog(self, width=300 * fn.dpifac())

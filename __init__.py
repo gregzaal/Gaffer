@@ -20,8 +20,8 @@ bl_info = {
     "name": "Gaffer",
     "description": "Master your lighting workflow with easy access to light properties, HDRIs and other tools",
     "author": "Greg Zaal",
-    "version": (3, 1, 5),
-    "blender": (2, 80, 0),
+    "version": (3, 1, 8),
+    "blender": (2, 90, 0),
     "location": "3D View > Sidebar  &  World Settings > HDRI",
     "warning": "",
     "wiki_url": "https://github.com/gregzaal/Gaffer/wiki",
@@ -41,15 +41,8 @@ else:
 
 import bpy
 import os
-import json
-import bgl
-import blf
 from . import addon_updater_ops
 from collections import OrderedDict
-from math import pi, cos, sin, log
-from mathutils import Vector, Matrix
-from bpy_extras.view3d_utils import location_3d_to_region_2d
-from bpy.app.handlers import persistent
 
 
 class GafferPreferences(bpy.types.AddonPreferences):
@@ -585,6 +578,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     FileNotFoundError: bpy.props.BoolProperty(default=False, options={'HIDDEN'})
     Blacklist: bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
+
 classes = [
     GafferPreferences,
     BlacklistedObject,
@@ -675,6 +669,7 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
+
 
 if __name__ == "__main__":
     register()
