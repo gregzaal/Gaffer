@@ -46,17 +46,17 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
         elif not gaf_props.MoreExpandAll:
             row.operator(ops.GAFFER_OT_show_more.bl_idname, icon='TRIA_RIGHT', text='', emboss=False).light = light.name
 
+    data_name = light.name if users[1] == 1 else (users[0][5:] if users[0].startswith('LIGHT') else users[0][3:])
     if gaf_props.SoloActive == '':
         if users[1] == 1:
-            row.operator(ops.GAFFER_OT_rename.bl_idname, text=light.name).light = light.name
+            row.operator(ops.GAFFER_OT_rename.bl_idname, text=data_name).light = light.name
         else:
-            data_name = users[0][5:] if users[0].startswith('LIGHT') else users[0][3:]
             op = row.operator(ops.GAFFER_OT_rename.bl_idname, text='[' + str(users[1]) + '] ' + data_name)
             op.multiuser = users[0]
             op.light = data_name
     else:
         # Don't allow names to be edited during solo, will break the record of what was originally hidden
-        row.label(text=light.name)
+        row.label(text=data_name)
 
     visop = row.operator(ops.GAFFER_OT_hide_show_light.bl_idname,
                          text="",
