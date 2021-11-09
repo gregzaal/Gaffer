@@ -209,7 +209,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
             else:
                 row.prop(light.data, 'shadow_soft_size', text='Size')
 
-            if scene.cycles.progressive == 'BRANCHED_PATH':
+            if hasattr(scene.cycles, 'progressive') and scene.cycles.progressive == 'BRANCHED_PATH':
                 row.prop(light.data.cycles, "samples")
 
             if not is_portal:
@@ -436,7 +436,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     if world.cycles.sampling_method == 'MANUAL':
                         row.prop(world.cycles,
                                  "sample_map_resolution", text="MIS res")
-                    if scene.cycles.progressive == 'BRANCHED_PATH':
+                    if hasattr(scene.cycles, 'progressive') and scene.cycles.progressive == 'BRANCHED_PATH':
                         row.prop(world.cycles, "samples", text="Samples")
                 worldcol.separator()
                 col = worldcol.column(align=True)
