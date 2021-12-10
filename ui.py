@@ -51,25 +51,31 @@ def update_category(self, context):
         bpy.utils.register_class(panel)
 
 
-def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stuff that's shown for all renderers
+# UI stuff that's shown for all renderers
+def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):
 
     if bpy.context.scene.render.engine in const.supported_renderers:
         if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
-            row.operator(ops.GAFFER_OT_hide_more.bl_idname, icon='TRIA_DOWN', text='', emboss=False).light = light.name
+            row.operator(ops.GAFFER_OT_hide_more.bl_idname,
+                         icon='TRIA_DOWN', text='', emboss=False).light = light.name
         elif not gaf_props.MoreExpandAll:
-            row.operator(ops.GAFFER_OT_show_more.bl_idname, icon='TRIA_RIGHT', text='', emboss=False).light = light.name
+            row.operator(ops.GAFFER_OT_show_more.bl_idname,
+                         icon='TRIA_RIGHT', text='', emboss=False).light = light.name
 
+    data_name = light.name if users[1] == 1 else (
+        users[0][5:] if users[0].startswith('LIGHT') else users[0][3:])
     if gaf_props.SoloActive == '':
         if users[1] == 1:
-            row.operator(ops.GAFFER_OT_rename.bl_idname, text=light.name).light = light.name
+            row.operator(ops.GAFFER_OT_rename.bl_idname,
+                         text=data_name).light = light.name
         else:
-            data_name = users[0][5:] if users[0].startswith('LIGHT') else users[0][3:]
-            op = row.operator(ops.GAFFER_OT_rename.bl_idname, text='[' + str(users[1]) + '] ' + data_name)
+            op = row.operator(ops.GAFFER_OT_rename.bl_idname,
+                              text='[' + str(users[1]) + '] ' + data_name)
             op.multiuser = users[0]
             op.light = data_name
     else:
         # Don't allow names to be edited during solo, will break the record of what was originally hidden
-        row.label(text=light.name)
+        row.label(text=data_name)
 
     visop = row.operator(ops.GAFFER_OT_hide_show_light.bl_idname,
                          text="",
@@ -90,7 +96,8 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
 
     if gaf_props.SoloActive == '':
         sub = row.column(align=True)
-        solobtn = sub.operator(ops.GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
+        solobtn = sub.operator(ops.GAFFER_OT_solo.bl_idname,
+                               icon='EVENT_S', text='', emboss=False)
         solobtn.light = light.name
         solobtn.showhide = True
         solobtn.worldsolo = False
@@ -98,7 +105,8 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):  # UI stu
     elif gaf_props.SoloActive == light.name:
         sub = row.column(align=True)
         sub.alert = True
-        solobtn = sub.operator(ops.GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
+        solobtn = sub.operator(ops.GAFFER_OT_solo.bl_idname,
+                               icon='EVENT_S', text='', emboss=False)
         solobtn.light = light.name
         solobtn.showhide = False
         solobtn.worldsolo = False
@@ -112,7 +120,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
         if socket_strength_type == 'o':
             strength_sockets = node_strength.outputs
         if light.type == 'LIGHT':
-            row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True)
+            row.prop(light.data, "type", text='', icon='LIGHT_%s' %
+                     light.data.type, icon_only=True)
         else:
             row.label(text='', icon='MESH_GRID')
 
@@ -120,7 +129,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
             if (((socket_strength_type == 'i' and not strength_sockets[socket_strength].is_linked) or
                     (socket_strength_type == 'o' and strength_sockets[socket_strength].is_linked)) and
                     hasattr(strength_sockets[socket_strength], "default_value")):
-                row.prop(strength_sockets[socket_strength], 'default_value', text='Strength')
+                row.prop(strength_sockets[socket_strength],
+                         'default_value', text='Strength')
             else:
                 row.label(text="  Node Invalid")
         except:
@@ -128,7 +138,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
 
     def draw_strength_eevee(col, light):
         row = col.row(align=True)
-        row.prop(light.data, "type", text='', icon='LIGHT_%s' % light.data.type, icon_only=True)
+        row.prop(light.data, "type", text='', icon='LIGHT_%s' %
+                 light.data.type, icon_only=True)
         row.prop(light.data, 'energy', text='Strength')
 
     def draw_color_cycles(gaf_props, i, icons, col, row, light, material):
@@ -144,13 +155,15 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 if node.outputs[0].is_linked:
                     emissions.append(node)
         if emissions:
-            node_color = sorted(emissions, key=lambda x: x.location.x, reverse=True)[0]
+            node_color = sorted(
+                emissions, key=lambda x: x.location.x, reverse=True)[0]
 
             if not node_color.inputs[socket_color].is_linked:
                 subcol = row.column(align=True)
                 subrow = subcol.row(align=True)
                 subrow.scale_x = 0.3
-                subrow.prop(node_color.inputs[socket_color], 'default_value', text='')
+                subrow.prop(
+                    node_color.inputs[socket_color], 'default_value', text='')
             else:
                 from_node = node_color.inputs[socket_color].links[0].from_node
                 if from_node.type == 'RGB':
@@ -161,13 +174,16 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 elif from_node.type == 'TEX_IMAGE' or from_node.type == 'TEX_ENVIRONMENT':
                     row.prop(from_node, 'image', text='')
                 elif from_node.type == 'BLACKBODY':
-                    row.prop(from_node.inputs[0], 'default_value', text='Temperature')
+                    row.prop(from_node.inputs[0],
+                             'default_value', text='Temperature')
                     if gaf_props.ColTempExpand and gaf_props.LightUIIndex == i:
-                        row.operator(ops.GAFFER_OT_hide_temp_list.bl_idname, text='', icon='TRIA_UP')
+                        row.operator(
+                            ops.GAFFER_OT_hide_temp_list.bl_idname, text='', icon='TRIA_UP')
                         col = col.column(align=True)
                         col.separator()
                         col.label(text="Color Temp. Presets:")
-                        ordered_col_temps = OrderedDict(sorted(const.col_temp.items()))
+                        ordered_col_temps = OrderedDict(
+                            sorted(const.col_temp.items()))
                         for temp in ordered_col_temps:
                             op = col.operator(ops.GAFFER_OT_set_temp.bl_idname,
                                               text=temp[3:],
@@ -180,9 +196,11 @@ def draw_cycles_eevee_UI(context, layout, lights):
                                 op.node = node_color.name
                         col.separator()
                     else:
-                        row.operator(ops.GAFFER_OT_show_temp_list.bl_idname, text='', icon='COLOR').l_index = i
+                        row.operator(
+                            ops.GAFFER_OT_show_temp_list.bl_idname, text='', icon='COLOR').l_index = i
                 elif from_node.type == 'WAVELENGTH':
-                    row.prop(from_node.inputs[0], 'default_value', text='Wavelength')
+                    row.prop(from_node.inputs[0],
+                             'default_value', text='Wavelength')
 
     def draw_color_eevee(row, light):
         subcol = row.column(align=True)
@@ -204,29 +222,38 @@ def draw_cycles_eevee_UI(context, layout, lights):
             else:
                 row.prop(light.data, 'shadow_soft_size', text='Size')
 
-            if scene.cycles.progressive == 'BRANCHED_PATH':
+            if hasattr(scene.cycles, 'progressive') and scene.cycles.progressive == 'BRANCHED_PATH':
                 row.prop(light.data.cycles, "samples")
 
             if not is_portal:
                 row = col.row(align=True)
-                row.prop(light.data.cycles, "use_multiple_importance_sampling", text='MIS', toggle=True)
-                row.prop(light.data.cycles, "cast_shadow", text='Shadows', toggle=True)
+                row.prop(
+                    light.data.cycles, "use_multiple_importance_sampling", text='MIS', toggle=True)
+                row.prop(light.data.cycles, "cast_shadow",
+                         text='Shadows', toggle=True)
                 row.separator()
-                row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
-                row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
+                row.prop(light.cycles_visibility, "diffuse",
+                         text='Diff', toggle=True)
+                row.prop(light.cycles_visibility, "glossy",
+                         text='Spec', toggle=True)
 
             if light.data.type == 'SPOT':
                 row = col.row(align=True)
                 row.prop(light.data, "spot_size", text='Spot Size')
                 row.prop(light.data, "spot_blend", text='Blend')
-                row.prop(light.data, "show_cone", text='', toggle=True, icon='CONE')
+                row.prop(light.data, "show_cone", text='',
+                         toggle=True, icon='CONE')
 
         else:  # MESH light
-            row.prop(material.cycles, "sample_as_light", text='MIS', toggle=True)
+            row.prop(material.cycles, "sample_as_light",
+                     text='MIS', toggle=True)
             row.separator()
-            row.prop(light.cycles_visibility, "camera", text='Cam', toggle=True)
-            row.prop(light.cycles_visibility, "diffuse", text='Diff', toggle=True)
-            row.prop(light.cycles_visibility, "glossy", text='Spec', toggle=True)
+            row.prop(light.cycles_visibility,
+                     "camera", text='Cam', toggle=True)
+            row.prop(light.cycles_visibility, "diffuse",
+                     text='Diff', toggle=True)
+            row.prop(light.cycles_visibility, "glossy",
+                     text='Spec', toggle=True)
 
         if hasattr(light, "GafferFalloff") and scene.render.engine == 'CYCLES':
             drawfalloff = True
@@ -240,7 +267,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
             if drawfalloff and node_strength is not None:
                 col.prop(light, "GafferFalloff", text="Falloff")
                 if node_strength.type != 'LIGHT_FALLOFF' and light.GafferFalloff != 'quadratic':
-                    col.label(text="Light Falloff node is missing", icon="ERROR")
+                    col.label(text="Light Falloff node is missing",
+                              icon="ERROR")
 
         if light.type == 'LIGHT':
             if light.data.type == 'AREA':
@@ -263,7 +291,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
         row = col.row(align=True)
         row.prop(light.data, "use_shadow", text='Shadows', toggle=True)
         if light.data.use_shadow:
-            row.prop(light.data, "use_contact_shadow", text='Contact', toggle=True)
+            row.prop(light.data, "use_contact_shadow",
+                     text='Contact', toggle=True)
             if light.data.use_contact_shadow:
                 row.prop(light.data, "contact_shadow_thickness")
         row.separator()
@@ -273,7 +302,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
             row = col.row(align=True)
             row.prop(light.data, "spot_size", text='Spot Size')
             row.prop(light.data, "spot_blend", text='Blend')
-            row.prop(light.data, "show_cone", text='', toggle=True, icon='CONE')
+            row.prop(light.data, "show_cone", text='',
+                     toggle=True, icon='CONE')
 
     def draw_world(context, layout, gaf_props, scene, prefs, icons):
         world = context.scene.world
@@ -303,14 +333,16 @@ def draw_cycles_eevee_UI(context, layout, lights):
 
         if gaf_props.SoloActive == '':
             sub = row.column(align=True)
-            solobtn = sub.operator(ops.GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
+            solobtn = sub.operator(
+                ops.GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = True
             solobtn.worldsolo = True
         elif gaf_props.SoloActive == "WorldEnviroLight":
             sub = row.column(align=True)
             sub.alert = True
-            solobtn = sub.operator(ops.GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
+            solobtn = sub.operator(
+                ops.GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='', emboss=False)
             solobtn.light = "WorldEnviroLight"
             solobtn.showhide = False
             solobtn.worldsolo = True
@@ -318,7 +350,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
         col = worldcol.column()
 
         if gaf_props.hdri_handler_enabled:
-            draw_hdri_handler(context, col, gaf_props, prefs, icons, toolbar=True)
+            draw_hdri_handler(context, col, gaf_props,
+                              prefs, icons, toolbar=True)
         else:
             row = col.row(align=True)
 
@@ -335,13 +368,15 @@ def draw_cycles_eevee_UI(context, layout, lights):
                             if node.outputs[0].is_linked:
                                 backgrounds.append(node)
                 if backgrounds:
-                    background = sorted(backgrounds, key=lambda x: x.location.x, reverse=True)[0]
+                    background = sorted(
+                        backgrounds, key=lambda x: x.location.x, reverse=True)[0]
                     # Strength
                     if background.inputs[1].is_linked:
                         strength_node = None
                         current_node = background.inputs[1].links[0].from_node
                         temp_current_node = None
-                        i = 0  # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
+                        # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
+                        i = 0
                         while strength_node is None and i < 1000:  # limitted to 100 chained nodes
                             i += 1
                             connected_inputs = False
@@ -358,15 +393,18 @@ def draw_cycles_eevee_UI(context, layout, lights):
                         if strength_node:
                             for socket in strength_node.inputs:
                                 if socket.type == 'VALUE' and not socket.is_linked:  # use first color socket
-                                    row.prop(socket, 'default_value', text="Strength")
+                                    row.prop(socket, 'default_value',
+                                             text="Strength")
                                     break
                     else:
-                        row.prop(background.inputs[1], "default_value", text="Strength")
+                        row.prop(
+                            background.inputs[1], "default_value", text="Strength")
 
                     # Color
                     if background.inputs[0].is_linked:
                         current_node = background.inputs[0].links[0].from_node
-                        i = 0  # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
+                        # Failsafe in case of infinite loop (which can happen from accidental cyclic links)
+                        i = 0
                         while color_node is None and i < 100:  # limitted to 100 chained nodes
                             i += 1
                             connected_inputs = False
@@ -386,10 +424,12 @@ def draw_cycles_eevee_UI(context, layout, lights):
                             if color_node.inputs:
                                 for socket in color_node.inputs:
                                     if socket.type == 'RGBA':  # use first color socket
-                                        row.prop(socket, 'default_value', text='')
+                                        row.prop(
+                                            socket, 'default_value', text='')
                                         break
                     else:
-                        row.prop(background.inputs[0], "default_value", text="")
+                        row.prop(background.inputs[0],
+                                 "default_value", text="")
                 else:
                     row.label(text="No node found!")
             else:
@@ -407,12 +447,14 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     col = worldcol.column()
                     row = col.row(align=True)
                     if world.cycles.sampling_method == 'MANUAL':
-                        row.prop(world.cycles, "sample_map_resolution", text="MIS res")
-                    if scene.cycles.progressive == 'BRANCHED_PATH':
+                        row.prop(world.cycles,
+                                 "sample_map_resolution", text="MIS res")
+                    if hasattr(scene.cycles, 'progressive') and scene.cycles.progressive == 'BRANCHED_PATH':
                         row.prop(world.cycles, "samples", text="Samples")
                 worldcol.separator()
                 col = worldcol.column(align=True)
-                col.prop(world.light_settings, "use_ambient_occlusion", text="Ambient Occlusion")
+                col.prop(world.light_settings, "use_ambient_occlusion",
+                         text="Ambient Occlusion")
                 if world.light_settings.use_ambient_occlusion:
                     row = col.row(align=True)
                     row.prop(world.light_settings, "ao_factor")
@@ -437,7 +479,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
                                              icon="LIGHT_SUN").node_name = color_node.name
                             else:
                                 row.label(text="Link Sky Texture:")
-                            row.prop_search(gaf_props, "SunObject", bpy.data, "objects", text="")
+                            row.prop_search(
+                                gaf_props, "SunObject", bpy.data, "objects", text="")
 
     maincol = layout.column(align=False)
     scene = context.scene
@@ -451,7 +494,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
     for light in lights:
         try:
             if light[0]:
-                a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
+                # Will cause KeyError exception if obj no longer exists
+                a = bpy.data.objects[light[0][1:-1]]
                 if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
                     if a.type != 'LIGHT':
                         b = bpy.data.materials[light[1][1:-1]]
@@ -468,7 +512,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
             box = maincol.box()
             row = box.row(align=True)
             row.label(text="Light list out of date")
-            row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname, icon='FILE_REFRESH', text='')
+            row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname,
+                         icon='FILE_REFRESH', text='')
 
     # Don't show lights that share the same data
     duplicates = {}
@@ -517,7 +562,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 light_uses_nodes = False
 
         if light.type == 'LIGHT':
-            users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
+            users = ['LIGHT' + light.data.name,
+                     duplicates['LIGHT' + light.data.name]]
         else:
             users = ['MAT' + material.name, duplicates['MAT' + material.name]]
 
@@ -546,12 +592,15 @@ def draw_cycles_eevee_UI(context, layout, lights):
             draw_renderer_independant(gaf_props, row, light, users)
 
             if not is_portal:
-                draw_strength_cycles(col, light, node_strength, socket_strength_type, socket_strength)
+                draw_strength_cycles(
+                    col, light, node_strength, socket_strength_type, socket_strength)
 
-                draw_color_cycles(gaf_props, i, icons, col, row, light, material)
+                draw_color_cycles(gaf_props, i, icons, col,
+                                  row, light, material)
 
             if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
-                draw_more_options_cycles(box, scene, light, material, node_strength, is_portal)
+                draw_more_options_cycles(
+                    box, scene, light, material, node_strength, is_portal)
             i += 1
         elif light.type == 'LIGHT':
             box = maincol.box()
@@ -569,7 +618,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
 
             if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
                 if scene.render.engine == 'CYCLES':
-                    draw_more_options_cycles(box, scene, light, material, None, is_portal)
+                    draw_more_options_cycles(
+                        box, scene, light, material, None, is_portal)
                 else:
                     draw_more_options_eevee(box, scene, light)
             i += 1
@@ -596,7 +646,8 @@ def draw_unsupported_renderer_UI(context, layout, lights):
     for light in lights:
         try:
             if light[0]:
-                a = bpy.data.objects[light[0][1:-1]]  # Will cause KeyError exception if obj no longer exists
+                # Will cause KeyError exception if obj no longer exists
+                a = bpy.data.objects[light[0][1:-1]]
                 if (gaf_props.VisibleLightsOnly and not a.hide_viewport) or (not gaf_props.VisibleLightsOnly):
                     if ((gaf_props.VisibleCollectionsOnly and fn.isInVisibleCollection(a, vis_cols)) or
                             (not gaf_props.VisibleCollectionsOnly)):
@@ -606,7 +657,8 @@ def draw_unsupported_renderer_UI(context, layout, lights):
             box = maincol.box()
             row = box.row(align=True)
             row.label(text="Light list out of date")
-            row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname, icon='FILE_REFRESH', text='')
+            row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname,
+                         icon='FILE_REFRESH', text='')
 
     # Don't show lights that share the same data
     duplicates = {}
@@ -637,7 +689,8 @@ def draw_unsupported_renderer_UI(context, layout, lights):
         row = col.row(align=True)
 
         if light.type == 'LIGHT':
-            users = ['LIGHT' + light.data.name, duplicates['LIGHT' + light.data.name]]
+            users = ['LIGHT' + light.data.name,
+                     duplicates['LIGHT' + light.data.name]]
         else:
             users = ['MAT' + light.name, duplicates['MAT' + light.name]]
         draw_renderer_independant(gaf_props, row, light, users)
@@ -695,21 +748,25 @@ class GAFFER_PT_lights(bpy.types.Panel):
         if gaf_props.SoloActive != "":  # if in solo mode
             sub = row.column(align=True)
             sub.alert = True
-            solobtn = sub.operator(ops.GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='')
+            solobtn = sub.operator(
+                ops.GAFFER_OT_solo.bl_idname, icon='EVENT_S', text='')
             solobtn.light = "None"
             solobtn.showhide = False
             solobtn.worldsolo = False
 
         # may not be needed if drawing errors are cought correctly (eg newly added lights):
-        row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname, text="Refresh", icon='FILE_REFRESH')
+        row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname,
+                     text="Refresh", icon='FILE_REFRESH')
 
-        row.prop(gaf_props, "VisibleCollectionsOnly", text='', icon='LAYER_ACTIVE')
+        row.prop(gaf_props, "VisibleCollectionsOnly",
+                 text='', icon='LAYER_ACTIVE')
         row.prop(gaf_props, "VisibleLightsOnly", text='', icon='HIDE_OFF')
         row.prop(gaf_props, "MoreExpandAll", text='', icon='PREFERENCES')
 
         if gaf_props.SoloActive != '':
             try:
-                bpy.data.objects[gaf_props.SoloActive]  # Will cause exception if object by that name doesn't exist
+                # Will cause exception if object by that name doesn't exist
+                bpy.data.objects[gaf_props.SoloActive]
             except:
                 if gaf_props.SoloActive != "WorldEnviroLight":
                     # In case solo'd light changes name, theres no other way to exit solo mode
@@ -722,9 +779,11 @@ class GAFFER_PT_lights(bpy.types.Panel):
                     solobtn.showhide = False
 
         row = col.row(align=True)
-        row.prop(bpy.context.scene.view_settings, 'exposure', text="Global Exposure", slider=False)
+        row.prop(bpy.context.scene.view_settings, 'exposure',
+                 text="Global Exposure", slider=False)
         if bpy.context.scene.render.engine in const.supported_renderers:
-            row.operator(ops.GAFFER_OT_apply_exposure.bl_idname, text="", icon='CHECKBOX_HLT')
+            row.operator(ops.GAFFER_OT_apply_exposure.bl_idname,
+                         text="", icon='CHECKBOX_HLT')
 
         if scene.render.engine == 'CYCLES':
             draw_cycles_eevee_UI(context, layout, lights)
@@ -777,12 +836,16 @@ class GAFFER_PT_tools(bpy.types.Panel):
         row = subcol.row()
         col = row.column(align=True)
         col.label(text="Selected:")
-        col.operator(ops.GAFFER_OT_aim_light.bl_idname, text="at 3D cursor", icon='PIVOT_CURSOR').target_type = 'CURSOR'
-        col.operator(ops.GAFFER_OT_aim_light.bl_idname, text="at active", icon='FULLSCREEN_EXIT').target_type = 'ACTIVE'
+        col.operator(ops.GAFFER_OT_aim_light.bl_idname, text="at 3D cursor",
+                     icon='PIVOT_CURSOR').target_type = 'CURSOR'
+        col.operator(ops.GAFFER_OT_aim_light.bl_idname, text="at active",
+                     icon='FULLSCREEN_EXIT').target_type = 'ACTIVE'
         col = row.column(align=True)
         col.label(text="Active:")
-        col.operator(ops.GAFFER_OT_aim_light.bl_idname, text="at selected", icon='PARTICLES').target_type = 'SELECTED'
-        col.operator(ops.GAFFER_OT_aim_light_with_view.bl_idname, text="w/ 3D View", icon='VIEW_CAMERA')
+        col.operator(ops.GAFFER_OT_aim_light.bl_idname,
+                     text="at selected", icon='PARTICLES').target_type = 'SELECTED'
+        col.operator(ops.GAFFER_OT_aim_light_with_view.bl_idname,
+                     text="w/ 3D View", icon='VIEW_CAMERA')
 
         maincol.separator()
 
@@ -795,7 +858,8 @@ class GAFFER_PT_tools(bpy.types.Panel):
                          text="Show Radius" if not gaf_props.IsShowingRadius else "Hide Radius",
                          icon='MESH_CIRCLE')
             if gaf_props.IsShowingRadius:
-                row.operator(ops.GAFFER_OT_refresh_bgl.bl_idname, text="", icon="FILE_REFRESH")
+                row.operator(ops.GAFFER_OT_refresh_bgl.bl_idname,
+                             text="", icon="FILE_REFRESH")
                 sub.prop(gaf_props, 'LightRadiusAlpha', slider=True)
                 row = sub.row(align=True)
                 row.active = gaf_props.IsShowingRadius
@@ -816,7 +880,8 @@ class GAFFER_PT_tools(bpy.types.Panel):
                      text="Show Label" if not gaf_props.IsShowingLabel else "Hide Label",
                      icon='ALIGN_LEFT')
         if gaf_props.IsShowingLabel:
-            row.operator(ops.GAFFER_OT_refresh_bgl.bl_idname, text="", icon="FILE_REFRESH")
+            row.operator(ops.GAFFER_OT_refresh_bgl.bl_idname,
+                         text="", icon="FILE_REFRESH")
             label_draw_type = gaf_props.LabelDrawType
             sub.prop(gaf_props, 'LabelAlpha', slider=True)
             sub.prop(gaf_props, 'LabelFontSize')
@@ -841,7 +906,8 @@ class GAFFER_PT_tools(bpy.types.Panel):
         sub = box.column(align=True)
         sub.label(text='Blacklist:')
         if gaf_props.Blacklist:
-            sub.template_list("OBJECT_UL_object_list", "", gaf_props, "Blacklist", gaf_props, "BlacklistIndex", rows=2)
+            sub.template_list("OBJECT_UL_object_list", "", gaf_props,
+                              "Blacklist", gaf_props, "BlacklistIndex", rows=2)
         row = sub.row(align=True)
         row.operator(ops.GAFFER_OT_add_blacklisted.bl_idname, icon='ADD')
         row.operator(ops.GAFFER_OT_remove_blacklisted.bl_idname, icon='REMOVE')
@@ -873,13 +939,17 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
 
             if gaf_props.hdri_search:
                 row = col.row(align=True)
-                row.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
-                row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon='X')
+                row.prop(gaf_props, 'hdri_search', text="",
+                         expand=True, icon='VIEWZOOM')
+                row.operator(
+                    ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon='X')
                 subrow = row.row(align=True)
                 subrow.alignment = 'RIGHT'
-                subrow.label(text=str(len(fn.hdri_enum_previews(gaf_props, context))) + ' matches')
+                subrow.label(
+                    text=str(len(fn.hdri_enum_previews(gaf_props, context))) + ' matches')
             else:
-                col.prop(gaf_props, 'hdri_search', text="", expand=True, icon='VIEWZOOM')
+                col.prop(gaf_props, 'hdri_search', text="",
+                         expand=True, icon='VIEWZOOM')
 
             col = layout.column(align=True)
 
@@ -888,28 +958,35 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             tmpc = row.column(align=True)
             tmpr = tmpc.column(align=True)
             tmpr.scale_y = 1
-            tmpr.operator(ops.GAFFER_OT_hdri_save.bl_idname, text='', icon='FILE_TICK').hdri = gaf_props.hdri
+            tmpr.operator(ops.GAFFER_OT_hdri_save.bl_idname,
+                          text='', icon='FILE_TICK').hdri = gaf_props.hdri
             tmpcc = tmpc.column(align=True)
             tmpcc.scale_y = 9 if not toolbar else 3.5
-            tmpcc.operator(ops.GAFFER_OT_hdri_paddles.bl_idname, text='', icon='TRIA_LEFT').do_next = False
+            tmpcc.operator(ops.GAFFER_OT_hdri_paddles.bl_idname,
+                           text='', icon='TRIA_LEFT').do_next = False
             tmpr = tmpc.column(align=True)
             tmpr.scale_y = 1
-            tmpr.operator(ops.GAFFER_OT_hdri_reset.bl_idname, text='', icon='FILE_REFRESH').hdri = gaf_props.hdri
+            tmpr.operator(ops.GAFFER_OT_hdri_reset.bl_idname,
+                          text='', icon='FILE_REFRESH').hdri = gaf_props.hdri
 
             tmpc = row.column()
             tmpc.scale_y = 1 / (2 if toolbar else 1)
-            tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=11)
+            tmpc.template_icon_view(
+                gaf_props, "hdri", show_labels=True, scale=11)
 
             tmpc = row.column(align=True)
             tmpr = tmpc.column(align=True)
             tmpr.scale_y = 1
-            tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='', toggle=True, icon_value=icons['tag'].icon_id)
+            tmpr.prop(gaf_props, 'hdri_show_tags_ui', text='',
+                      toggle=True, icon_value=icons['tag'].icon_id)
             tmpcc = tmpc.column(align=True)
             tmpcc.scale_y = 9 if not toolbar else 3.5
-            tmpcc.operator(ops.GAFFER_OT_hdri_paddles.bl_idname, text='', icon='TRIA_RIGHT').do_next = True
+            tmpcc.operator(ops.GAFFER_OT_hdri_paddles.bl_idname,
+                           text='', icon='TRIA_RIGHT').do_next = True
             tmpr = tmpc.column(align=True)
             tmpr.scale_y = 1
-            tmpr.operator(ops.GAFFER_OT_hdri_random.bl_idname, text='', icon_value=icons['random'].icon_id)
+            tmpr.operator(ops.GAFFER_OT_hdri_random.bl_idname,
+                          text='', icon_value=icons['random'].icon_id)
 
             if gaf_props.hdri_show_tags_ui:
                 col.separator()
@@ -938,9 +1015,11 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                         i += 1
                     else:
                         i = 0
-                tags_col.prop(gaf_props, 'hdri_custom_tags', icon_value=icons['text-cursor'].icon_id)
+                tags_col.prop(gaf_props, 'hdri_custom_tags',
+                              icon_value=icons['text-cursor'].icon_id)
                 tags_col.separator()
-                tags_col.prop(gaf_props, 'hdri_show_tags_ui', text="Done", toggle=True)
+                tags_col.prop(gaf_props, 'hdri_show_tags_ui',
+                              text="Done", toggle=True)
                 col.separator()
 
             col = layout.column(align=True)
@@ -948,12 +1027,14 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             if prefs.RequestThumbGen:
                 row = col.row(align=True)
                 row.alignment = 'CENTER'
-                row.operator(ops.GAFFER_OT_hdri_thumb_gen.bl_idname, icon='IMAGE')
+                row.operator(
+                    ops.GAFFER_OT_hdri_thumb_gen.bl_idname, icon='IMAGE')
                 col.separator()
 
             row = col.row(align=True)
             vp_icon = 'TRIA_LEFT' if gaf_props['hdri_variation'] != 0 else 'TRIA_LEFT_BAR'
-            row.operator(ops.GAFFER_OT_hdri_variation_paddles.bl_idname, text='', icon=vp_icon).do_next = False
+            row.operator(ops.GAFFER_OT_hdri_variation_paddles.bl_idname,
+                         text='', icon=vp_icon).do_next = False
             row.prop(gaf_props, "hdri_variation", text="")
             if const.hdri_haven_list and const.hdri_list:
                 if gaf_props.hdri in const.hdri_haven_list and gaf_props.hdri in const.hdri_list:
@@ -967,7 +1048,8 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                            else 'TRIA_RIGHT_BAR')
             else:
                 vp_icon = 'TRIA_RIGHT'
-            row.operator(ops.GAFFER_OT_hdri_variation_paddles.bl_idname, text='', icon=vp_icon).do_next = True
+            row.operator(ops.GAFFER_OT_hdri_variation_paddles.bl_idname,
+                         text='', icon=vp_icon).do_next = True
             col.separator()
 
             if gaf_props.FileNotFoundError:
@@ -975,8 +1057,10 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 row.scale_y = 1.5
                 row.alert = True
                 row.alignment = 'CENTER'
-                row.label(text="File not found. Try refreshing your HDRI list:", icon='ERROR')
-                row.operator(ops.GAFFER_OT_detect_hdris.bl_idname, text="Refresh", icon="FILE_REFRESH")
+                row.label(
+                    text="File not found. Try refreshing your HDRI list:", icon='ERROR')
+                row.operator(ops.GAFFER_OT_detect_hdris.bl_idname,
+                             text="Refresh", icon="FILE_REFRESH")
 
             col.separator()
         col.prop(gaf_props, 'hdri_rotation', slider=True)
@@ -1077,9 +1161,11 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 if gaf_props.RequestJPGGen and gaf_props.hdri_use_jpg_background:
                     col.separator()
                     col.separator()
-                    col.label(text="No JPGs have been created yet,", icon='ERROR')
+                    col.label(text="No JPGs have been created yet,",
+                              icon='ERROR')
                     col.label(text="please click 'Generate JPGs' below.")
-                    col.label(text="Note: This may take a while for high-res images")
+                    col.label(
+                        text="Note: This may take a while for high-res images")
                     col.operator(ops.GAFFER_OT_hdri_jpg_gen.bl_idname)
                     col.prop(gaf_props, 'hdri_jpg_gen_all')
                     if gaf_props.hdri_jpg_gen_all:
@@ -1090,7 +1176,8 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
         prefs.ForcePreviewsRefresh = True
         row = layout.row(align=True)
         row.prop(gaf_props, 'hdri_search', text="", icon='VIEWZOOM')
-        row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon='X')
+        row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname,
+                     text="", icon='X')
         subrow = row.row(align=True)
         subrow.alignment = 'RIGHT'
         subrow.label(text="No matches")
@@ -1155,8 +1242,10 @@ class GAFFER_PT_hdris (bpy.types.Panel):
                     row.alignment = 'CENTER'
                     row.scale_y = 1.5
                     row.scale_x = 1.5
-                    row.operator(ops.GAFFER_OT_get_hdrihaven.bl_idname, icon_value=icons['hdri_haven'].icon_id)
-                    row.operator(ops.GAFFER_OT_hide_hdrihaven.bl_idname, text="", icon='X')
+                    row.operator(ops.GAFFER_OT_get_hdrihaven.bl_idname,
+                                 icon_value=icons['hdri_haven'].icon_id)
+                    row.operator(
+                        ops.GAFFER_OT_hide_hdrihaven.bl_idname, text="", icon='X')
             else:
                 col = layout.column()
                 row = col.row()
@@ -1164,7 +1253,8 @@ class GAFFER_PT_hdris (bpy.types.Panel):
                 row.label(text="Gaffer's HDRI handler is disabled.")
                 row = col.row()
                 row.alignment = 'CENTER'
-                row.label(text="Enable it with the checkbox in this panel's header")
+                row.label(
+                    text="Enable it with the checkbox in this panel's header")
 
 
 class OBJECT_UL_object_list(bpy.types.UIList):
