@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 ***PLEASE NOTE***
-If you did not purchase Gaffer, I cannot provide you any user support. This especially includes helping you install the add-on correctly. Check #112 if you are having installation problems.
+If you did not purchase Gaffer, I cannot provide you any user support. This especially includes helping you install the add-on correctly. Check #112 (https://github.com/gregzaal/Gaffer/issues/112) if you are having installation problems.
 
 ----
 
