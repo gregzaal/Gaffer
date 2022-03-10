@@ -835,6 +835,13 @@ def handler_node(context, t, background=False):
 
     """ Return requested node, or create it """
     nodes = context.scene.world.node_tree.nodes
+
+    if t == 'ShaderNodeOutputWorld':
+        for n in nodes:
+            if hasattr(n, 'is_active_output'):
+                if n.is_active_output:
+                    return n
+
     name = "HDRIHandler_" + t + ("_B" if background else "")
     for n in nodes:
         if n.name == name:
@@ -975,9 +982,6 @@ def setup_hdri(self, context):
     n_sat = handler_node(context, "ShaderNodeHueSaturation")
     n_shader = handler_node(context, "ShaderNodeBackground")
     n_out = handler_node(context, "ShaderNodeOutputWorld")
-    for n in w.node_tree.nodes:
-        if hasattr(n, "is_active_output"):
-            n.is_active_output = n == n_out  # Set the handler node to be the only active output
 
     if extra_nodes:
         n_img_b = handler_node(context, "ShaderNodeTexEnvironment", background=gaf_props.hdri_use_jpg_background)
