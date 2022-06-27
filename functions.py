@@ -786,7 +786,7 @@ def handler_node(context, t, background=False):
             n2.inputs[1].default_value = 1.0
             n2.location = (407.1993713378906, -335.6588134765625)
 
-            n3 = group.nodes.new('ShaderNodeSeparateRGB')
+            n3 = group.nodes.new('ShaderNodeSeparateXYZ')
             n3.location = (408.24310302734375, -167.7357940673828)
 
             n4 = group.nodes.new('ShaderNodeMath')
@@ -811,7 +811,7 @@ def handler_node(context, t, background=False):
             n8.inputs[1].default_value = 1.0
             n8.location = (407.1993713378906, -529.1270751953125)
 
-            n9 = group.nodes.new('ShaderNodeCombineRGB')
+            n9 = group.nodes.new('ShaderNodeCombineXYZ')
             n9.location = (807.5265502929688, -162.73184204101562)
 
             group.links.new(group_inputs.outputs[1], n1.inputs[0])
