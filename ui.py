@@ -1216,7 +1216,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                     ):
                         row.operator(
                             ops.GAFFER_OT_open_hdrihaven.bl_idname, text="", icon="ADD"
-                        ).url = ("https://hdrihaven.com/hdri/?h=" + gaf_props.hdri)
+                        ).url = ("https://polyhaven.com/a/" + gaf_props.hdri)
 
             if (
                 gaf_props.hdri in const.hdri_list
