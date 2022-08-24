@@ -1960,7 +1960,6 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
     "Instantly download free HDRIs from hdrihaven.com"
     bl_idname = "gaffer.get_hdri_haven"
     bl_label = "Get Free HDRIs"
-    bl_options = {"INTERNAL"}
 
     def draw(self, context):
         num_hdris = 50  # Assume 50, but check the actual number if possible
