@@ -1762,7 +1762,7 @@ def set_defaults(context, hdri_name):
 
 
 def get_hdri_haven_list(force_update=False):
-    """Get HDRI Haven list from web once per week, otherwise fetch from file"""
+    """Get Poly Haven list from web once per week, otherwise fetch from file"""
 
     offline_data = {}
     if os.path.exists(const.hdri_haven_list_path):
@@ -1781,17 +1781,17 @@ def get_hdri_haven_list(force_update=False):
 
     from requests import get as requests_get
 
-    print("Getting HDRI list from HDRI Haven...")
+    print("Getting HDRI list from Poly Haven...")
     try:
         hdrihaven_hdris = requests_get(
             "https://hdrihaven.com/php/json_list.php", timeout=10
         ).json()
     except:
         if force_update:
-            print("    Can't fetch list from HDRI Haven")
+            print("    Can't fetch list from Poly Haven")
             return {}
         else:
-            print("    Can't fetch list from HDRI Haven, using old data")
+            print("    Can't fetch list from Poly Haven, using old data")
             if offline_data:
                 return offline_data
             else:
@@ -1804,7 +1804,7 @@ def get_hdri_haven_list(force_update=False):
         with open(const.hdri_haven_list_path, "w") as f:
             f.write(json.dumps(hdrihaven_hdris, indent=4))
 
-        # Add HDRI Haven tags to tag list
+        # Add Poly Haven tags to tag list
         standard_colors = [
             "red",
             "green",

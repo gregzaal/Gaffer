@@ -1957,7 +1957,7 @@ class GAFFER_OT_fix_mis(bpy.types.Operator):
 
 class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
 
-    "Instantly download free HDRIs from hdrihaven.com"
+    "Instantly download free HDRIs from polyhaven.com"
     bl_idname = "gaffer.get_hdri_haven"
     bl_label = "Get Free HDRIs"
 
@@ -1972,7 +1972,7 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
         row = col.row()
         row.alignment = "CENTER"
         row.label(
-            text="This will download ~" + str(num_hdris) + " HDRIs from hdrihaven.com"
+            text="This will download ~" + str(num_hdris) + " HDRIs from polyhaven.com"
         )
         row = col.row()
         row.alignment = "CENTER"
@@ -1986,7 +1986,7 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
         )
         row = col.row()
         row.alignment = "CENTER"
-        row.label(text="More info at hdrihaven.com")
+        row.label(text="More info at polyhaven.com")
 
         col.separator()
         row = col.row()
@@ -2086,8 +2086,8 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
             self.report(
                 {"ERROR"},
                 (
-                    "Cannot connect to HDRI Haven website, check your internet connection or try again later. "
-                    "If this error persists, contact info@hdrihaven.com"
+                    "Cannot connect to Poly Haven website, check your internet connection or try again later. "
+                    "If this error persists, contact info@polyhaven.com"
                 ),
             )
             return {"CANCELLED"}
