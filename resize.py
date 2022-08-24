@@ -29,7 +29,7 @@ import sys
 from math import floor
 
 argv = sys.argv
-argv = argv[argv.index("--") + 1:]  # Get all args after  '--'
+argv = argv[argv.index("--") + 1 :]  # Get all args after  '--'
 FILEPATH, SIZE_X, OUTPATH = argv
 SIZE_X = int(SIZE_X)
 
@@ -42,7 +42,7 @@ node_tree = scene.node_tree
 # Remove default nodes, except composite
 n_comp = None
 for n in node_tree.nodes:
-    if not n.type == 'COMPOSITE':
+    if not n.type == "COMPOSITE":
         node_tree.nodes.remove(n)
     else:
         n_comp = n
@@ -52,7 +52,7 @@ n_img = node_tree.nodes.new("CompositorNodeImage")
 n_img.image = img
 
 n_blur = node_tree.nodes.new("CompositorNodeBlur")
-n_blur.filter_type = 'FLAT'
+n_blur.filter_type = "FLAT"
 n_blur.size_x = floor(img.size[0] / SIZE_X / 2)
 n_blur.size_y = n_blur.size_x
 
@@ -68,7 +68,7 @@ links.new(n_scale.outputs[0], n_comp.inputs[0])
 
 # Render
 r = scene.render
-r.image_settings.file_format = 'JPEG'
+r.image_settings.file_format = "JPEG"
 r.image_settings.quality = 95
 r.resolution_x = SIZE_X
 SIZE_Y = floor(SIZE_X / (img.size[0] / img.size[1]))
