@@ -1572,7 +1572,7 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
         col.label(
             text="The only way to stop this process once you start it is to forcibly close Blender."
         )
-        col.label(text="Due to a bug in Blender 2.8, no progress bar will be shown.")
+        col.label(text="Blender may become unresponsive during this process.")
 
         col.separator()
         col = layout.column(align=True)
@@ -2042,7 +2042,7 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
 
             from concurrent.futures import ThreadPoolExecutor
 
-            executor = ThreadPoolExecutor(max_workers=12)
+            executor = ThreadPoolExecutor(max_workers=20)
             threads = []
             for i, hh in enumerate(hdrihaven_hdris):
                 t = executor.submit(
