@@ -288,8 +288,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 )
                 row.prop(light.data.cycles, "cast_shadow", text="Shadows", toggle=True)
                 row.separator()
-                row.prop(light.cycles_visibility, "diffuse", text="Diff", toggle=True)
-                row.prop(light.cycles_visibility, "glossy", text="Spec", toggle=True)
+                row.prop(light, "visible_diffuse", text="Diff", toggle=True)
+                row.prop(light, "visible_glossy", text="Spec", toggle=True)
 
             if light.data.type == "SPOT":
                 row = col.row(align=True)
@@ -300,9 +300,9 @@ def draw_cycles_eevee_UI(context, layout, lights):
         else:  # MESH light
             row.prop(material.cycles, "sample_as_light", text="MIS", toggle=True)
             row.separator()
-            row.prop(light.cycles_visibility, "camera", text="Cam", toggle=True)
-            row.prop(light.cycles_visibility, "diffuse", text="Diff", toggle=True)
-            row.prop(light.cycles_visibility, "glossy", text="Spec", toggle=True)
+            row.prop(light, "visible_camera", text="Cam", toggle=True)
+            row.prop(light, "visible_diffuse", text="Diff", toggle=True)
+            row.prop(light, "visible_glossy", text="Spec", toggle=True)
 
         if hasattr(light, "GafferFalloff") and scene.render.engine == "CYCLES":
             drawfalloff = True
