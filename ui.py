@@ -96,9 +96,7 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):
     selop = sub.operator(
         ops.GAFFER_OT_select_light.bl_idname,
         text="",
-        icon="%s" % "RESTRICT_SELECT_OFF"
-        if light.select_get()
-        else "RESTRICT_SELECT_ON",
+        icon="%s" % "RESTRICT_SELECT_OFF" if light.select_get() else "RESTRICT_SELECT_ON",
         emboss=False,
     )
     selop.light = light.name
@@ -202,9 +200,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     subrow = subcol.row(align=True)
                     subrow.scale_x = 0.3
                     subrow.prop(from_node.outputs[0], "default_value", text="")
-                elif (
-                    from_node.type == "TEX_IMAGE" or from_node.type == "TEX_ENVIRONMENT"
-                ):
+                elif from_node.type == "TEX_IMAGE" or from_node.type == "TEX_ENVIRONMENT":
                     row.prop(from_node, "image", text="")
                 elif from_node.type == "BLACKBODY":
                     row.prop(from_node.inputs[0], "default_value", text="Temperature")
@@ -276,8 +272,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 )
                 row.prop(light.data.cycles, "cast_shadow", text="Shadows", toggle=True)
                 row.separator()
-                row.prop(light, "visible_diffuse", text="Diff", toggle=True)
-                row.prop(light, "visible_glossy", text="Spec", toggle=True)
+                row.prop(light.cycles_visibility, "diffuse", text="Diff", toggle=True)
+                row.prop(light.cycles_visibility, "glossy", text="Spec", toggle=True)
 
             if light.data.type == "SPOT":
                 row = col.row(align=True)
@@ -288,9 +284,9 @@ def draw_cycles_eevee_UI(context, layout, lights):
         else:  # MESH light
             row.prop(material.cycles, "sample_as_light", text="MIS", toggle=True)
             row.separator()
-            row.prop(light, "visible_camera", text="Cam", toggle=True)
-            row.prop(light, "visible_diffuse", text="Diff", toggle=True)
-            row.prop(light, "visible_glossy", text="Spec", toggle=True)
+            row.prop(light.cycles_visibility, "camera", text="Cam", toggle=True)
+            row.prop(light.cycles_visibility, "diffuse", text="Diff", toggle=True)
+            row.prop(light.cycles_visibility, "glossy", text="Spec", toggle=True)
 
         if hasattr(light, "GafferFalloff") and scene.render.engine == "CYCLES":
             drawfalloff = True
@@ -702,9 +698,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 or gaf_props.MoreExpandAll
             ):
                 if scene.render.engine == "CYCLES":
-                    draw_more_options_cycles(
-                        box, scene, light, material, None, is_portal
-                    )
+                    draw_more_options_cycles(box, scene, light, material, None, is_portal)
                 else:
                     draw_more_options_eevee(box, scene, light)
             i += 1
@@ -846,9 +840,7 @@ class GAFFER_PT_lights(bpy.types.Panel):
         if gaf_props.SoloActive != "":  # if in solo mode
             sub = row.column(align=True)
             sub.alert = True
-            solobtn = sub.operator(
-                ops.GAFFER_OT_solo.bl_idname, icon="EVENT_S", text=""
-            )
+            solobtn = sub.operator(ops.GAFFER_OT_solo.bl_idname, icon="EVENT_S", text="")
             solobtn.light = "None"
             solobtn.showhide = False
             solobtn.worldsolo = False
@@ -1072,22 +1064,15 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
 
             if gaf_props.hdri_search:
                 row = col.row(align=True)
-                row.prop(
-                    gaf_props, "hdri_search", text="", expand=True, icon="VIEWZOOM"
-                )
-                row.operator(
-                    ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X"
-                )
+                row.prop(gaf_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
+                row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
                 subrow = row.row(align=True)
                 subrow.alignment = "RIGHT"
                 subrow.label(
-                    text=str(len(fn.hdri_enum_previews(gaf_props, context)))
-                    + " matches"
+                    text=str(len(fn.hdri_enum_previews(gaf_props, context))) + " matches"
                 )
             else:
-                col.prop(
-                    gaf_props, "hdri_search", text="", expand=True, icon="VIEWZOOM"
-                )
+                col.prop(gaf_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
 
             col = layout.column(align=True)
 
@@ -1184,9 +1169,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 col.separator()
 
             row = col.row(align=True)
-            vp_icon = (
-                "TRIA_LEFT" if gaf_props["hdri_variation"] != 0 else "TRIA_LEFT_BAR"
-            )
+            vp_icon = "TRIA_LEFT" if gaf_props["hdri_variation"] != 0 else "TRIA_LEFT_BAR"
             row.operator(
                 ops.GAFFER_OT_hdri_variation_paddles.bl_idname, text="", icon=vp_icon
             ).do_next = False
@@ -1442,9 +1425,7 @@ class GAFFER_PT_hdris(bpy.types.Panel):
 
 
 class OBJECT_UL_object_list(bpy.types.UIList):
-    def draw_item(
-        self, context, layout, data, item, icon, active_data, active_propname
-    ):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         obj = item
         layout.prop(obj, "name", text="", emboss=False)
 
