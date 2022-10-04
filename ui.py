@@ -249,6 +249,13 @@ def draw_cycles_eevee_UI(context, layout, lights):
     def draw_more_options_cycles(box, scene, light, material, node_strength, is_portal):
         col = box.column()
         row = col.row(align=True)
+
+        visibility = [
+            ("camera", "Cam"),
+            ("diffuse", "Diff"),
+            ("glossy", "Spec"),
+        ]
+
         if light.type == "LIGHT":
             if light.data.type == "AREA":
                 if light.data.shape in ["RECTANGLE", "ELLIPSE"]:
@@ -276,8 +283,11 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 )
                 row.prop(light.data.cycles, "cast_shadow", text="Shadows", toggle=True)
                 row.separator()
-                row.prop(light, "visible_diffuse", text="Diff", toggle=True)
-                row.prop(light, "visible_glossy", text="Spec", toggle=True)
+                for v in visibility[1:]:  # All but camera
+                    if bpy.app.version_string >= "3.0":
+                        row.prop(light, "visible_" + v[0], text=v[1], toggle=True)
+                    else:
+                        row.prop(light.cycles_visibility, v[0], text=v[1], toggle=True)
 
             if light.data.type == "SPOT":
                 row = col.row(align=True)
@@ -288,9 +298,11 @@ def draw_cycles_eevee_UI(context, layout, lights):
         else:  # MESH light
             row.prop(material.cycles, "sample_as_light", text="MIS", toggle=True)
             row.separator()
-            row.prop(light, "visible_camera", text="Cam", toggle=True)
-            row.prop(light, "visible_diffuse", text="Diff", toggle=True)
-            row.prop(light, "visible_glossy", text="Spec", toggle=True)
+            for v in visibility:
+                if bpy.app.version_string >= "3.0":
+                    row.prop(light, "visible_" + v[0], text=v[1], toggle=True)
+                else:
+                    row.prop(light.cycles_visibility, v[0], text=v[1], toggle=True)
 
         if hasattr(light, "GafferFalloff") and scene.render.engine == "CYCLES":
             drawfalloff = True
