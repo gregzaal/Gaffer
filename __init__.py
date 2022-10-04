@@ -21,7 +21,7 @@ bl_info = {
     "description": "Master your lighting workflow with easy access to light properties, HDRIs and other tools",
     "author": "Greg Zaal",
     "version": (3, 1, 14),
-    "blender": (3, 2, 0),
+    "blender": (2, 90, 0),
     "location": "3D View > Sidebar  &  World Settings > HDRI",
     "warning": "",
     "wiki_url": "https://github.com/gregzaal/Gaffer/wiki",
