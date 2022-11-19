@@ -30,8 +30,8 @@ If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
  - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+ - Blender Version [e.g. 3.3]
+ - Gaffer Version [e.g. 3.1.14]
 
 **Additional context**
 Add any other context about the problem here.
