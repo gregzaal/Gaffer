@@ -264,6 +264,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     row = col.row(align=True)
                 else:
                     row.prop(light.data, "size")
+            elif light.data.type == "SUN":
+                row.prop(light.data, "angle")
             else:
                 row.prop(light.data, "shadow_soft_size", text="Size")
 
@@ -338,6 +340,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 row = col.row(align=True)
             else:
                 row.prop(light.data, "size")
+        elif light.data.type == "SUN":
+            row.prop(light.data, "angle")
         else:
             row.prop(light.data, "shadow_soft_size", text="Size")
 
