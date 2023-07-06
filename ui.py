@@ -264,6 +264,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     row = col.row(align=True)
                 else:
                     row.prop(light.data, "size")
+                if hasattr(light.data, "spread"):
+                    row.prop(light.data, "spread")
             elif light.data.type == "SUN":
                 row.prop(light.data, "angle")
             else:
