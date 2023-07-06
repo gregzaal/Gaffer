@@ -331,6 +331,19 @@ def draw_cycles_eevee_UI(context, layout, lights):
             if light.data.type == "AREA":
                 col.prop(light.data.cycles, "is_portal")
 
+        # Light groups
+        if len(context.view_layer.lightgroups) > 0:
+            row = col.row(align=True)
+            row.use_property_decorate = False
+
+            sub = row.column(align=True)
+            sub.prop_search(light, "lightgroup", context.view_layer, "lightgroups", text="Group", results_are_suggestions=True)
+
+            sub = row.column(align=True)
+            if bool(light.lightgroup) and not any(lg.name == light.lightgroup for lg in context.view_layer.lightgroups):
+                row.operator("scene.view_layer_add_lightgroup", icon='ADD', text="").name = light.lightgroup
+
+
     def draw_more_options_eevee(box, scene, light):
         col = box.column()
         row = col.row(align=True)
@@ -543,6 +556,18 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     row = col.row(align=True)
                     row.prop(world.light_settings, "ao_factor")
                     row.prop(world.light_settings, "distance")
+
+                # Light groups
+                if len(context.view_layer.lightgroups) > 0:
+                    row = col.row(align=True)
+                    row.use_property_decorate = False
+
+                    sub = row.column(align=True)
+                    sub.prop_search(world, "lightgroup", context.view_layer, "lightgroups", text="Group", results_are_suggestions=True)
+
+                    sub = row.column(align=True)
+                    if bool(world.lightgroup) and not any(lg.name == world.lightgroup for lg in context.view_layer.lightgroups):
+                        row.operator("scene.view_layer_add_lightgroup", icon='ADD', text="").name = world.lightgroup
             else:
                 worldcol.separator()
                 col = worldcol.column(align=True)
