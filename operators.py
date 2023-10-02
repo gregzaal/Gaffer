@@ -894,7 +894,10 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
     def draw_callback_radius(self, context):
         scene = context.scene
-        shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        try:
+            shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        except ValueError:
+            shader = gpu.shader.from_builtin("UNIFORM_COLOR")  # Blender 4.0+
 
         if not context.space_data.overlay.show_overlays:
             return
@@ -1142,7 +1145,11 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
         draw_type = scene.gaf_props.LabelDrawType
         background_color = scene.gaf_props.DefaultLabelBGColor
         text_color = scene.gaf_props.LabelTextColor
-        shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+
+        try:
+            shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        except ValueError:
+            shader = gpu.shader.from_builtin("UNIFORM_COLOR")  # Blender 4.0+
 
         for item in self.objects:
             obj = item[0]
