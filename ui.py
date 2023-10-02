@@ -296,7 +296,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
             if light.data.type == "SPOT":
                 row = col.row(align=True)
                 row.prop(light.data, "spot_size", text="Spot Size")
-                row.prop(light.data, "spot_blend", text="Blend")
+                row.prop(light.data, "spot_blend", text="Blend", slider=True)
                 row.prop(light.data, "show_cone", text="", toggle=True, icon="CONE")
 
         else:  # MESH light
@@ -372,7 +372,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
         if light.data.type == "SPOT":
             row = col.row(align=True)
             row.prop(light.data, "spot_size", text="Spot Size")
-            row.prop(light.data, "spot_blend", text="Blend")
+            row.prop(light.data, "spot_blend", text="Blend", slider=True)
             row.prop(light.data, "show_cone", text="", toggle=True, icon="CONE")
 
     def draw_world(context, layout, gaf_props, scene, prefs, icons):
