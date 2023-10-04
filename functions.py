@@ -877,16 +877,30 @@ def handler_node(context, t, background=False):
 
             group_inputs = group.nodes.new("NodeGroupInput")
             group_inputs.location = (-70.08822631835938, -477.9051513671875)
-            group.inputs.new("NodeSocketColor", "Image")
-            group.inputs.new("NodeSocketFloat", "Temp")
-            group.inputs.new("NodeSocketFloat", "Tint")
-            group.inputs[1].min_value = -100
-            group.inputs[1].max_value = 100
-            group.inputs[2].min_value = -100
-            group.inputs[2].max_value = 100
+
+            if bpy.app.version >= (4,0,0):
+                group.interface.new_socket("Image", socket_type="NodeSocketColor", in_out="INPUT")
+                temp = group.interface.new_socket("Temp", socket_type="NodeSocketFloat", in_out="INPUT")
+                tint = group.interface.new_socket("Tint", socket_type="NodeSocketFloat", in_out="INPUT")
+                group.interface.new_socket(socket_type="NodeSocketColor", name="Image", in_out="OUTPUT")
+
+                temp.min_value=-100
+                temp.max_value=100
+                tint.min_value=-100
+                tint.max_value=100
+
+            else:
+                group.inputs.new("NodeSocketColor", "Image")
+                group.inputs.new("NodeSocketFloat", "Temp")
+                group.inputs.new("NodeSocketFloat", "Tint")
+                group.inputs[1].min_value = -100
+                group.inputs[1].max_value = 100
+                group.inputs[2].min_value = -100
+                group.inputs[2].max_value = 100
+                group.outputs.new("NodeSocketColor", "Image")
+
             group_outputs = group.nodes.new("NodeGroupOutput")
             group_outputs.location = (1032.72119140625, -158.30892944335938)
-            group.outputs.new("NodeSocketColor", "Image")
 
             n1 = group.nodes.new("ShaderNodeMath")
             n1.operation = "DIVIDE"
