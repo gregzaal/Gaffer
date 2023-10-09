@@ -894,12 +894,17 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
     def draw_callback_radius(self, context):
         scene = context.scene
-        shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        try:
+            shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        except ValueError:
+            shader = gpu.shader.from_builtin("UNIFORM_COLOR")  # Blender 4.0+
 
         if not context.space_data.overlay.show_overlays:
             return
 
+
         for item in self.objects:
+            gpu.state.blend_set('ALPHA')
             obj = item[0]
             if not scene.gaf_props.LightRadiusSelectedOnly or obj.select_get():
                 if obj:
@@ -925,9 +930,6 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                                     else:
                                         color = scene.gaf_props.DefaultRadiusColor
 
-                                    bgl.glEnable(bgl.GL_BLEND)
-                                    # Anti-aliasing; Gives bad results in 2.8, leaving here in case of future fix.
-                                    # bgl.glEnable(bgl.GL_POLYGON_SMOOTH)
                                     if scene.gaf_props.LightRadiusXray:
                                         bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
 
@@ -1015,9 +1017,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                                         shader, "TRIS", {"pos": verts}, indices=indices
                                     )
                                     batch.draw(shader)
-
-                                    bgl.glDisable(bgl.GL_BLEND)
-                                    # bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
+            gpu.state.blend_set('NONE')
 
     def modal(self, context, event):
         if context.scene.gaf_props.IsShowingRadius:
@@ -1148,9 +1148,15 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
         draw_type = scene.gaf_props.LabelDrawType
         background_color = scene.gaf_props.DefaultLabelBGColor
         text_color = scene.gaf_props.LabelTextColor
-        shader = gpu.shader.from_builtin("2D_UNIFORM_COLOR")
+
+
+        try:
+            shader = gpu.shader.from_builtin("3D_UNIFORM_COLOR")
+        except ValueError:
+            shader = gpu.shader.from_builtin("UNIFORM_COLOR")  # Blender 4.0+
 
         for item in self.objects:
+            gpu.state.blend_set('ALPHA')
             obj = item[0]
             if obj in context.visible_objects and obj.name not in [
                 o.name for o in scene.gaf_props.Blacklist
@@ -1191,7 +1197,6 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
 
                     if draw_type != "color_text":
                         # Draw background rectangles
-                        bgl.glEnable(bgl.GL_BLEND)
                         shader.bind()
                         if draw_type == "color_bg" and scene.gaf_props.LabelUseColor:
                             shader.uniform_float(
@@ -1227,7 +1232,6 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                             shader, x1, y1, x2, y2, 20 * font_size_factor
                         )
 
-                        bgl.glDisable(bgl.GL_BLEND)
 
                     # Draw text
                     if draw_type != "color_bg" and scene.gaf_props.LabelUseColor:
@@ -1247,8 +1251,7 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                     blf.position(font_id, x, y, 0)
                     blf.size(
                         font_id,
-                        scene.gaf_props.LabelFontSize,
-                        context.preferences.system.dpi,
+                        scene.gaf_props.LabelFontSize * (context.preferences.system.dpi / 72),
                     )
 
                     if not item[2]:
@@ -1258,10 +1261,10 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
                         blf.position(font_id, x, y_sub, 0)
                         blf.size(
                             font_id,
-                            int(scene.gaf_props.LabelFontSize * 0.8),
-                            context.preferences.system.dpi,
+                            int(scene.gaf_props.LabelFontSize * 0.8) * (context.preferences.system.dpi / 72),
                         )
                         blf.draw(font_id, obj.name)
+            gpu.state.blend_set('NONE')
 
     def modal(self, context, event):
         if context.scene.gaf_props.IsShowingLabel:
