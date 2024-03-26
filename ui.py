@@ -487,15 +487,28 @@ def draw_cycles_eevee_UI(context, layout, lights):
                         row.prop(world.cycles, "samples", text="Samples")
                 worldcol.separator()
                 col = worldcol.column(align=True)
-                col.prop(
-                    world.light_settings,
-                    "use_ambient_occlusion",
-                    text="Ambient Occlusion",
-                )
-                if world.light_settings.use_ambient_occlusion:
-                    row = col.row(align=True)
-                    row.prop(world.light_settings, "ao_factor")
-                    row.prop(world.light_settings, "distance")
+                if hasattr(scene.cycles, "use_fast_gi"):
+                    col.prop(
+                        scene.cycles,
+                        "use_fast_gi",
+                        text="Fast GI",
+                    )
+                    if scene.cycles.use_fast_gi:
+                        row = col.row(align=True)
+                        row.prop(scene.cycles, "fast_gi_method", text="")
+                        row.prop(world.light_settings, "ao_factor")
+                        row.prop(world.light_settings, "distance")
+                else:
+                    # Legacy Blender support
+                    col.prop(
+                        world.light_settings,
+                        "use_ambient_occlusion",
+                        text="Ambient Occlusion",
+                    )
+                    if world.light_settings.use_ambient_occlusion:
+                        row = col.row(align=True)
+                        row.prop(world.light_settings, "ao_factor")
+                        row.prop(world.light_settings, "distance")
 
                 # Light groups
                 if len(context.view_layer.lightgroups) > 0:
@@ -521,7 +534,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 worldcol.separator()
                 col = worldcol.column(align=True)
                 col.prop(scene.eevee, "use_gtao", text="Ambient Occlusion")
-                if world.light_settings.use_ambient_occlusion:
+                if scene.eevee.use_gtao:
                     row = col.row(align=True)
                     row.prop(scene.eevee, "gtao_factor")
                     row.prop(scene.eevee, "gtao_distance")
