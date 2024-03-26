@@ -694,6 +694,21 @@ def get_hdri_basename(f):
     return hdri_name
 
 
+def polyhaven_asset_lib(context):
+    """Get the Poly Haven asset library path if it exists"""
+
+    for l in context.preferences.filepaths.asset_libraries:
+        if l.name.lower() == "poly haven":
+            return l.path
+
+    return None
+
+
+def paths_are_equal(p1, p2):
+    """Check if two paths are equal, regardless of case or slashes"""
+    return os.path.normcase(os.path.normpath(p1)) == os.path.normcase(os.path.normpath(p2))
+
+
 def detect_hdris(self, context):
 
     log("FN: Detect HDRIs")
@@ -702,7 +717,7 @@ def detect_hdris(self, context):
 
     hdris = {}
 
-    def check_folder_for_HDRIs(path):
+    def check_folder_for_HDRIs(path, is_polyhaven_asset_lib=False):
         prefs = bpy.context.preferences.addons[__package__].preferences
 
         l_allowed_file_types = const.allowed_file_types
@@ -718,8 +733,10 @@ def detect_hdris(self, context):
                         if ext.lower() in l_allowed_file_types and not fn.startswith("."):
                             files.append(f)
                 else:
+                    if is_polyhaven_asset_lib and f == "textures":
+                        continue  # Don't detect exr textures as HDRIs in Poly Haven asset library
                     if f != "_MACOSX":
-                        check_folder_for_HDRIs(os.path.join(path, f))
+                        check_folder_for_HDRIs(os.path.join(path, f), is_polyhaven_asset_lib)
 
             hdri_file_pairs = []
             for f in files:
@@ -735,7 +752,7 @@ def detect_hdris(self, context):
     hdri_paths = get_persistent_setting("hdri_paths")
     if hdri_paths[0] != "":
         for hp in hdri_paths:
-            check_folder_for_HDRIs(hp)
+            check_folder_for_HDRIs(hp, paths_are_equal(polyhaven_asset_lib(context), hp))
 
         # Sort variations by filesize
         for h in hdris:
