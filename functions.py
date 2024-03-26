@@ -77,9 +77,7 @@ def hastebin_file(filepath, extra_string=""):
             lines = f.read()
         from requests import post as requests_post
 
-        r = requests_post(
-            "https://hastebin.com/documents", lines + "\n" * 4 + extra_string
-        )
+        r = requests_post("https://hastebin.com/documents", lines + "\n" * 4 + extra_string)
         url = "https://hastebin.com/" + json.loads(r.content.decode())["key"]
         bpy.ops.wm.url_open(url=url)
 
@@ -107,10 +105,7 @@ def refresh_light_list(scene):
         while found_socket == -1:
             i += 1
             if i == max_iterations:
-                print(
-                    "Gaffer Warning: Max iterations hit in get_next_available_value_socket for "
-                    + node.name
-                )
+                print("Gaffer Warning: Max iterations hit in get_next_available_value_socket for " + node.name)
                 break
             if len(current_node.inputs) == 0:
                 # End of the line.
@@ -164,9 +159,7 @@ def refresh_light_list(scene):
                 if obj.data.use_nodes:
                     invalid_node = False
                     if obj.name in light_dict:
-                        if (
-                            light_dict[obj.name] == "None"
-                        ):  # Previously did not use nodes (like default light)
+                        if light_dict[obj.name] == "None":  # Previously did not use nodes (like default light)
                             invalid_node = True
                         elif light_dict[obj.name] not in obj.data.node_tree.nodes:
                             invalid_node = True
@@ -191,18 +184,12 @@ def refresh_light_list(scene):
                     else:
                         node = obj.data.node_tree.nodes[light_dict[obj.name]]
                         if node.inputs:
-                            node_name, socket_index = get_next_available_value_socket(
-                                node
-                            )
-                            m.append(
-                                [obj.name, None, node_name, "i" + str(socket_index)]
-                            )
+                            node_name, socket_index = get_next_available_value_socket(node)
+                            m.append([obj.name, None, node_name, "i" + str(socket_index)])
                         elif node.outputs:
                             socket_index = 0
                             for oupt in node.outputs:
-                                if (
-                                    oupt.type == "VALUE"
-                                ):  # use first Value socket as strength
+                                if oupt.type == "VALUE":  # use first Value socket as strength
                                     m.append(
                                         [
                                             obj.name,
@@ -215,11 +202,7 @@ def refresh_light_list(scene):
                                 socket_index += 1
                 else:
                     m.append([obj.name, None, None])
-            elif (
-                obj.type == "MESH"
-                and len(obj.material_slots) > 0
-                and scene.render.engine == "CYCLES"
-            ):
+            elif obj.type == "MESH" and len(obj.material_slots) > 0 and scene.render.engine == "CYCLES":
                 slot_break = False
                 for slot in obj.material_slots:
                     if slot_break:
@@ -229,14 +212,9 @@ def refresh_light_list(scene):
                             if slot.material.use_nodes:
                                 invalid_node = False
                                 if obj.name in light_dict:
-                                    if (
-                                        light_dict[obj.name] == "None"
-                                    ):  # Previously did not use nodes
+                                    if light_dict[obj.name] == "None":  # Previously did not use nodes
                                         invalid_node = True
-                                    elif (
-                                        light_dict[obj.name]
-                                        not in slot.material.node_tree.nodes
-                                    ):
+                                    elif light_dict[obj.name] not in slot.material.node_tree.nodes:
                                         invalid_node = True
                                 if obj.name not in light_dict or invalid_node:
                                     for node in slot.material.node_tree.nodes:
@@ -246,9 +224,7 @@ def refresh_light_list(scene):
                                                     (
                                                         node_name,
                                                         socket_index,
-                                                    ) = get_next_available_value_socket(
-                                                        node
-                                                    )
+                                                    ) = get_next_available_value_socket(node)
                                                     m.append(
                                                         [
                                                             obj.name,
@@ -257,15 +233,11 @@ def refresh_light_list(scene):
                                                             "i" + str(socket_index),
                                                         ]
                                                     )
-                                                    light_mats.append(
-                                                        slot.material
-                                                    )  # Skip this material next time
+                                                    light_mats.append(slot.material)  # Skip this material next time
                                                     slot_break = True
                                                     break
                                 else:
-                                    node = slot.material.node_tree.nodes[
-                                        light_dict[obj.name]
-                                    ]
+                                    node = slot.material.node_tree.nodes[light_dict[obj.name]]
                                     if node.inputs:
                                         (
                                             node_name,
@@ -282,9 +254,7 @@ def refresh_light_list(scene):
                                     elif node.outputs:
                                         socket_index = 0
                                         for oupt in node.outputs:
-                                            if (
-                                                oupt.type == "VALUE"
-                                            ):  # use first Value socket as strength
+                                            if oupt.type == "VALUE":  # use first Value socket as strength
                                                 m.append(
                                                     [
                                                         obj.name,
@@ -311,10 +281,7 @@ def refresh_light_list(scene):
                 nodes = bpy.data.materials[light[1]].node_tree.nodes
         if nodes:
             if light[2]:
-                if (
-                    nodes[light[2]].type != "LIGHT_FALLOFF"
-                    and bpy.data.objects[light[0]].GafferFalloff != "quadratic"
-                ):
+                if nodes[light[2]].type != "LIGHT_FALLOFF" and bpy.data.objects[light[0]].GafferFalloff != "quadratic":
                     bpy.data.objects[light[0]].GafferFalloff = "quadratic"
     scene.gaf_props.Lights = str(m)
 
@@ -497,9 +464,7 @@ def dictOfLights():
             if len(light) > 1:
                 lights_with_nodes.append(light[0])
                 lights_with_nodes.append(light[2])
-        light_dict = dict(
-            lights_with_nodes[i : i + 2] for i in range(0, len(lights_with_nodes), 2)
-        )
+        light_dict = dict(lights_with_nodes[i : i + 2] for i in range(0, len(lights_with_nodes), 2))
     return light_dict
 
 
@@ -528,9 +493,7 @@ def setGafferNode(context, nodetype, tree=None, obj=None):
 
             if node.inputs:
                 for socket in node.inputs:
-                    if (
-                        socket.type == "VALUE" and not socket.is_linked
-                    ):  # use first Value socket as strength
+                    if socket.type == "VALUE" and not socket.is_linked:  # use first Value socket as strength
                         light[list_socketindex] = "i" + str(socket_index)
                         break
                     socket_index += 1
@@ -581,14 +544,10 @@ def do_update_falloff(self):
         else:
             if light.GafferFalloff != "quadratic":
                 fnode = tree.nodes.new("ShaderNodeLightFalloff")
-                fnode.inputs[0].default_value = node.inputs[
-                    int(str(lightitems[3])[-1])
-                ].default_value
+                fnode.inputs[0].default_value = node.inputs[int(str(lightitems[3])[-1])].default_value
                 fnode.location.x = node.location.x - 250
                 fnode.location.y = node.location.y
-                tree.links.new(
-                    fnode.outputs[socket_no], node.inputs[int(str(lightitems[3])[-1])]
-                )
+                tree.links.new(fnode.outputs[socket_no], node.inputs[int(str(lightitems[3])[-1])])
                 tree.nodes.active = fnode
                 setGafferNode(bpy.context, "STRENGTH", tree, light)
         force_update(bpy.context, light)
@@ -756,9 +715,7 @@ def detect_hdris(self, context):
                 if os.path.isfile(os.path.join(path, f)):
                     fn, ext = os.path.splitext(f)
                     if not any([fn.lower().endswith(b) for b in const.thumb_endings]):
-                        if ext.lower() in l_allowed_file_types and not fn.startswith(
-                            "."
-                        ):
+                        if ext.lower() in l_allowed_file_types and not fn.startswith("."):
                             files.append(f)
                 else:
                     if f != "_MACOSX":
@@ -819,9 +776,7 @@ def get_hdri_list(use_search=False):
                     for name in data:
                         matchables = [name]
                         sub_folder = data[name][0].split(name)[0]
-                        matchables += sub_folder.split(
-                            "\\" if "\\" in sub_folder else "/"
-                        )
+                        matchables += sub_folder.split("\\" if "\\" in sub_folder else "/")
                         if name in tags:
                             matchables += tags[name]
 
@@ -835,9 +790,7 @@ def get_hdri_list(use_search=False):
                         if num_matched == len(search_terms) or not search_terms:
                             matched_data[name] = data[name]
 
-                    return OrderedDict(
-                        sorted(matched_data.items(), key=lambda x: x[0].lower())
-                    )
+                    return OrderedDict(sorted(matched_data.items(), key=lambda x: x[0].lower()))
                 else:
                     return data
             else:
@@ -878,16 +831,16 @@ def handler_node(context, t, background=False):
             group_inputs = group.nodes.new("NodeGroupInput")
             group_inputs.location = (-70.08822631835938, -477.9051513671875)
 
-            if bpy.app.version >= (4,0,0):
+            if bpy.app.version >= (4, 0, 0):
                 group.interface.new_socket("Image", socket_type="NodeSocketColor", in_out="INPUT")
                 temp = group.interface.new_socket("Temp", socket_type="NodeSocketFloat", in_out="INPUT")
                 tint = group.interface.new_socket("Tint", socket_type="NodeSocketFloat", in_out="INPUT")
                 group.interface.new_socket(socket_type="NodeSocketColor", name="Image", in_out="OUTPUT")
 
-                temp.min_value=-100
-                temp.max_value=100
-                tint.min_value=-100
-                tint.max_value=100
+                temp.min_value = -100
+                temp.max_value = 100
+                tint.min_value = -100
+                tint.max_value = 100
 
             else:
                 group.inputs.new("NodeSocketColor", "Image")
@@ -1041,15 +994,9 @@ def uses_default_values(node, node_type):
         },
     }
     if NMN:
-        defaults_dict["ShaderNodeMapping"]["_socket_1"] = defaults_dict[
-            "ShaderNodeMapping"
-        ]["translation"]
-        defaults_dict["ShaderNodeMapping"]["_socket_2"] = defaults_dict[
-            "ShaderNodeMapping"
-        ]["rotation"]
-        defaults_dict["ShaderNodeMapping"]["_socket_3"] = defaults_dict[
-            "ShaderNodeMapping"
-        ]["scale"]
+        defaults_dict["ShaderNodeMapping"]["_socket_1"] = defaults_dict["ShaderNodeMapping"]["translation"]
+        defaults_dict["ShaderNodeMapping"]["_socket_2"] = defaults_dict["ShaderNodeMapping"]["rotation"]
+        defaults_dict["ShaderNodeMapping"]["_socket_3"] = defaults_dict["ShaderNodeMapping"]["scale"]
 
     defaults = defaults_dict[node_type]
     for d in defaults:
@@ -1074,9 +1021,7 @@ def new_link(links, from_socket, to_socket, force=False):
 def switch_hdri(self, context):
     gaf_props = context.scene.gaf_props
     if gaf_props.hdri != "":
-        default_var = get_variation(
-            gaf_props.hdri, mode="smallest"
-        )  # Default to smallest
+        default_var = get_variation(gaf_props.hdri, mode="smallest")  # Default to smallest
 
         # But prefer 1k if there is one
         for v in const.hdri_list[gaf_props.hdri]:
@@ -1240,9 +1185,7 @@ def hdri_enable(self, context):
                         if hasattr(n, "is_active_output"):
                             n.is_active_output = False
             except:
-                print(
-                    "Failed to reset active world output (node may not exist anymore?)"
-                )
+                print("Failed to reset active world output (node may not exist anymore?)")
 
     gaf_props = context.scene.gaf_props
     if gaf_props.hdri_handler_enabled:
@@ -1254,11 +1197,7 @@ def hdri_enable(self, context):
             setup_hdri(self, context)
             prefs.ForcePreviewsRefresh = True
             if gaf_props.hdri:
-                if not os.path.exists(
-                    os.path.join(
-                        const.thumbnail_dir, gaf_props.hdri + "__thumb_preview.jpg"
-                    )
-                ):
+                if not os.path.exists(os.path.join(const.thumbnail_dir, gaf_props.hdri + "__thumb_preview.jpg")):
                     prefs.RequestThumbGen = True
         else:
             gaf_props.hdri_handler_enabled = False
@@ -1301,9 +1240,7 @@ def update_rotation(self, context):
     e = 2
     rot = math.radians(gaf_props.hdri_rotation)
     loc = pow(gaf_props.hdri_horz_shift, e) * 2
-    sca = pow(
-        1 - ((gaf_props.hdri_horz_exp * 2 - 1) * pow(gaf_props.hdri_horz_shift, e)), e
-    )
+    sca = pow(1 - ((gaf_props.hdri_horz_exp * 2 - 1) * pow(gaf_props.hdri_horz_shift, e)), e)
 
     if NMN:
         n.inputs["Location"].default_value.z = loc
@@ -1602,9 +1539,7 @@ def nice_hdri_name(name):
     name = name[0] + name[1:].replace("_", " ").replace("-", " ").replace(".", " ")
     #      ^^  name = name[0] + name[1:] to ignore separator if first char
     name = " ".join(name.split())  # Merge multple spaces into one
-    name = " ".join(
-        [w[0].upper() + w[1:] for w in name.split(" ")]
-    )  # Title case but only for first character
+    name = " ".join([w[0].upper() + w[1:] for w in name.split(" ")])  # Title case but only for first character
     for w in dont_capitalize:
         name.replace(" " + w.title(), " " + w)
     return name
@@ -1787,9 +1722,7 @@ def get_hdri_haven_list(force_update=False):
         if offline_data:
             import time
 
-            age = (
-                time.time() - os.stat(const.hdri_haven_list_path).st_mtime
-            )  # seconds since last modified
+            age = time.time() - os.stat(const.hdri_haven_list_path).st_mtime  # seconds since last modified
             if age / 60 / 60 / 24 < 7:
                 return offline_data
 
@@ -1797,9 +1730,7 @@ def get_hdri_haven_list(force_update=False):
 
     print("Getting HDRI list from Poly Haven...")
     try:
-        hdrihaven_hdris = requests_get(
-            "https://hdrihaven.com/php/json_list.php", timeout=10
-        ).json()
+        hdrihaven_hdris = requests_get("https://hdrihaven.com/php/json_list.php", timeout=10).json()
     except:
         if force_update:
             print("    Can't fetch list from Poly Haven")
@@ -1841,9 +1772,7 @@ def get_hdri_haven_list(force_update=False):
                             if t not in standard_colors:
                                 tag_list[h].append(t)
                 else:
-                    tag_list[h] = [
-                        t for t in hdrihaven_hdris[h] if t not in standard_colors
-                    ]
+                    tag_list[h] = [t for t in hdrihaven_hdris[h] if t not in standard_colors]
         with open(const.tags_path, "w") as f:
             f.write(json.dumps(tag_list, indent=4))
 

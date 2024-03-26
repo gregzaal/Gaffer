@@ -133,12 +133,8 @@ class GafferPreferences(bpy.types.AddonPreferences):
             row = hp_col.row(align=True)
             row.operator("gaffer.hdri_path_edit", text=hp).folder_index = i
             if len(hdri_paths) > 1:
-                row.operator(
-                    "gaffer.hdri_path_remove", text="", icon="X"
-                ).folder_index = i
-            row.operator(
-                "gaffer.hdri_path_edit", text="", icon="FILE_FOLDER"
-            ).folder_index = i
+                row.operator("gaffer.hdri_path_remove", text="", icon="X").folder_index = i
+            row.operator("gaffer.hdri_path_edit", text="", icon="FILE_FOLDER").folder_index = i
 
         if hdri_paths[0] != "":
             all_paths_exist = True
@@ -150,20 +146,14 @@ class GafferPreferences(bpy.types.AddonPreferences):
                 hdris = functions.get_hdri_list()
                 if hdris:
                     num_files = sum(len(x) for x in hdris.values())
-                    hdris = OrderedDict(
-                        sorted(hdris.items(), key=lambda x: x[0].lower())
-                    )
+                    hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
                     num_hdris = len(hdris)
                     row = main_col.row()
                     row.alignment = "RIGHT"
-                    row.label(
-                        text="Found {} HDRIs ({} files)".format(num_hdris, num_files)
-                    )
+                    row.label(text="Found {} HDRIs ({} files)".format(num_hdris, num_files))
                     if num_hdris > 0:
                         row.prop(self, "show_hdri_list", toggle=True)
-                    row.operator(
-                        "gaffer.detect_hdris", text="Refresh", icon="FILE_REFRESH"
-                    )
+                    row.operator("gaffer.detect_hdris", text="Refresh", icon="FILE_REFRESH")
 
                     if self.show_hdri_list:
                         col = main_col.column(align=True)
@@ -197,9 +187,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         else:
             row = main_col.row()
             row.alignment = "RIGHT"
-            row.label(
-                text="Select the folder that contains all your HDRIs. Subfolders will be included."
-            )
+            row.label(text="Select the folder that contains all your HDRIs. Subfolders will be included.")
 
         row = main_col.row()
         row.alignment = "RIGHT"
@@ -234,9 +222,7 @@ class BlacklistedObject(bpy.types.PropertyGroup):
 
 
 class GafferProperties(bpy.types.PropertyGroup):
-    Lights: bpy.props.StringProperty(
-        name="Lights", default="", description="The objects to include in the isolation"
-    )
+    Lights: bpy.props.StringProperty(name="Lights", default="", description="The objects to include in the isolation")
     ColTempExpand: bpy.props.BoolProperty(
         name="Color Temperature Presets",
         default=False,
@@ -252,15 +238,9 @@ class GafferProperties(bpy.types.PropertyGroup):
         default=False,
         description="Show settings such as MIS, falloff, ray visibility...",
     )
-    LightUIIndex: bpy.props.IntProperty(
-        name="light index", default=0, min=0, description="light index"
-    )
-    LightsHiddenRecord: bpy.props.StringProperty(
-        name="hidden record", default="", description="hidden record"
-    )
-    SoloActive: bpy.props.StringProperty(
-        name="soloactive", default="", description="soloactive"
-    )
+    LightUIIndex: bpy.props.IntProperty(name="light index", default=0, min=0, description="light index")
+    LightsHiddenRecord: bpy.props.StringProperty(name="hidden record", default="", description="hidden record")
+    SoloActive: bpy.props.StringProperty(name="soloactive", default="", description="soloactive")
     VisibleCollectionsOnly: bpy.props.BoolProperty(
         name="Visible Collections Only",
         default=True,
@@ -351,9 +331,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         max=1,
         description="The opacity of the drawn labels",
     )
-    LabelFontSize: bpy.props.IntProperty(
-        name="Font Size", default=14, min=1, description="How large the text is drawn"
-    )
+    LabelFontSize: bpy.props.IntProperty(name="Font Size", default=14, min=1, description="How large the text is drawn")
     LabelDrawType: bpy.props.EnumProperty(
         name="Draw Type",
         description="How should the label look?",
@@ -419,9 +397,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         default=False,
         update=functions.hdri_enable,
     )
-    hdri: bpy.props.EnumProperty(
-        name="HDRIs", items=functions.hdri_enum_previews, update=functions.switch_hdri
-    )
+    hdri: bpy.props.EnumProperty(name="HDRIs", items=functions.hdri_enum_previews, update=functions.switch_hdri)
     hdri_variation: bpy.props.EnumProperty(
         name="Resolution / Variation",
         items=functions.variation_enum_previews,
@@ -510,8 +486,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         name="Pre-darkened",
         default=False,
         description=(
-            "Use a darker version of the JPG to avoid clipped highlights "
-            "(but at the cost of potential banding)"
+            "Use a darker version of the JPG to avoid clipped highlights (but at the cost of potential banding)"
         ),
         update=functions.setup_hdri,
     )
@@ -602,9 +577,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         soft_max=50000,
         update=functions.update_clamp,
     )
-    hdri_advanced: bpy.props.BoolProperty(
-        name="Advanced", description="Show/hide advanced settings", default=False
-    )
+    hdri_advanced: bpy.props.BoolProperty(name="Advanced", description="Show/hide advanced settings", default=False)
     hdri_jpg_gen_all: bpy.props.BoolProperty(
         name="Generate for ALL HDRIs",
         description="Generate the JPG and darkened JPG for all HDRIs that you have. This will probably take a while",
@@ -637,9 +610,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     OldWorldSettings: bpy.props.StringProperty(default="", options={"HIDDEN"})
     ThumbnailsBigHDRIFound: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
     FileNotFoundError: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    Blacklist: bpy.props.CollectionProperty(
-        type=BlacklistedObject
-    )  # must be registered after classes
+    Blacklist: bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
 
 classes = [
@@ -706,9 +677,7 @@ def register():
 
     for cls in classes:
         register_class(cls)
-    ui.update_category(
-        bpy.context.preferences.addons[__name__].preferences, bpy.context
-    )
+    ui.update_category(bpy.context.preferences.addons[__name__].preferences, bpy.context)
 
     bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
     bpy.app.handlers.load_post.append(operators.load_handler)
@@ -722,14 +691,10 @@ def unregister():
     functions.previews_unregister()
 
     if operators.GAFFER_OT_show_light_radius._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(
-            operators.GAFFER_OT_show_light_radius._handle, "WINDOW"
-        )
+        bpy.types.SpaceView3D.draw_handler_remove(operators.GAFFER_OT_show_light_radius._handle, "WINDOW")
         bpy.context.scene.gaf_props.IsShowingRadius = False
     if operators.GAFFER_OT_show_light_label._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(
-            operators.GAFFER_OT_show_light_label._handle, "WINDOW"
-        )
+        bpy.types.SpaceView3D.draw_handler_remove(operators.GAFFER_OT_show_light_label._handle, "WINDOW")
         bpy.context.scene.gaf_props.IsShowingLabel = False
 
     del bpy.types.Scene.gaf_props
