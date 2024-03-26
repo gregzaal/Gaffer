@@ -752,6 +752,8 @@ def detect_hdris(self, context):
     hdri_paths = get_persistent_setting("hdri_paths")
     if hdri_paths[0] != "":
         for hp in hdri_paths:
+            if not os.path.exists(hp):
+                continue
             check_folder_for_HDRIs(hp, paths_are_equal(polyhaven_asset_lib(context), hp))
 
         # Sort variations by filesize

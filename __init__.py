@@ -136,59 +136,52 @@ class GafferPreferences(bpy.types.AddonPreferences):
         hp_col = main_col.column(align=True)
         for i, hp in enumerate(hdri_paths):
             row = hp_col.row(align=True)
-            row.operator("gaffer.hdri_path_edit", text=hp).folder_index = i
+            row.operator(
+                "gaffer.hdri_path_edit",
+                text=hp + (" (missing!)" if not os.path.exists(hp) else ""),
+                icon=("ERROR" if not os.path.exists(hp) else "NONE"),
+            ).folder_index = i
             if len(hdri_paths) > 1:
                 row.operator("gaffer.hdri_path_remove", text="", icon="X").folder_index = i
             row.operator("gaffer.hdri_path_edit", text="", icon="FILE_FOLDER").folder_index = i
 
         if hdri_paths[0] != "":
-            all_paths_exist = True
-            for hp in hdri_paths:
-                if not os.path.exists(hp):
-                    all_paths_exist = False
-                    break
-            if all_paths_exist:
-                hdris = functions.get_hdri_list()
-                if hdris:
-                    num_files = sum(len(x) for x in hdris.values())
-                    hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
-                    num_hdris = len(hdris)
-                    row = main_col.row()
-                    row.alignment = "RIGHT"
-                    row.label(text="Found {} HDRIs ({} files)".format(num_hdris, num_files))
-                    if num_hdris > 0:
-                        row.prop(self, "show_hdri_list", toggle=True)
-                    row.operator("gaffer.detect_hdris", text="Refresh", icon="FILE_REFRESH")
-
-                    if self.show_hdri_list:
-                        col = main_col.column(align=True)
-                        for name in hdris:
-                            col.label(text=name)
-                            variations = hdris[name]
-                            if len(variations) >= 10:
-                                row = col.row()
-                                row.alignment = "CENTER"
-                                row.label(
-                                    text=(
-                                        "There are quite a few varations of this HDRI, "
-                                        "maybe they were wrongly detected?"
-                                    ),
-                                    icon="QUESTION",
-                                )
-                                row = col.row()
-                                row.alignment = "CENTER"
-                                op = row.operator(
-                                    "wm.url_open",
-                                    text="Click here to learn how to fix this",
-                                    icon="URL",
-                                )
-                                op.url = "https://github.com/gregzaal/Gaffer/wiki/HDRI-Detection-and-Grouping"
-                            for v in variations:
-                                col.label(text="    " + v)
-            else:
+            hdris = functions.get_hdri_list()
+            if hdris:
+                num_files = sum(len(x) for x in hdris.values())
+                hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
+                num_hdris = len(hdris)
                 row = main_col.row()
                 row.alignment = "RIGHT"
-                row.label(text="Cannot find HDRI folder :(")
+                row.label(text="Found {} HDRIs ({} files)".format(num_hdris, num_files))
+                if num_hdris > 0:
+                    row.prop(self, "show_hdri_list", toggle=True)
+                row.operator("gaffer.detect_hdris", text="Refresh", icon="FILE_REFRESH")
+
+                if self.show_hdri_list:
+                    col = main_col.column(align=True)
+                    for name in hdris:
+                        col.label(text=name)
+                        variations = hdris[name]
+                        if len(variations) >= 10:
+                            row = col.row()
+                            row.alignment = "CENTER"
+                            row.label(
+                                text=(
+                                    "There are quite a few varations of this HDRI, " "maybe they were wrongly detected?"
+                                ),
+                                icon="QUESTION",
+                            )
+                            row = col.row()
+                            row.alignment = "CENTER"
+                            op = row.operator(
+                                "wm.url_open",
+                                text="Click here to learn how to fix this",
+                                icon="URL",
+                            )
+                            op.url = "https://github.com/gregzaal/Gaffer/wiki/HDRI-Detection-and-Grouping"
+                        for v in variations:
+                            col.label(text="    " + v)
         else:
             row = main_col.row()
             row.alignment = "RIGHT"
