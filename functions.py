@@ -1735,6 +1735,12 @@ def get_hdri_haven_list(force_update=False):
         with open(const.hdri_haven_list_path) as f:
             offline_data = json.load(f)
 
+    prefs = bpy.context.preferences.addons[__package__].preferences
+
+    if prefs and prefs.offline_mode:
+        print("Offline mode enabled, using local data")
+        return offline_data
+
     if not force_update:
         if offline_data:
             import time

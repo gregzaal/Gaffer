@@ -106,6 +106,11 @@ class GafferPreferences(bpy.types.AddonPreferences):
         default="Gaffer",
         update=ui.update_category,
     )
+    offline_mode: bpy.props.BoolProperty(
+        name="Offline Mode",
+        description=("Stop Gaffer from checking polyhaven.com for the latest HDRI and tag lists"),
+        default=False,
+    )
 
     show_debug: bpy.props.BoolProperty(
         name="Show Debug Tools",
@@ -196,6 +201,10 @@ class GafferPreferences(bpy.types.AddonPreferences):
         row = main_col.row()
         row.alignment = "RIGHT"
         row.prop(self, "panel_category")
+
+        row = main_col.row()
+        row.alignment = "RIGHT"
+        row.prop(self, "offline_mode")
 
         addon_updater_ops.update_settings_ui(self, context)
 
