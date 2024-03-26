@@ -227,6 +227,10 @@ def draw_cycles_eevee_UI(context, layout, lights):
             ("glossy", "Spec"),
         ]
 
+        if hasattr(light.data, "shape"):
+            row.prop(light.data, "shape", text="")
+            row = col.row(align=True)
+
         if light.type == "LIGHT":
             if light.data.type == "AREA":
                 if light.data.shape in ["RECTANGLE", "ELLIPSE"]:
