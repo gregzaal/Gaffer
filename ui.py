@@ -1030,30 +1030,33 @@ def draw_progress_bar(gaf_props, layout):
 
 
 def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, prefs, icons, toolbar=False):
+
+    def draw_filter_row(col, no_matches=False):
+        row = col.row(align=True)
+        row.operator(
+            ops.GAFFER_OT_hdri_set_favorite.bl_idname,
+            text="",
+            icon="FUND" if gaf_hdri_props.hdri in fn.get_favorites() else "HEART",
+        ).name = gaf_hdri_props.hdri
+        row.prop(gaf_hdri_props, "hdri_favorite", text="", icon="FILTER")
+        row.separator()
+        if len(hdri_paths) > 1:
+            row.menu(
+                "GAFFER_MT_folder_filter", text="", icon="X" if gaf_hdri_props.hdri_folder_filter else "FILE_FOLDER"
+            )
+            row.separator()
+        row.prop(gaf_hdri_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
+        if gaf_hdri_props.hdri_search or no_matches:
+            row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
+            subrow = row.row(align=True)
+            subrow.alignment = "RIGHT"
+            subrow.label(text=str(len(fn.hdri_enum_previews(gaf_props, context))) + " matches")
+
     if gaf_hdri_props.hdri:
         col = layout.column(align=True)
 
         if not toolbar or "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
-
-            row = col.row(align=True)
-            row.operator(
-                ops.GAFFER_OT_hdri_set_favorite.bl_idname,
-                text="",
-                icon="FUND" if gaf_hdri_props.hdri in fn.get_favorites() else "HEART",
-            ).name = gaf_hdri_props.hdri
-            row.prop(gaf_hdri_props, "hdri_favorite", text="", icon="FILTER")
-            row.separator()
-            if len(hdri_paths) > 1:
-                row.menu(
-                    "GAFFER_MT_folder_filter", text="", icon="X" if gaf_hdri_props.hdri_folder_filter else "FILE_FOLDER"
-                )
-                row.separator()
-            row.prop(gaf_hdri_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
-            if gaf_hdri_props.hdri_search:
-                row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
-                subrow = row.row(align=True)
-                subrow.alignment = "RIGHT"
-                subrow.label(text=str(len(fn.hdri_enum_previews(gaf_props, context))) + " matches")
+            draw_filter_row(col)
 
             col = layout.column(align=True)
 
@@ -1293,24 +1296,7 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
                     col.separator()
     elif gaf_hdri_props.hdri_search or gaf_hdri_props.hdri_favorite or gaf_hdri_props.hdri_folder_filter:
         prefs.ForcePreviewsRefresh = True
-        row = layout.row(align=True)
-        row.operator(
-            ops.GAFFER_OT_hdri_set_favorite.bl_idname,
-            text="",
-            icon="FUND" if gaf_hdri_props.hdri in fn.get_favorites() else "HEART",
-        ).name = gaf_hdri_props.hdri
-        row.prop(gaf_hdri_props, "hdri_favorite", text="", icon="FILTER")
-        row.separator()
-        if len(hdri_paths) > 1:
-            row.menu(
-                "GAFFER_MT_folder_filter", text="", icon="X" if gaf_hdri_props.hdri_folder_filter else "FILE_FOLDER"
-            )
-            row.separator()
-        row.prop(gaf_hdri_props, "hdri_search", text="", icon="VIEWZOOM")
-        row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
-        subrow = row.row(align=True)
-        subrow.alignment = "RIGHT"
-        subrow.label(text="No matches")
+        draw_filter_row(layout, no_matches=True)
     else:
         prefs.ForcePreviewsRefresh = True
         row = layout.row()
