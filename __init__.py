@@ -428,6 +428,12 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         default="",
         update=functions.update_search,
     )
+    hdri_favorite: bpy.props.BoolProperty(
+        name="Favorite",
+        description="Filter to show only your favorite HDRIs",
+        default=False,
+        update=functions.update_search,
+    )
     hdri_rotation: bpy.props.FloatProperty(
         name="Rotation",
         description="Rotate the HDRI (in degrees) around the Z-axis",
@@ -652,6 +658,7 @@ classes = [
     operators.GAFFER_OT_hdri_thumb_gen,
     operators.GAFFER_OT_hdri_jpg_gen,
     operators.GAFFER_OT_hdri_clear_search,
+    operators.GAFFER_OT_hdri_set_favorite,
     operators.GAFFER_OT_hdri_paddles,
     operators.GAFFER_OT_hdri_variation_paddles,
     operators.GAFFER_OT_hdri_add_tag,
@@ -666,6 +673,7 @@ classes = [
     operators.GAFFER_OT_debug_delete_thumbs,
     operators.GAFFER_OT_debug_upload_hdri_list,
     operators.GAFFER_OT_debug_upload_logs,
+    ui.GAFFER_MT_favorites,
     ui.GAFFER_PT_hdris,
     ui.OBJECT_UL_object_list,
 ]

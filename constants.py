@@ -130,6 +130,8 @@ if not os.path.exists(jpg_dir):
     os.makedirs(jpg_dir)
 hdri_list_path = os.path.join(data_dir, "gaffer_hdris.json")
 tags_path = os.path.join(data_dir, "tags.json")
+favorites = {}
+favorites_path = os.path.join(data_dir, "favorites.json")
 defaults_path = os.path.join(data_dir, "hdri_defaults.json")
 defaults_stored = [
     "rotation",

@@ -807,7 +807,11 @@ def get_hdri_list(use_search=False):
             data = OrderedDict(sorted(data.items(), key=lambda x: x[0].lower()))
 
             if use_search:
-                search_string = bpy.context.scene.world.gaf_hdri_props.hdri_search
+                gaf_hdri_props = bpy.context.scene.world.gaf_hdri_props
+                if gaf_hdri_props.hdri_favorite:
+                    new_data = {name: value for name, value in data.items() if name in get_favorites()}
+                    data = new_data
+                search_string = gaf_hdri_props.hdri_search
                 if search_string:
                     search_string = search_string.replace(",", " ").replace(";", " ")
                     search_terms = search_string.split(" ")
@@ -1674,6 +1678,36 @@ def variation_enum_previews(self, context):
         enum_items.append((v, os.path.basename(v), v))
 
     return enum_items
+
+
+def get_favorites_dict(force_update=False):
+    if force_update or not const.favorites:
+        if os.path.exists(const.favorites_path):
+            with open(const.favorites_path) as f:
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError:
+                    data = {}
+            const.favorites = data
+            return data
+        else:
+            return {}
+    else:
+        return const.favorites
+
+
+def get_favorites(force_update=False):
+    d = get_favorites_dict(force_update)
+    return {k: v for k, v in d.items() if v}
+
+
+def set_favorite(name, favorite=True):
+    favorites_list = get_favorites()
+    favorites_list[name] = favorite
+    const.favorites[name] = favorite
+
+    with open(const.favorites_path, "w") as f:
+        f.write(json.dumps(favorites_list, indent=4))
 
 
 def get_tags():

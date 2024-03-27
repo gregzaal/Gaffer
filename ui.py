@@ -1024,15 +1024,16 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, prefs, icons, 
 
         if not toolbar or "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
 
+            row = col.row(align=True)
+            row.menu(
+                "GAFFER_MT_favorites", text="", icon="FUND" if gaf_hdri_props.hdri in fn.get_favorites() else "HEART"
+            )
+            row.prop(gaf_hdri_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
             if gaf_hdri_props.hdri_search:
-                row = col.row(align=True)
-                row.prop(gaf_hdri_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
                 row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
                 subrow = row.row(align=True)
                 subrow.alignment = "RIGHT"
                 subrow.label(text=str(len(fn.hdri_enum_previews(gaf_props, context))) + " matches")
-            else:
-                col.prop(gaf_hdri_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
 
             col = layout.column(align=True)
 
@@ -1270,9 +1271,10 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, prefs, icons, 
                         col.label(text="This is REALLY going to take a while.")
                         col.label(text="See the console for progress.")
                     col.separator()
-    elif gaf_hdri_props.hdri_search:
+    elif gaf_hdri_props.hdri_search or gaf_hdri_props.hdri_favorite:
         prefs.ForcePreviewsRefresh = True
         row = layout.row(align=True)
+        row.menu("GAFFER_MT_favorites", text="", icon="FUND" if gaf_hdri_props.hdri in fn.get_favorites() else "HEART")
         row.prop(gaf_hdri_props, "hdri_search", text="", icon="VIEWZOOM")
         row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
         subrow = row.row(align=True)
@@ -1286,6 +1288,22 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, prefs, icons, 
         row = layout.row()
         row.alignment = "CENTER"
         row.label(text="Please put some in the HDRI folder:")
+
+
+class GAFFER_MT_favorites(bpy.types.Menu):
+    bl_label = "Favorites"
+    bl_description = "Filter to show only your favorite HDRI's, or add/remove favorites"
+
+    def draw(self, context):
+        gaf_hdri_props = context.scene.world.gaf_hdri_props
+        col = self.layout.column()
+        is_favorite = gaf_hdri_props.hdri in fn.get_favorites()
+        col.prop(gaf_hdri_props, "hdri_favorite", text="Show Favorites Only", icon="VIEWZOOM")
+        col.operator(
+            ops.GAFFER_OT_hdri_set_favorite.bl_idname,
+            text="Remove from Favorites" if is_favorite else "Add to Favorites",
+            icon="HEART" if is_favorite else "FUND",
+        ).name = gaf_hdri_props.hdri
 
 
 class GAFFER_PT_hdris(bpy.types.Panel):

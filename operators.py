@@ -1669,7 +1669,20 @@ class GAFFER_OT_hdri_clear_search(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.world.gaf_hdri_props.hdri_search = ""
+        return {"FINISHED"}
 
+
+class GAFFER_OT_hdri_set_favorite(bpy.types.Operator):
+
+    "Mark/unmark this HDRI as a favorite"
+    bl_idname = "gaffer.set_favorite"
+    bl_label = "Favorite/Unfavorite"
+    bl_options = {"INTERNAL"}
+
+    name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        fn.set_favorite(name=self.name, favorite=self.name not in fn.get_favorites())
         return {"FINISHED"}
 
 
