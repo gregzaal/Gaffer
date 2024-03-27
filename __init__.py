@@ -242,6 +242,7 @@ class GafferProperties(bpy.types.PropertyGroup):
     )
     LightUIIndex: bpy.props.IntProperty(name="light index", default=0, min=0, description="light index")
     LightsHiddenRecord: bpy.props.StringProperty(name="hidden record", default="", description="hidden record")
+    WorldHiddenRecord: bpy.props.StringProperty(name="hidden record", default="", description="hidden record")
     SoloActive: bpy.props.StringProperty(name="soloactive", default="", description="soloactive")
     VisibleCollectionsOnly: bpy.props.BoolProperty(
         name="Visible Collections Only",

@@ -583,16 +583,36 @@ def _update_world_refl_only(self, context):
 
 def do_set_world_vis(context):
     scene = context.scene
-    if scene.gaf_props.WorldVis:
-        scene.gaf_props.WorldReflOnly = False
-    elif scene.gaf_props.WorldReflOnly:
-        scene.gaf_props.WorldReflOnly = False
     world = scene.world
-    world.cycles_visibility.glossy = scene.gaf_props.WorldVis
-    world.cycles_visibility.camera = scene.gaf_props.WorldVis
-    world.cycles_visibility.diffuse = scene.gaf_props.WorldVis
-    world.cycles_visibility.transmission = scene.gaf_props.WorldVis
-    world.cycles_visibility.scatter = scene.gaf_props.WorldVis
+    if scene.gaf_props.WorldVis:
+        # Show
+        try:
+            previous_state = json.loads(scene.gaf_props.WorldHiddenRecord)
+        except json.JSONDecodeError:
+            pass  # No previous state
+        else:
+            world.cycles_visibility.glossy = previous_state[0]
+            world.cycles_visibility.camera = previous_state[1]
+            world.cycles_visibility.diffuse = previous_state[2]
+            world.cycles_visibility.transmission = previous_state[3]
+            world.cycles_visibility.scatter = previous_state[4]
+    else:
+        # Hide
+        current_state = json.dumps(
+            [
+                world.cycles_visibility.glossy,
+                world.cycles_visibility.camera,
+                world.cycles_visibility.diffuse,
+                world.cycles_visibility.transmission,
+                world.cycles_visibility.scatter,
+            ]
+        )
+        scene.gaf_props.WorldHiddenRecord = current_state
+        world.cycles_visibility.glossy = False
+        world.cycles_visibility.camera = False
+        world.cycles_visibility.diffuse = False
+        world.cycles_visibility.transmission = False
+        world.cycles_visibility.scatter = False
     world.update_tag()
 
 
