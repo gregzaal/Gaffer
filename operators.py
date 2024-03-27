@@ -1777,7 +1777,7 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
 
     def execute(self, context):
         defaults = fn.get_defaults(self.hdri)
-        rna_props = context.scene.gaf_props.bl_rna.properties
+        rna_props = context.scene.world.gaf_hdri_props.bl_rna.properties
 
         for d in const.defaults_stored:
             v = 0
