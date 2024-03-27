@@ -429,8 +429,8 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         update=functions.update_search,
     )
     hdri_favorite: bpy.props.BoolProperty(
-        name="Favorite",
-        description="Filter to show only your favorite HDRIs",
+        name="Show Only Favorites",
+        description="Filter to show only your favorite HDRIs in the list",
         default=False,
         update=functions.update_search,
     )
@@ -673,7 +673,6 @@ classes = [
     operators.GAFFER_OT_debug_delete_thumbs,
     operators.GAFFER_OT_debug_upload_hdri_list,
     operators.GAFFER_OT_debug_upload_logs,
-    ui.GAFFER_MT_favorites,
     ui.GAFFER_PT_hdris,
     ui.OBJECT_UL_object_list,
 ]

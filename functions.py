@@ -1702,7 +1702,7 @@ def get_favorites(force_update=False):
 
 
 def set_favorite(name, favorite=True):
-    favorites_list = get_favorites()
+    favorites_list = get_favorites_dict()
     favorites_list[name] = favorite
     const.favorites[name] = favorite
 
