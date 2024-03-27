@@ -1645,6 +1645,12 @@ def hdri_enum_previews(self, context):
     else:
         prefs.ForcePreviewsRefresh = False
 
+    # Make indexes for all HDRIs
+    indexes = {}
+    all_hdris = get_hdri_list()
+    for i, name in enumerate(all_hdris):
+        indexes[name] = i
+
     all_thumbs_exist = True
     for i, name in enumerate(get_hdri_list(use_search=True)):
 
@@ -1658,7 +1664,7 @@ def hdri_enum_previews(self, context):
             thumb = pcoll[name]
         else:
             thumb = pcoll.load(name, thumb_file, "IMAGE")
-        enum_items.append((name, name, "", thumb.icon_id, i))
+        enum_items.append((name, name, "", thumb.icon_id, indexes[name]))
 
     prefs.RequestThumbGen = not all_thumbs_exist
 
