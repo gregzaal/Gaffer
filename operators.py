@@ -476,10 +476,11 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
                         )
 
         # World
-        if gaf_props.hdri_handler_enabled:
-            gaf_props.hdri_brightness = gaf_props.hdri_brightness + evs
-            if gaf_props.hdri_use_separate_brightness:
-                gaf_props.hdri_background_brightness = gaf_props.hdri_background_brightness + evs
+        gaf_hdri_props = scene.world.gaf_hdri_props
+        if gaf_hdri_props.hdri_handler_enabled:
+            gaf_hdri_props.hdri_brightness = gaf_hdri_props.hdri_brightness + evs
+            if gaf_hdri_props.hdri_use_separate_brightness:
+                gaf_hdri_props.hdri_background_brightness = gaf_hdri_props.hdri_background_brightness + evs
         else:
             world = scene.world
             if world.use_nodes:
@@ -1634,7 +1635,8 @@ class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
     def execute(self, context):
         gaf_props = context.scene.gaf_props
         gaf_props.RequestJPGGen = False
-        gen_all = gaf_props.hdri_jpg_gen_all
+        gaf_hdri_props = context.scene.world.gaf_hdri_props
+        gen_all = gaf_hdri_props.hdri_jpg_gen_all
 
         if gen_all:
             hdris = fn.get_hdri_list()
@@ -1651,7 +1653,7 @@ class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
             print("Done!")
             fn.progress_end(context)
         else:
-            self.generate_jpgs(context, gaf_props.hdri)
+            self.generate_jpgs(context, gaf_hdri_props.hdri)
 
         fn.setup_hdri(self, context)
 
@@ -1666,7 +1668,7 @@ class GAFFER_OT_hdri_clear_search(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     def execute(self, context):
-        context.scene.gaf_props.hdri_search = ""
+        context.scene.world.gaf_hdri_props.hdri_search = ""
 
         return {"FINISHED"}
 
@@ -1680,23 +1682,23 @@ class GAFFER_OT_hdri_paddles(bpy.types.Operator):
     do_next: bpy.props.BoolProperty()
 
     def execute(self, context):
-        gaf_props = context.scene.gaf_props
+        gaf_hdri_props = context.scene.world.gaf_hdri_props
         hdris = fn.get_hdri_list(use_search=True)
-        current_hdri = gaf_props.hdri
+        current_hdri = gaf_hdri_props.hdri
         current_index = -1
         list_hdris = list(hdris)
         first_hdri = list_hdris[0]
         last_hdri = list_hdris[-1]
 
         if current_hdri == last_hdri and self.do_next:
-            gaf_props.hdri = first_hdri
+            gaf_hdri_props.hdri = first_hdri
             return {"FINISHED"}
         elif current_hdri == first_hdri and not self.do_next:
-            gaf_props.hdri = last_hdri
+            gaf_hdri_props.hdri = last_hdri
             return {"FINISHED"}
         else:
             current_index = list_hdris.index(current_hdri)
-            gaf_props.hdri = list_hdris[current_index + 1] if self.do_next else list_hdris[current_index - 1]
+            gaf_hdri_props.hdri = list_hdris[current_index + 1] if self.do_next else list_hdris[current_index - 1]
             return {"FINISHED"}
 
 
@@ -1709,12 +1711,12 @@ class GAFFER_OT_hdri_variation_paddles(bpy.types.Operator):
     do_next: bpy.props.BoolProperty()
 
     def execute(self, context):
-        gaf_props = context.scene.gaf_props
-        variations = fn.get_hdri_list()[gaf_props.hdri]
+        gaf_hdri_props = context.scene.world.gaf_hdri_props
+        variations = fn.get_hdri_list()[gaf_hdri_props.hdri]
         last_var = len(variations) - 1
         adj = 1 if self.do_next else -1
 
-        gaf_props["hdri_variation"] = min(last_var, max(0, gaf_props["hdri_variation"] + adj))
+        gaf_hdri_props["hdri_variation"] = min(last_var, max(0, gaf_hdri_props["hdri_variation"] + adj))
         fn.update_variation(self, context)
         return {"FINISHED"}
 
@@ -1742,7 +1744,7 @@ class GAFFER_OT_hdri_random(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     def execute(self, context):
-        gaf_props = context.scene.gaf_props
+        gaf_hdri_props = context.scene.world.gaf_hdri_props
         hdris = fn.get_hdri_list(use_search=True)
 
         if len(hdris) <= 1:
@@ -1751,11 +1753,11 @@ class GAFFER_OT_hdri_random(bpy.types.Operator):
 
         from random import choice
 
-        random_hdri = gaf_props.hdri
-        while random_hdri == gaf_props.hdri:  # ensure the same HDRI is not chosen twice in a row
+        random_hdri = gaf_hdri_props.hdri
+        while random_hdri == gaf_hdri_props.hdri:  # ensure the same HDRI is not chosen twice in a row
             random_hdri = choice(list(hdris))
 
-        gaf_props.hdri = random_hdri
+        gaf_hdri_props.hdri = random_hdri
 
         return {"FINISHED"}
 
@@ -1786,7 +1788,7 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
                     v = rna_props["hdri_" + d].default
 
             if "hdri_" + d in rna_props.keys():
-                setattr(context.scene.gaf_props, "hdri_" + d, v)
+                setattr(context.scene.world.gaf_hdri_props, "hdri_" + d, v)
 
         return {"FINISHED"}
 
@@ -1808,7 +1810,7 @@ class GAFFER_OT_hdri_save(bpy.types.Operator):
         fn.set_defaults(context, self.hdri)
         self.report(
             {"INFO"},
-            "Saved defaults for " + fn.nice_hdri_name(context.scene.gaf_props.hdri),
+            "Saved defaults for " + fn.nice_hdri_name(context.scene.world.gaf_hdri_props.hdri),
         )
         return {"FINISHED"}
 

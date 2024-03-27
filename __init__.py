@@ -391,6 +391,24 @@ class GafferProperties(bpy.types.PropertyGroup):
         description="The light object to use to drive the Sky rotation",
     )
 
+    # Internal vars (not shown in UI)
+    IsShowingRadius: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    IsShowingLabel: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    BlacklistIndex: bpy.props.IntProperty(default=0, options={"HIDDEN"})
+    VarNameCounter: bpy.props.IntProperty(default=0, options={"HIDDEN"})
+    HDRIList: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    RequestJPGGen: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    ShowProgress: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    Progress: bpy.props.FloatProperty(default=0.0, options={"HIDDEN"})
+    ProgressText: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    ProgressBarText: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    ShowHDRIHaven: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    ThumbnailsBigHDRIFound: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    FileNotFoundError: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    Blacklist: bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
+
+
+class GafferHDRIProperties(bpy.types.PropertyGroup):
     # HDRI Handler stuffs
     hdri_handler_enabled: bpy.props.BoolProperty(
         name="Enable",
@@ -597,27 +615,14 @@ class GafferProperties(bpy.types.PropertyGroup):
     )
 
     # Internal vars (not shown in UI)
-    IsShowingRadius: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    IsShowingLabel: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    BlacklistIndex: bpy.props.IntProperty(default=0, options={"HIDDEN"})
-    VarNameCounter: bpy.props.IntProperty(default=0, options={"HIDDEN"})
-    HDRIList: bpy.props.StringProperty(default="", options={"HIDDEN"})
-    RequestJPGGen: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    ShowProgress: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    Progress: bpy.props.FloatProperty(default=0.0, options={"HIDDEN"})
-    ProgressText: bpy.props.StringProperty(default="", options={"HIDDEN"})
-    ProgressBarText: bpy.props.StringProperty(default="", options={"HIDDEN"})
-    ShowHDRIHaven: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
     OldWorldSettings: bpy.props.StringProperty(default="", options={"HIDDEN"})
-    ThumbnailsBigHDRIFound: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    FileNotFoundError: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    Blacklist: bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
 
 
 classes = [
     GafferPreferences,
     BlacklistedObject,
     GafferProperties,
+    GafferHDRIProperties,
     operators.GAFFER_OT_rename,
     operators.GAFFER_OT_set_temp,
     operators.GAFFER_OT_show_temp_list,
@@ -681,6 +686,7 @@ def register():
     ui.update_category(bpy.context.preferences.addons[__name__].preferences, bpy.context)
 
     bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
+    bpy.types.World.gaf_hdri_props = bpy.props.PointerProperty(type=GafferHDRIProperties)
     bpy.app.handlers.load_post.append(operators.load_handler)
 
 
@@ -699,6 +705,7 @@ def unregister():
         bpy.context.scene.gaf_props.IsShowingLabel = False
 
     del bpy.types.Scene.gaf_props
+    del bpy.types.World.gaf_hdri_props
 
     bpy.types.NODE_PT_active_node_generic.remove(ui.gaffer_node_menu_func)
 

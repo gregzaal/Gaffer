@@ -345,7 +345,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
             row.prop(light.data, "spot_blend", text="Blend", slider=True)
             row.prop(light.data, "show_cone", text="", toggle=True, icon="CONE")
 
-    def draw_world(context, layout, gaf_props, scene, prefs, icons):
+    def draw_world(context, layout, gaf_props, gaf_hdri_props, scene, prefs, icons):
         world = context.scene.world
         box = layout.box()
         worldcol = box.column(align=True)
@@ -394,8 +394,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
 
         col = worldcol.column()
 
-        if gaf_props.hdri_handler_enabled:
-            draw_hdri_handler(context, col, gaf_props, prefs, icons, toolbar=True)
+        if gaf_hdri_props.hdri_handler_enabled:
+            draw_hdri_handler(context, col, gaf_props, gaf_hdri_props, prefs, icons, toolbar=True)
         else:
             row = col.row(align=True)
 
@@ -543,7 +543,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     row.prop(scene.eevee, "gtao_factor")
                     row.prop(scene.eevee, "gtao_distance")
 
-            if not gaf_props.hdri_handler_enabled:
+            if not gaf_hdri_props.hdri_handler_enabled:
                 if color_node:
                     if color_node.type == "TEX_SKY":
                         if world.node_tree and world.use_nodes:
@@ -561,6 +561,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
     maincol = layout.column(align=False)
     scene = context.scene
     gaf_props = scene.gaf_props
+    gaf_hdri_props = scene.world.gaf_hdri_props
     prefs = context.preferences.addons[__package__].preferences
     icons = fn.get_icons()
 
@@ -701,13 +702,14 @@ def draw_cycles_eevee_UI(context, layout, lights):
         row.label(text="No lights to show :)")
 
     if context.scene.world:
-        draw_world(context, layout, gaf_props, scene, prefs, icons)
+        draw_world(context, layout, gaf_props, gaf_hdri_props, scene, prefs, icons)
 
 
 def draw_unsupported_renderer_UI(context, layout, lights):
     maincol = layout.column(align=False)
     scene = context.scene
     gaf_props = scene.gaf_props
+    gaf_hdri_props = scene.world.gaf_hdri_props
     prefs = context.preferences.addons[__package__].preferences
     icons = fn.get_icons()
 
@@ -772,7 +774,7 @@ def draw_unsupported_renderer_UI(context, layout, lights):
         row.label(text="No lights to show :)")
 
     # World
-    if context.scene.world and gaf_props.hdri_handler_enabled and context.scene.render.engine in ["BLENDER_EEVEE"]:
+    if context.scene.world and gaf_hdri_props.hdri_handler_enabled and context.scene.render.engine in ["BLENDER_EEVEE"]:
         box = layout.box()
         worldcol = box.column(align=True)
         col = worldcol.column(align=True)
@@ -796,7 +798,7 @@ def draw_unsupported_renderer_UI(context, layout, lights):
 
         row.label(text="World")
         col = worldcol.column()
-        draw_hdri_handler(context, col, gaf_props, prefs, icons, toolbar=True)
+        draw_hdri_handler(context, col, gaf_props, gaf_hdri_props, prefs, icons, toolbar=True)
 
 
 class GAFFER_PT_lights(bpy.types.Panel):
@@ -1016,21 +1018,21 @@ def draw_progress_bar(gaf_props, layout):
         layout.separator()
 
 
-def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
-    if gaf_props.hdri:
+def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, prefs, icons, toolbar=False):
+    if gaf_hdri_props.hdri:
         col = layout.column(align=True)
 
         if not toolbar or "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
 
-            if gaf_props.hdri_search:
+            if gaf_hdri_props.hdri_search:
                 row = col.row(align=True)
-                row.prop(gaf_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
+                row.prop(gaf_hdri_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
                 row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
                 subrow = row.row(align=True)
                 subrow.alignment = "RIGHT"
                 subrow.label(text=str(len(fn.hdri_enum_previews(gaf_props, context))) + " matches")
             else:
-                col.prop(gaf_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
+                col.prop(gaf_hdri_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
 
             col = layout.column(align=True)
 
@@ -1039,23 +1041,23 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             tmpc = row.column(align=True)
             tmpr = tmpc.column(align=True)
             tmpr.scale_y = 1
-            tmpr.operator(ops.GAFFER_OT_hdri_save.bl_idname, text="", icon="FILE_TICK").hdri = gaf_props.hdri
+            tmpr.operator(ops.GAFFER_OT_hdri_save.bl_idname, text="", icon="FILE_TICK").hdri = gaf_hdri_props.hdri
             tmpcc = tmpc.column(align=True)
             tmpcc.scale_y = 9 if not toolbar else 3.5
             tmpcc.operator(ops.GAFFER_OT_hdri_paddles.bl_idname, text="", icon="TRIA_LEFT").do_next = False
             tmpr = tmpc.column(align=True)
             tmpr.scale_y = 1
-            tmpr.operator(ops.GAFFER_OT_hdri_reset.bl_idname, text="", icon="FILE_REFRESH").hdri = gaf_props.hdri
+            tmpr.operator(ops.GAFFER_OT_hdri_reset.bl_idname, text="", icon="FILE_REFRESH").hdri = gaf_hdri_props.hdri
 
             tmpc = row.column()
             tmpc.scale_y = 1 / (2 if toolbar else 1)
-            tmpc.template_icon_view(gaf_props, "hdri", show_labels=True, scale=11)
+            tmpc.template_icon_view(gaf_hdri_props, "hdri", show_labels=True, scale=11)
 
             tmpc = row.column(align=True)
             tmpr = tmpc.column(align=True)
             tmpr.scale_y = 1
             tmpr.prop(
-                gaf_props,
+                gaf_hdri_props,
                 "hdri_show_tags_ui",
                 text="",
                 toggle=True,
@@ -1072,7 +1074,7 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 icon_value=icons["random"].icon_id,
             )
 
-            if gaf_props.hdri_show_tags_ui:
+            if gaf_hdri_props.hdri_show_tags_ui:
                 col.separator()
                 box = col.box()
                 tags_col = box.column(align=True)
@@ -1080,8 +1082,8 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 tags_col.separator()
 
                 current_tags = fn.get_tags()
-                if gaf_props.hdri in current_tags:
-                    current_tags = current_tags[gaf_props.hdri]
+                if gaf_hdri_props.hdri in current_tags:
+                    current_tags = current_tags[gaf_hdri_props.hdri]
                 else:
                     current_tags = []
 
@@ -1096,18 +1098,18 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                             text=t.title(),
                             icon="CHECKBOX_HLT" if t in current_tags else "NONE",
                         )
-                        op.hdri = gaf_props.hdri
+                        op.hdri = gaf_hdri_props.hdri
                         op.tag = t
                         i += 1
                     else:
                         i = 0
                 tags_col.prop(
-                    gaf_props,
+                    gaf_hdri_props,
                     "hdri_custom_tags",
                     icon_value=icons["text-cursor"].icon_id,
                 )
                 tags_col.separator()
-                tags_col.prop(gaf_props, "hdri_show_tags_ui", text="Done", toggle=True)
+                tags_col.prop(gaf_hdri_props, "hdri_show_tags_ui", text="Done", toggle=True)
                 col.separator()
 
             col = layout.column(align=True)
@@ -1119,20 +1121,20 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 col.separator()
 
             row = col.row(align=True)
-            vp_icon = "TRIA_LEFT" if gaf_props["hdri_variation"] != 0 else "TRIA_LEFT_BAR"
+            vp_icon = "TRIA_LEFT" if gaf_hdri_props["hdri_variation"] != 0 else "TRIA_LEFT_BAR"
             row.operator(ops.GAFFER_OT_hdri_variation_paddles.bl_idname, text="", icon=vp_icon).do_next = False
-            row.prop(gaf_props, "hdri_variation", text="")
+            row.prop(gaf_hdri_props, "hdri_variation", text="")
             if const.hdri_haven_list and const.hdri_list:
-                if gaf_props.hdri in const.hdri_haven_list and gaf_props.hdri in const.hdri_list:
-                    if not any(("_16k" in h or "_8k" in h) for h in const.hdri_list[gaf_props.hdri]):
+                if gaf_hdri_props.hdri in const.hdri_haven_list and gaf_hdri_props.hdri in const.hdri_list:
+                    if not any(("_16k" in h or "_8k" in h) for h in const.hdri_list[gaf_hdri_props.hdri]):
                         row.operator(ops.GAFFER_OT_open_hdrihaven.bl_idname, text="", icon="ADD").url = (
-                            "https://polyhaven.com/a/" + gaf_props.hdri
+                            "https://polyhaven.com/a/" + gaf_hdri_props.hdri
                         )
 
-            if gaf_props.hdri in const.hdri_list:  # Rare case of hdri_list not being initialized
+            if gaf_hdri_props.hdri in const.hdri_list:  # Rare case of hdri_list not being initialized
                 vp_icon = (
                     "TRIA_RIGHT"
-                    if gaf_props["hdri_variation"] < len(const.hdri_list[gaf_props.hdri]) - 1
+                    if gaf_hdri_props["hdri_variation"] < len(const.hdri_list[gaf_hdri_props.hdri]) - 1
                     else "TRIA_RIGHT_BAR"
                 )
             else:
@@ -1153,15 +1155,15 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
                 )
 
             col.separator()
-        col.prop(gaf_props, "hdri_rotation", slider=True)
+        col.prop(gaf_hdri_props, "hdri_rotation", slider=True)
         col.separator()
         row = col.row(align=True)
-        row.prop(gaf_props, "hdri_brightness", slider=True)
+        row.prop(gaf_hdri_props, "hdri_brightness", slider=True)
         if not toolbar or "_Light:_(WorldEnviroLight)_" in gaf_props.MoreExpand or gaf_props.MoreExpandAll:
-            row.prop(gaf_props, "hdri_saturation", slider=True)
+            row.prop(gaf_hdri_props, "hdri_saturation", slider=True)
             row = col.row(align=True)
-            row.prop(gaf_props, "hdri_contrast", slider=True)
-            row.prop(gaf_props, "hdri_warmth", slider=True)
+            row.prop(gaf_hdri_props, "hdri_contrast", slider=True)
+            row.prop(gaf_hdri_props, "hdri_warmth", slider=True)
 
         wc = context.scene.world.cycles
         if context.scene.render.engine == "CYCLES" and (
@@ -1188,90 +1190,90 @@ def draw_hdri_handler(context, layout, gaf_props, prefs, icons, toolbar=False):
             row = col.row(align=True)
             row.alignment = "LEFT"
             row.prop(
-                gaf_props,
+                gaf_hdri_props,
                 "hdri_advanced",
-                icon="TRIA_DOWN" if gaf_props.hdri_advanced else "TRIA_RIGHT",
+                icon="TRIA_DOWN" if gaf_hdri_props.hdri_advanced else "TRIA_RIGHT",
                 emboss=False,
                 toggle=True,
             )
-            if gaf_props.hdri_advanced:
+            if gaf_hdri_props.hdri_advanced:
                 col = box.column(align=True)
-                col.prop(gaf_props, "hdri_tint", slider=True)
-                col.prop(gaf_props, "hdri_clamp", slider=True)
+                col.prop(gaf_hdri_props, "hdri_tint", slider=True)
+                col.prop(gaf_hdri_props, "hdri_clamp", slider=True)
                 split = col.split(factor=0.75, align=True)
                 r = split.row(align=True)
-                r.prop(gaf_props, "hdri_horz_shift", slider=True)
+                r.prop(gaf_hdri_props, "hdri_horz_shift", slider=True)
                 r = split.row(align=True)
-                r.prop(gaf_props, "hdri_horz_exp", slider=False)
+                r.prop(gaf_hdri_props, "hdri_horz_exp", slider=False)
                 col.separator()
 
                 col.label(text="Control background separately:")
                 row = col.row(align=True)
-                row.prop(gaf_props, "hdri_use_separate_brightness", toggle=True)
+                row.prop(gaf_hdri_props, "hdri_use_separate_brightness", toggle=True)
                 sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_separate_brightness
-                sub.prop(gaf_props, "hdri_background_brightness", slider=True)
+                sub.active = gaf_hdri_props.hdri_use_separate_brightness
+                sub.prop(gaf_hdri_props, "hdri_background_brightness", slider=True)
                 row = col.row(align=True)
-                row.prop(gaf_props, "hdri_use_separate_contrast", toggle=True)
+                row.prop(gaf_hdri_props, "hdri_use_separate_contrast", toggle=True)
                 sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_separate_contrast
-                sub.prop(gaf_props, "hdri_background_contrast", slider=True)
+                sub.active = gaf_hdri_props.hdri_use_separate_contrast
+                sub.prop(gaf_hdri_props, "hdri_background_contrast", slider=True)
                 row = col.row(align=True)
-                row.prop(gaf_props, "hdri_use_separate_saturation", toggle=True)
+                row.prop(gaf_hdri_props, "hdri_use_separate_saturation", toggle=True)
                 sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_separate_saturation
-                sub.prop(gaf_props, "hdri_background_saturation", slider=True)
+                sub.active = gaf_hdri_props.hdri_use_separate_saturation
+                sub.prop(gaf_hdri_props, "hdri_background_saturation", slider=True)
                 row = col.row(align=True)
-                row.prop(gaf_props, "hdri_use_separate_warmth", toggle=True)
+                row.prop(gaf_hdri_props, "hdri_use_separate_warmth", toggle=True)
                 sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_separate_warmth
-                sub.prop(gaf_props, "hdri_background_warmth", slider=True)
+                sub.active = gaf_hdri_props.hdri_use_separate_warmth
+                sub.prop(gaf_hdri_props, "hdri_background_warmth", slider=True)
                 row = col.row(align=True)
-                row.prop(gaf_props, "hdri_use_separate_tint", toggle=True)
+                row.prop(gaf_hdri_props, "hdri_use_separate_tint", toggle=True)
                 sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_separate_tint
-                sub.prop(gaf_props, "hdri_background_tint", slider=True)
+                sub.active = gaf_hdri_props.hdri_use_separate_tint
+                sub.prop(gaf_hdri_props, "hdri_background_tint", slider=True)
 
                 col.separator()
                 sub = col.row(align=True)
                 sub.active = any(
                     [
-                        gaf_props.hdri_use_jpg_background,
-                        gaf_props.hdri_use_separate_brightness,
-                        gaf_props.hdri_use_separate_contrast,
-                        gaf_props.hdri_use_separate_saturation,
-                        gaf_props.hdri_use_separate_warmth,
+                        gaf_hdri_props.hdri_use_jpg_background,
+                        gaf_hdri_props.hdri_use_separate_brightness,
+                        gaf_hdri_props.hdri_use_separate_contrast,
+                        gaf_hdri_props.hdri_use_separate_saturation,
+                        gaf_hdri_props.hdri_use_separate_warmth,
                     ]
                 )
-                sub.prop(gaf_props, "hdri_use_bg_reflections")
+                sub.prop(gaf_hdri_props, "hdri_use_bg_reflections")
 
                 col.separator()
                 row = col.row(align=True)
-                row.prop(gaf_props, "hdri_use_jpg_background")
+                row.prop(gaf_hdri_props, "hdri_use_jpg_background")
                 sub = row.row(align=True)
-                sub.active = gaf_props.hdri_use_jpg_background
-                sub.prop(gaf_props, "hdri_use_darkened_jpg")
+                sub.active = gaf_hdri_props.hdri_use_jpg_background
+                sub.prop(gaf_hdri_props, "hdri_use_darkened_jpg")
                 if (
-                    gaf_props.hdri_use_jpg_background and gaf_props.hdri_use_bg_reflections
-                ) and not gaf_props.hdri_use_darkened_jpg:
+                    gaf_hdri_props.hdri_use_jpg_background and gaf_hdri_props.hdri_use_bg_reflections
+                ) and not gaf_hdri_props.hdri_use_darkened_jpg:
                     col.label(text="Enabling 'Pre-Darkened' is recommended to")
                     col.label(text="get more accurate reflections.")
-                if gaf_props.RequestJPGGen and gaf_props.hdri_use_jpg_background:
+                if gaf_props.RequestJPGGen and gaf_hdri_props.hdri_use_jpg_background:
                     col.separator()
                     col.separator()
                     col.label(text="No JPGs have been created yet,", icon="ERROR")
                     col.label(text="please click 'Generate JPGs' below.")
                     col.label(text="Note: This may take a while for high-res images")
                     col.operator(ops.GAFFER_OT_hdri_jpg_gen.bl_idname)
-                    col.prop(gaf_props, "hdri_jpg_gen_all")
-                    if gaf_props.hdri_jpg_gen_all:
+                    col.prop(gaf_hdri_props, "hdri_jpg_gen_all")
+                    if gaf_hdri_props.hdri_jpg_gen_all:
                         col.label(text="This is REALLY going to take a while.")
                         col.label(text="See the console for progress.")
                     col.separator()
-    elif gaf_props.hdri_search:
+    elif gaf_hdri_props.hdri_search:
         prefs.ForcePreviewsRefresh = True
         row = layout.row(align=True)
-        row.prop(gaf_props, "hdri_search", text="", icon="VIEWZOOM")
+        row.prop(gaf_hdri_props, "hdri_search", text="", icon="VIEWZOOM")
         row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
         subrow = row.row(align=True)
         subrow.alignment = "RIGHT"
@@ -1298,18 +1300,19 @@ class GAFFER_PT_hdris(bpy.types.Panel):
         return context.scene.render.engine in ["CYCLES", "BLENDER_EEVEE"]
 
     def draw_header(self, context):
-        gaf_props = context.scene.gaf_props
+        gaf_hdri_props = context.scene.world.gaf_hdri_props
 
         layout = self.layout
         row = layout.row(align=True)
-        row.prop(gaf_props, "hdri_handler_enabled", text="")
-        if gaf_props.hdri and gaf_props.hdri_handler_enabled:
-            row.label(text="HDRI: " + fn.nice_hdri_name(gaf_props.hdri))
+        row.prop(gaf_hdri_props, "hdri_handler_enabled", text="")
+        if gaf_hdri_props.hdri and gaf_hdri_props.hdri_handler_enabled:
+            row.label(text="HDRI: " + fn.nice_hdri_name(gaf_hdri_props.hdri))
         else:
             row.label(text="HDRI")
 
     def draw(self, context):
         gaf_props = context.scene.gaf_props
+        gaf_hdri_props = context.scene.world.gaf_hdri_props
         prefs = context.preferences.addons[__package__].preferences
         icons = fn.get_icons()
 
@@ -1327,8 +1330,8 @@ class GAFFER_PT_hdris(bpy.types.Panel):
             row.alignment = "CENTER"
             row.label(text="Preferences > Add-ons > Gaffer > HDRI Folder")
         else:
-            if gaf_props.hdri_handler_enabled:
-                draw_hdri_handler(context, col, gaf_props, prefs, icons)
+            if gaf_hdri_props.hdri_handler_enabled:
+                draw_hdri_handler(context, col, gaf_props, gaf_hdri_props, prefs, icons)
 
                 if gaf_props.ShowHDRIHaven:
                     layout.separator()
