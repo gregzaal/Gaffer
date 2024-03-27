@@ -1396,11 +1396,15 @@ class GAFFER_MT_folder_filter(bpy.types.Menu):
 
         hdri_paths = fn.get_persistent_setting("hdri_paths")
         for path in hdri_paths:
-            col.operator(
-                ops.GAFFER_OT_hdri_set_folder_filter.bl_idname,
-                text=path,
-                icon="FILE_FOLDER",
-            ).folder = path
+            col.operator(ops.GAFFER_OT_hdri_set_folder_filter.bl_idname, text=path, icon="FILE_FOLDER").folder = path
+            # Subfolders
+            for subfolder in os.listdir(path):
+                if os.path.isdir(os.path.join(path, subfolder)):
+                    col.operator(
+                        ops.GAFFER_OT_hdri_set_folder_filter.bl_idname,
+                        text=subfolder,
+                        icon="DOT",
+                    ).folder = os.path.join(path, subfolder)
 
 
 def gaffer_node_menu_func(self, context):
