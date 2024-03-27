@@ -799,7 +799,10 @@ def detect_hdris(self, context):
 def get_hdri_list(use_search=False):
     if os.path.exists(const.hdri_list_path):
         with open(const.hdri_list_path) as f:
-            data = json.load(f)
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = {}
         if data:
             data = OrderedDict(sorted(data.items(), key=lambda x: x[0].lower()))
 
@@ -1676,7 +1679,10 @@ def variation_enum_previews(self, context):
 def get_tags():
     if os.path.exists(const.tags_path):
         with open(const.tags_path) as f:
-            data = json.load(f)
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = {}
         return data
     else:
         return {}
@@ -1732,7 +1738,10 @@ if len(const.possible_tags) < 1:
 def get_defaults(hdri_name):
     if os.path.exists(const.defaults_path):
         with open(const.defaults_path) as f:
-            data = json.load(f)
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = {}
         if hdri_name in data:
             return data[hdri_name]
     return {}
@@ -1757,7 +1766,10 @@ def get_hdri_haven_list(force_update=False):
     offline_data = {}
     if os.path.exists(const.hdri_haven_list_path):
         with open(const.hdri_haven_list_path) as f:
-            offline_data = json.load(f)
+            try:
+                offline_data = json.load(f)
+            except json.JSONDecodeError:
+                offline_data = {}
 
     prefs = bpy.context.preferences.addons[__package__].preferences
 
@@ -1877,7 +1889,10 @@ def init_persistent_settings(set_name=None, set_value=None):
     # Some settings might already exist
     if os.path.exists(const.settings_file):
         with open(const.settings_file) as f:
-            settings = json.load(f)
+            try:
+                settings = json.load(f)
+            except json.JSONDecodeError:
+                settings = {}
 
     # First time use in 2.8, copy path from 2.7
     if "hdri_paths" not in settings and "hdri_path" in settings:
@@ -1900,7 +1915,10 @@ def init_persistent_settings(set_name=None, set_value=None):
 def get_persistent_setting(name):
     if os.path.exists(const.settings_file):
         with open(const.settings_file) as f:
-            settings = json.load(f)
+            try:
+                settings = json.load(f)
+            except json.JSONDecodeError:
+                settings = {}
         if name in settings:
             return settings[name]
 
