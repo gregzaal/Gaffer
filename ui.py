@@ -561,7 +561,6 @@ def draw_cycles_eevee_UI(context, layout, lights):
     maincol = layout.column(align=False)
     scene = context.scene
     gaf_props = scene.gaf_props
-    gaf_hdri_props = scene.world.gaf_hdri_props
     prefs = context.preferences.addons[__package__].preferences
     icons = fn.get_icons()
 
@@ -702,6 +701,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
         row.label(text="No lights to show :)")
 
     if context.scene.world:
+        gaf_hdri_props = scene.world.gaf_hdri_props
         draw_world(context, layout, gaf_props, gaf_hdri_props, scene, prefs, icons)
 
 
@@ -1297,7 +1297,7 @@ class GAFFER_PT_hdris(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.render.engine in ["CYCLES", "BLENDER_EEVEE"]
+        return context.scene.render.engine in ["CYCLES", "BLENDER_EEVEE"] and context.scene.world
 
     def draw_header(self, context):
         gaf_hdri_props = context.scene.world.gaf_hdri_props
