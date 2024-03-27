@@ -434,6 +434,12 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         default=False,
         update=functions.update_search,
     )
+    hdri_folder_filter: bpy.props.StringProperty(
+        name="Folder Filter",
+        description="Show only HDRIs from this subfolder",
+        default="",
+        update=functions.update_search,
+    )
     hdri_rotation: bpy.props.FloatProperty(
         name="Rotation",
         description="Rotate the HDRI (in degrees) around the Z-axis",
@@ -659,6 +665,7 @@ classes = [
     operators.GAFFER_OT_hdri_jpg_gen,
     operators.GAFFER_OT_hdri_clear_search,
     operators.GAFFER_OT_hdri_set_favorite,
+    operators.GAFFER_OT_hdri_set_folder_filter,
     operators.GAFFER_OT_hdri_paddles,
     operators.GAFFER_OT_hdri_variation_paddles,
     operators.GAFFER_OT_hdri_add_tag,
@@ -674,6 +681,7 @@ classes = [
     operators.GAFFER_OT_debug_upload_hdri_list,
     operators.GAFFER_OT_debug_upload_logs,
     ui.GAFFER_PT_hdris,
+    ui.GAFFER_MT_folder_filter,
     ui.OBJECT_UL_object_list,
 ]
 

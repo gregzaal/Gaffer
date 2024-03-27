@@ -1686,6 +1686,20 @@ class GAFFER_OT_hdri_set_favorite(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class GAFFER_OT_hdri_set_folder_filter(bpy.types.Operator):
+
+    "Show only HDRIs from this subfolder"
+    bl_idname = "gaffer.set_folder_filter"
+    bl_label = "Folder Filter"
+    bl_options = {"INTERNAL"}
+
+    folder: bpy.props.StringProperty()
+
+    def execute(self, context):
+        context.scene.world.gaf_hdri_props.hdri_folder_filter = self.folder
+        return {"FINISHED"}
+
+
 class GAFFER_OT_hdri_paddles(bpy.types.Operator):
 
     "Switch to the next/previous HDRI"

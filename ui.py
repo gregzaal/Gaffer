@@ -395,7 +395,16 @@ def draw_cycles_eevee_UI(context, layout, lights):
         col = worldcol.column()
 
         if gaf_hdri_props.hdri_handler_enabled:
-            draw_hdri_handler(context, col, gaf_props, gaf_hdri_props, prefs, icons, toolbar=True)
+            draw_hdri_handler(
+                context,
+                col,
+                gaf_props,
+                gaf_hdri_props,
+                fn.get_persistent_setting("hdri_paths"),
+                prefs,
+                icons,
+                toolbar=True,
+            )
         else:
             row = col.row(align=True)
 
@@ -798,7 +807,9 @@ def draw_unsupported_renderer_UI(context, layout, lights):
 
         row.label(text="World")
         col = worldcol.column()
-        draw_hdri_handler(context, col, gaf_props, gaf_hdri_props, prefs, icons, toolbar=True)
+        draw_hdri_handler(
+            context, col, gaf_props, gaf_hdri_props, fn.get_persistent_setting("hdri_paths"), prefs, icons, toolbar=True
+        )
 
 
 class GAFFER_PT_lights(bpy.types.Panel):
@@ -1018,7 +1029,7 @@ def draw_progress_bar(gaf_props, layout):
         layout.separator()
 
 
-def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, prefs, icons, toolbar=False):
+def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, prefs, icons, toolbar=False):
     if gaf_hdri_props.hdri:
         col = layout.column(align=True)
 
@@ -1032,6 +1043,11 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, prefs, icons, 
             ).name = gaf_hdri_props.hdri
             row.prop(gaf_hdri_props, "hdri_favorite", text="", icon="FILTER")
             row.separator()
+            if len(hdri_paths) > 1:
+                row.menu(
+                    "GAFFER_MT_folder_filter", text="", icon="X" if gaf_hdri_props.hdri_folder_filter else "FILE_FOLDER"
+                )
+                row.separator()
             row.prop(gaf_hdri_props, "hdri_search", text="", expand=True, icon="VIEWZOOM")
             if gaf_hdri_props.hdri_search:
                 row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
@@ -1275,7 +1291,7 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, prefs, icons, 
                         col.label(text="This is REALLY going to take a while.")
                         col.label(text="See the console for progress.")
                     col.separator()
-    elif gaf_hdri_props.hdri_search or gaf_hdri_props.hdri_favorite:
+    elif gaf_hdri_props.hdri_search or gaf_hdri_props.hdri_favorite or gaf_hdri_props.hdri_folder_filter:
         prefs.ForcePreviewsRefresh = True
         row = layout.row(align=True)
         row.operator(
@@ -1285,6 +1301,11 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, prefs, icons, 
         ).name = gaf_hdri_props.hdri
         row.prop(gaf_hdri_props, "hdri_favorite", text="", icon="FILTER")
         row.separator()
+        if len(hdri_paths) > 1:
+            row.menu(
+                "GAFFER_MT_folder_filter", text="", icon="X" if gaf_hdri_props.hdri_folder_filter else "FILE_FOLDER"
+            )
+            row.separator()
         row.prop(gaf_hdri_props, "hdri_search", text="", icon="VIEWZOOM")
         row.operator(ops.GAFFER_OT_hdri_clear_search.bl_idname, text="", icon="X")
         subrow = row.row(align=True)
@@ -1343,7 +1364,7 @@ class GAFFER_PT_hdris(bpy.types.Panel):
             row.label(text="Preferences > Add-ons > Gaffer > HDRI Folder")
         else:
             if gaf_hdri_props.hdri_handler_enabled:
-                draw_hdri_handler(context, col, gaf_props, gaf_hdri_props, prefs, icons)
+                draw_hdri_handler(context, col, gaf_props, gaf_hdri_props, hdri_paths, prefs, icons)
 
                 if gaf_props.ShowHDRIHaven:
                     layout.separator()
@@ -1370,6 +1391,30 @@ class OBJECT_UL_object_list(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         obj = item
         layout.prop(obj, "name", text="", emboss=False)
+
+
+class GAFFER_MT_folder_filter(bpy.types.Menu):
+    bl_label = "Folder Filter"
+    bl_description = "Show only HDRIs from this subfolder"
+
+    def draw(self, context):
+        gaf_hdri_props = context.scene.world.gaf_hdri_props
+        col = self.layout.column()
+
+        if gaf_hdri_props.hdri_folder_filter:
+            col.operator(
+                ops.GAFFER_OT_hdri_set_folder_filter.bl_idname,
+                text="Remove Filter",
+                icon="X",
+            ).folder = ""
+
+        hdri_paths = fn.get_persistent_setting("hdri_paths")
+        for path in hdri_paths:
+            col.operator(
+                ops.GAFFER_OT_hdri_set_folder_filter.bl_idname,
+                text=path,
+                icon="FILE_FOLDER",
+            ).folder = path
 
 
 def gaffer_node_menu_func(self, context):

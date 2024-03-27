@@ -729,6 +729,11 @@ def paths_are_equal(p1, p2):
     return os.path.normcase(os.path.normpath(p1)) == os.path.normcase(os.path.normpath(p2))
 
 
+def path_contains(parent, child):
+    """Check if parent contains child, regardless of case or slashes"""
+    return os.path.normcase(os.path.normpath(child)).startswith(os.path.normcase(os.path.normpath(parent)))
+
+
 def detect_hdris(self, context):
 
     log("FN: Detect HDRIs")
@@ -810,6 +815,13 @@ def get_hdri_list(use_search=False):
                 gaf_hdri_props = bpy.context.scene.world.gaf_hdri_props
                 if gaf_hdri_props.hdri_favorite:
                     new_data = {name: value for name, value in data.items() if name in get_favorites()}
+                    data = new_data
+                if gaf_hdri_props.hdri_folder_filter:
+                    new_data = {
+                        name: value
+                        for name, value in data.items()
+                        if path_contains(gaf_hdri_props.hdri_folder_filter, value[0])
+                    }
                     data = new_data
                 search_string = gaf_hdri_props.hdri_search
                 if search_string:
