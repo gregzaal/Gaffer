@@ -126,9 +126,9 @@ class GafferPreferences(bpy.types.AddonPreferences):
 
         main_col = layout.column()
 
-        hdri_paths = functions.get_persistent_setting("hdri_paths")
         row = main_col.row(align=True)
         row.label(text="HDRI Folders:")
+        hdri_paths = functions.get_persistent_setting("hdri_paths")
         if hdri_paths[0] != "":
             sub = row.column(align=True)
             sub.alignment = "RIGHT"
@@ -192,12 +192,10 @@ class GafferPreferences(bpy.types.AddonPreferences):
         row.prop(self, "include_8bit")
 
         row = main_col.row()
-        row.alignment = "RIGHT"
-        row.prop(self, "panel_category")
-
-        row = main_col.row()
-        row.alignment = "RIGHT"
-        row.prop(self, "offline_mode")
+        row.label(text="Settings:")
+        col = main_col.column()
+        col.prop(self, "panel_category")
+        col.prop(self, "offline_mode")
 
         addon_updater_ops.update_settings_ui(self, context)
 
