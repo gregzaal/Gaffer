@@ -300,7 +300,8 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 row.prop(light.data, "show_cone", text="", toggle=True, icon="CONE")
 
         else:  # MESH light
-            row.prop(material.cycles, "sample_as_light", text="MIS", toggle=True)
+            if hasattr(material.cycles, "sample_as_light"):
+                row.prop(material.cycles, "sample_as_light", text="MIS", toggle=True)
             row.separator()
             for v in visibility:
                 if bpy.app.version_string >= "3.0":
