@@ -636,6 +636,7 @@ classes = [
     GafferProperties,
     GafferHDRIProperties,
     operators.GAFFER_OT_rename,
+    operators.GAFFER_OT_set_strength,
     operators.GAFFER_OT_set_temp,
     operators.GAFFER_OT_show_temp_list,
     operators.GAFFER_OT_hide_temp_list,

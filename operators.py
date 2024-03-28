@@ -89,6 +89,39 @@ class GAFFER_OT_rename(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class GAFFER_OT_set_strength(bpy.types.Operator):
+
+    "Double/half the power of this light"
+    bl_idname = "gaffer.col_set_strength"
+    bl_label = "Increase/Decrease Strength"
+    mult: bpy.props.FloatProperty()
+    light: bpy.props.StringProperty()
+    socket_strength: bpy.props.IntProperty()
+    node: bpy.props.StringProperty()
+    material: bpy.props.StringProperty()
+    socket_strength_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        light = context.scene.objects[self.light]
+        if self.node:
+            node = None
+
+            if self.material:
+                node = bpy.data.materials[self.material].node_tree.nodes[self.node]
+            else:
+                node = light.data.node_tree.nodes[self.node]
+
+            if self.socket_strength_type == "o":
+                socket = node.outputs[self.socket_strength]
+            else:
+                socket = node.inputs[self.socket_strength]
+
+            socket.default_value = socket.default_value * self.mult
+        else:
+            light.data.energy = light.data.energy * self.mult
+        return {"FINISHED"}
+
+
 class GAFFER_OT_set_temp(bpy.types.Operator):
 
     "Set the color temperature to a preset"

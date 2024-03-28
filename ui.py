@@ -110,7 +110,7 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):
 
 
 def draw_cycles_eevee_UI(context, layout, lights):
-    def draw_strength_cycles(col, light, node_strength, socket_strength_type, socket_strength):
+    def draw_strength_cycles(col, light, material, node_strength, socket_strength_type, socket_strength):
         row = col.row(align=True)
         strength_sockets = node_strength.inputs
         if socket_strength_type == "o":
@@ -131,7 +131,21 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 (socket_strength_type == "i" and not strength_sockets[socket_strength].is_linked)
                 or (socket_strength_type == "o" and strength_sockets[socket_strength].is_linked)
             ) and hasattr(strength_sockets[socket_strength], "default_value"):
+                op = row.operator(ops.GAFFER_OT_set_strength.bl_idname, text="", icon="REMOVE")
+                op.light = light.name
+                op.node = node_strength.name
+                op.material = material.name if material else ""
+                op.socket_strength = socket_strength
+                op.socket_strength_type = socket_strength_type
+                op.mult = 0.5
                 row.prop(strength_sockets[socket_strength], "default_value", text="Strength")
+                op = row.operator(ops.GAFFER_OT_set_strength.bl_idname, text="", icon="ADD")
+                op.light = light.name
+                op.node = node_strength.name
+                op.material = material.name if material else ""
+                op.socket_strength = socket_strength
+                op.socket_strength_type = socket_strength_type
+                op.mult = 2
             else:
                 row.label(text="  Node Invalid")
         except:
@@ -146,7 +160,13 @@ def draw_cycles_eevee_UI(context, layout, lights):
             icon="LIGHT_%s" % light.data.type,
             icon_only=True,
         )
+        op = row.operator(ops.GAFFER_OT_set_strength.bl_idname, text="", icon="REMOVE")
+        op.light = light.name
+        op.mult = 0.5
         row.prop(light.data, "energy", text="Strength")
+        op = row.operator(ops.GAFFER_OT_set_strength.bl_idname, text="", icon="ADD")
+        op.light = light.name
+        op.mult = 2
 
     def draw_color_cycles(gaf_props, i, icons, col, row, light, material):
         if light.type == "LIGHT":
@@ -676,7 +696,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
             draw_renderer_independant(gaf_props, row, light, users)
 
             if not is_portal:
-                draw_strength_cycles(col, light, node_strength, socket_strength_type, socket_strength)
+                draw_strength_cycles(col, light, material, node_strength, socket_strength_type, socket_strength)
 
                 draw_color_cycles(gaf_props, i, icons, col, row, light, material)
 
