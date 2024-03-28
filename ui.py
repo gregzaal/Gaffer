@@ -162,10 +162,18 @@ def draw_cycles_eevee_UI(context, layout, lights):
         )
         op = row.operator(ops.GAFFER_OT_set_strength.bl_idname, text="", icon="REMOVE")
         op.light = light.name
+        op.node = ""
+        op.material = ""
+        op.socket_strength = 0
+        op.socket_strength_type = ""
         op.mult = 0.5
         row.prop(light.data, "energy", text="Strength")
         op = row.operator(ops.GAFFER_OT_set_strength.bl_idname, text="", icon="ADD")
         op.light = light.name
+        op.node = ""
+        op.material = ""
+        op.socket_strength = 0
+        op.socket_strength_type = ""
         op.mult = 2
 
     def draw_color_cycles(gaf_props, i, icons, col, row, light, material):
