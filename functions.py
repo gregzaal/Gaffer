@@ -121,7 +121,7 @@ def refresh_light_list(scene):
                         current_node = s.links[0].from_node
         return found_node, found_socket
 
-    m = []
+    detected_lights = []
 
     if not hasattr(bpy.types.Object, "GafferFalloff"):
         bpy.types.Object.GafferFalloff = bpy.props.EnumProperty(
@@ -172,7 +172,7 @@ def refresh_light_list(scene):
                                             node_name,
                                             socket_index,
                                         ) = get_next_available_value_socket(node)
-                                        m.append(
+                                        detected_lights.append(
                                             [
                                                 obj.name,
                                                 None,
@@ -185,12 +185,12 @@ def refresh_light_list(scene):
                         node = obj.data.node_tree.nodes[light_dict[obj.name]]
                         if node.inputs:
                             node_name, socket_index = get_next_available_value_socket(node)
-                            m.append([obj.name, None, node_name, "i" + str(socket_index)])
+                            detected_lights.append([obj.name, None, node_name, "i" + str(socket_index)])
                         elif node.outputs:
                             socket_index = 0
                             for oupt in node.outputs:
                                 if oupt.type == "VALUE":  # use first Value socket as strength
-                                    m.append(
+                                    detected_lights.append(
                                         [
                                             obj.name,
                                             None,
@@ -201,7 +201,7 @@ def refresh_light_list(scene):
                                     break
                                 socket_index += 1
                 else:
-                    m.append([obj.name, None, None])
+                    detected_lights.append([obj.name, None, None])
             elif obj.type == "MESH" and len(obj.material_slots) > 0 and scene.render.engine == "CYCLES":
                 slot_break = False
                 for slot in obj.material_slots:
@@ -225,7 +225,7 @@ def refresh_light_list(scene):
                                                         node_name,
                                                         socket_index,
                                                     ) = get_next_available_value_socket(node)
-                                                    m.append(
+                                                    detected_lights.append(
                                                         [
                                                             obj.name,
                                                             slot.material.name,
@@ -243,7 +243,7 @@ def refresh_light_list(scene):
                                             node_name,
                                             socket_index,
                                         ) = get_next_available_value_socket(node)
-                                        m.append(
+                                        detected_lights.append(
                                             [
                                                 obj.name,
                                                 slot.material.name,
@@ -255,7 +255,7 @@ def refresh_light_list(scene):
                                         socket_index = 0
                                         for oupt in node.outputs:
                                             if oupt.type == "VALUE":  # use first Value socket as strength
-                                                m.append(
+                                                detected_lights.append(
                                                     [
                                                         obj.name,
                                                         slot.material.name,
@@ -268,9 +268,9 @@ def refresh_light_list(scene):
     else:  # Unsupported engines
         for obj in objects:
             if obj.type == "LIGHT":
-                m.append([obj.name, None, None])
+                detected_lights.append([obj.name, None, None])
 
-    for light in m:
+    for light in detected_lights:
         obj = bpy.data.objects[light[0]]
         nodes = None
         if obj.type == "LIGHT":
@@ -283,7 +283,7 @@ def refresh_light_list(scene):
             if light[2]:
                 if nodes[light[2]].type != "LIGHT_FALLOFF" and bpy.data.objects[light[0]].GafferFalloff != "quadratic":
                     bpy.data.objects[light[0]].GafferFalloff = "quadratic"
-    scene.gaf_props.Lights = str(m)
+    scene.gaf_props.Lights = str(detected_lights)
 
 
 def force_update(context, obj=None):
