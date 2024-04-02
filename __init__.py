@@ -481,12 +481,22 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         update=functions.update_warmth,
     )
     hdri_tint: bpy.props.FloatProperty(
-        name="Tint",
-        description="Control the purple/green color balance",
+        name="Purple/Green Tint",
+        description="Control the purple/green color balance, usually used together with the warmth setting",
         default=1,
         soft_min=0,
         soft_max=2,
         update=functions.update_tint,
+    )
+    hdri_color: bpy.props.FloatVectorProperty(
+        name="Color",
+        description="Tint, or fully color, the environment. Use Alpha to control strength/opacity",
+        subtype="COLOR",
+        size=4,
+        soft_min=0.0,
+        soft_max=1.0,
+        default=(0.0, 0.0, 0.0, 0.0),
+        update=functions.update_color,
     )
     hdri_horz_shift: bpy.props.FloatProperty(
         name="Horizon Shift",
@@ -596,6 +606,22 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         soft_min=0,
         soft_max=2,
         update=functions.update_background_tint,
+    )
+    hdri_use_separate_color: bpy.props.BoolProperty(
+        name="Color",
+        default=False,
+        description="Adjust the color value for the background separately from the lighting",
+        update=functions.setup_hdri,
+    )
+    hdri_background_color: bpy.props.FloatVectorProperty(
+        name="Background Color",
+        description="Tint, or fully color, the background. Use Alpha to control strength/opacity",
+        subtype="COLOR",
+        size=4,
+        soft_min=0.0,
+        soft_max=1.0,
+        default=(0.0, 0.0, 0.0, 0.0),
+        update=functions.update_background_color,
     )
     hdri_clamp: bpy.props.FloatProperty(
         name="Clamp Brightness",

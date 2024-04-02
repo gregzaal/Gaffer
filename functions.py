@@ -998,21 +998,25 @@ def handler_node(context, t, background=False):
         "ShaderNodeTexEnvironment": (-567.9, 91.765 - y_offset),
         "ShaderNodeGamma": (-71.785, 59.522 - y_offset),
         "ShaderNodeHueSaturation": (118.214, 81.406 - y_offset),
+        "ShaderNodeMix": (317, 101 - y_offset),
         "Warmth": (-262.389, 72.821 - y_offset),
-        "ShaderNodeBackground": (318.214, 48.494 - y_offset),
-        "ShaderNodeMixShader": (523.77, 59.349),
+        "ShaderNodeBackground": (520, 48.494 - y_offset),
+        "ShaderNodeMixShader": (730, 59.349),
         "ShaderNodeLightPath": (123.77, 426.489),
         "ShaderNodeMath": (318.213, 309.207) if background else (110.564, -501.938),
         "ShaderNodeSeparateHSV": (-94.990, -404.268),
         "ShaderNodeValue": (-94.990, -540.5),
         "ShaderNodeMixRGB": (316.12, -492.022),
         "ShaderNodeCombineHSV": (528.408, -404.612),
-        "ShaderNodeOutputWorld": (729.325, 34.154),
+        "ShaderNodeOutputWorld": (940, 34.154),
     }
     n.location = positions[t]
 
     if t == "ShaderNodeMath" and not background:
         n.operation = "GREATER_THAN"
+
+    if t == "ShaderNodeMix":
+        n.data_type = "RGBA"
 
     return n
 
@@ -1107,6 +1111,7 @@ def setup_hdri(self, context):
             gaf_hdri_props.hdri_use_separate_saturation,
             gaf_hdri_props.hdri_use_separate_warmth,
             gaf_hdri_props.hdri_use_separate_tint,
+            gaf_hdri_props.hdri_use_separate_color,
         ]
     )
 
@@ -1120,6 +1125,7 @@ def setup_hdri(self, context):
     n_warm = handler_node(context, "Warmth")
     n_cont = handler_node(context, "ShaderNodeGamma")
     n_sat = handler_node(context, "ShaderNodeHueSaturation")
+    n_col = handler_node(context, "ShaderNodeMix")
     n_shader = handler_node(context, "ShaderNodeBackground")
     n_out = handler_node(context, "ShaderNodeOutputWorld")
 
@@ -1131,6 +1137,7 @@ def setup_hdri(self, context):
         )
         n_cont_b = handler_node(context, "ShaderNodeGamma", background=True)
         n_sat_b = handler_node(context, "ShaderNodeHueSaturation", background=True)
+        n_col_b = handler_node(context, "ShaderNodeMix", background=True)
         n_warm_b = handler_node(context, "Warmth", background=True)
         n_shader_b = handler_node(context, "ShaderNodeBackground", background=True)
         n_mix = handler_node(context, "ShaderNodeMixShader")
@@ -1152,14 +1159,16 @@ def setup_hdri(self, context):
     new_link(links, n_img.outputs[0], n_warm.inputs[0])
     new_link(links, n_warm.outputs[0], n_cont.inputs[0])
     new_link(links, n_cont.outputs[0], n_sat.inputs[4])
-    new_link(links, n_sat.outputs[0], n_shader.inputs[0], force=True)
+    new_link(links, n_sat.outputs[0], n_col.inputs[6])
+    new_link(links, n_col.outputs[2], n_shader.inputs[0], force=True)
 
     if extra_nodes:
         new_link(links, n_mapping.outputs[0], n_img_b.inputs[0], force=True)
         new_link(links, n_img_b.outputs[0], n_warm_b.inputs[0], force=True)
         new_link(links, n_warm_b.outputs[0], n_cont_b.inputs[0], force=True)
         new_link(links, n_cont_b.outputs[0], n_sat_b.inputs[4], force=True)
-        new_link(links, n_sat_b.outputs[0], n_shader_b.inputs[0], force=True)
+        new_link(links, n_sat_b.outputs[0], n_col_b.inputs[6], force=True)
+        new_link(links, n_col_b.outputs[2], n_shader_b.inputs[0], force=True)
         new_link(links, n_shader.outputs[0], n_mix.inputs[1], force=True)
         new_link(links, n_shader_b.outputs[0], n_mix.inputs[2], force=True)
         if gaf_hdri_props.hdri_use_bg_reflections:
@@ -1173,7 +1182,7 @@ def setup_hdri(self, context):
         new_link(links, n_shader.outputs[0], n_out.inputs[0], force=True)
 
     if gaf_hdri_props.hdri_clamp:
-        new_link(links, n_sat.outputs[0], n_shsv.inputs[0])
+        new_link(links, n_col.outputs[2], n_shsv.inputs[0])
         new_link(links, n_shsv.outputs[0], n_chsv.inputs[0])
         new_link(links, n_shsv.outputs[1], n_chsv.inputs[1])
         new_link(links, n_shsv.outputs[2], n_greater.inputs[0])
@@ -1211,6 +1220,7 @@ def setup_hdri(self, context):
     update_background_saturation(self, context)
     update_background_warmth(self, context)
     update_background_tint(self, context)
+    update_background_color(self, context)
 
     return None
 
@@ -1333,6 +1343,7 @@ def update_brightness(self, context):
             gaf_hdri_props.hdri_use_separate_saturation,
             gaf_hdri_props.hdri_use_separate_warmth,
             gaf_hdri_props.hdri_use_separate_tint,
+            gaf_hdri_props.hdri_use_separate_color,
         ]
     )
     if not gaf_hdri_props.hdri_use_separate_brightness and extra_nodes:
@@ -1362,6 +1373,7 @@ def update_contrast(self, context):
             gaf_hdri_props.hdri_use_separate_saturation,
             gaf_hdri_props.hdri_use_separate_warmth,
             gaf_hdri_props.hdri_use_separate_tint,
+            gaf_hdri_props.hdri_use_separate_color,
         ]
     )
     if not gaf_hdri_props.hdri_use_separate_contrast and extra_nodes:
@@ -1390,6 +1402,7 @@ def update_saturation(self, context):
             gaf_hdri_props.hdri_use_separate_saturation,
             gaf_hdri_props.hdri_use_separate_warmth,
             gaf_hdri_props.hdri_use_separate_tint,
+            gaf_hdri_props.hdri_use_separate_color,
         ]
     )
     if not gaf_hdri_props.hdri_use_separate_saturation and extra_nodes:
@@ -1418,6 +1431,7 @@ def update_warmth(self, context):
             gaf_hdri_props.hdri_use_separate_saturation,
             gaf_hdri_props.hdri_use_separate_warmth,
             gaf_hdri_props.hdri_use_separate_tint,
+            gaf_hdri_props.hdri_use_separate_color,
         ]
     )
     if not gaf_hdri_props.hdri_use_separate_warmth and extra_nodes:
@@ -1446,12 +1460,44 @@ def update_tint(self, context):
             gaf_hdri_props.hdri_use_separate_saturation,
             gaf_hdri_props.hdri_use_separate_warmth,
             gaf_hdri_props.hdri_use_separate_tint,
+            gaf_hdri_props.hdri_use_separate_color,
         ]
     )
     if not gaf_hdri_props.hdri_use_separate_tint and extra_nodes:
         n = handler_node(context, "Warmth", background=True)
         n.inputs[2].default_value = value
         n.mute = uses_default_values(n, "Warmth")
+
+    return None
+
+
+def update_color(self, context):
+    gaf_hdri_props = context.scene.world.gaf_hdri_props
+    if not gaf_hdri_props.hdri_handler_enabled:
+        return None  # Don't do anything if handler is disabled
+
+    value = gaf_hdri_props.hdri_color
+    n = handler_node(context, "ShaderNodeMix")
+    n.inputs[0].default_value = value[3]
+    n.inputs[7].default_value = value[:-1] + (1,)
+    n.mute = value[3] == 0
+
+    extra_nodes = any(
+        [
+            gaf_hdri_props.hdri_use_jpg_background,
+            gaf_hdri_props.hdri_use_separate_brightness,
+            gaf_hdri_props.hdri_use_separate_contrast,
+            gaf_hdri_props.hdri_use_separate_saturation,
+            gaf_hdri_props.hdri_use_separate_warmth,
+            gaf_hdri_props.hdri_use_separate_tint,
+            gaf_hdri_props.hdri_use_separate_color,
+        ]
+    )
+    if not gaf_hdri_props.hdri_use_separate_color and extra_nodes:
+        n = handler_node(context, "ShaderNodeMix", background=True)
+        n.inputs[0].default_value = value[3]
+        n.inputs[7].default_value = value[:-1] + (1,)
+        n.mute = value[3] == 0
 
     return None
 
@@ -1537,6 +1583,21 @@ def update_background_tint(self, context):
     n = handler_node(context, "Warmth", background=True)
     n.inputs[2].default_value = value
     n.mute = uses_default_values(n, "Warmth")
+
+    return None
+
+
+def update_background_color(self, context):
+    gaf_hdri_props = context.scene.world.gaf_hdri_props
+    if not gaf_hdri_props.hdri_handler_enabled or not gaf_hdri_props.hdri_use_separate_color:
+        update_color(self, context)
+        return None
+
+    value = gaf_hdri_props.hdri_background_color
+    n = handler_node(context, "ShaderNodeMix", background=True)
+    n.inputs[0].default_value = value[3]
+    n.inputs[7].default_value = value[:-1] + (1,)
+    n.mute = value[3] == 0
 
     return None
 

@@ -1252,6 +1252,9 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
             if gaf_hdri_props.hdri_advanced:
                 col = box.column(align=True)
                 col.prop(gaf_hdri_props, "hdri_tint", slider=True)
+                row = col.row(align=True)
+                row.prop(gaf_hdri_props, "hdri_color")
+                col.separator()
                 col.prop(gaf_hdri_props, "hdri_clamp", slider=True)
                 split = col.split(factor=0.75, align=True)
                 r = split.row(align=True)
@@ -1286,6 +1289,11 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
                 sub = row.row(align=True)
                 sub.active = gaf_hdri_props.hdri_use_separate_tint
                 sub.prop(gaf_hdri_props, "hdri_background_tint", slider=True)
+                row = col.row(align=True)
+                row.prop(gaf_hdri_props, "hdri_use_separate_color", toggle=True)
+                sub = row.row(align=True)
+                sub.active = gaf_hdri_props.hdri_use_separate_color
+                sub.prop(gaf_hdri_props, "hdri_background_color", text="")
 
                 col.separator()
                 sub = col.row(align=True)
