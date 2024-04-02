@@ -1238,18 +1238,25 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
             col.separator()
             col.separator()
 
-            box = col.box()
-            col = box.column(align=True)
-            row = col.row(align=True)
-            row.alignment = "LEFT"
-            row.prop(
-                gaf_hdri_props,
-                "hdri_advanced",
-                icon="TRIA_DOWN" if gaf_hdri_props.hdri_advanced else "TRIA_RIGHT",
-                emboss=False,
-                toggle=True,
-            )
-            if gaf_hdri_props.hdri_advanced:
+            layout_panels_supported = bpy.app.version >= (4, 1, 0)
+            if layout_panels_supported:
+                header, panel = layout.panel("gaffer_advanced", default_closed=True)
+                header.label(text="Advanced")
+                if panel:
+                    box = panel.column(align=True)
+            else:
+                box = col.box()
+                col = box.column(align=True)
+                row = col.row(align=True)
+                row.alignment = "LEFT"
+                row.prop(
+                    gaf_hdri_props,
+                    "hdri_advanced",
+                    icon="TRIA_DOWN" if gaf_hdri_props.hdri_advanced else "TRIA_RIGHT",
+                    emboss=False,
+                    toggle=True,
+                )
+            if (gaf_hdri_props.hdri_advanced and not layout_panels_supported) or (layout_panels_supported and panel):
                 col = box.column(align=True)
                 col.prop(gaf_hdri_props, "hdri_tint", slider=True)
                 row = col.row(align=True)
