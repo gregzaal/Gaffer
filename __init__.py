@@ -39,7 +39,7 @@ if "bpy" in locals():
     imp.reload(addon_updater)
     imp.reload(addon_updater_ops)
 else:
-    from . import constants, functions, operators, ui
+    from . import constants, functions, operators, ui  # noqa: F401 (imported but unused, needed for reload)
 
 import bpy
 import os

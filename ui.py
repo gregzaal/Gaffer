@@ -148,7 +148,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 op.mult = 2
             else:
                 row.label(text="  Node Invalid")
-        except:
+        except (KeyError, IndexError, AttributeError):
             row.label(text="  Node Invalid")
 
     def draw_strength_eevee(col, light):
@@ -880,9 +880,9 @@ class GAFFER_PT_lights(bpy.types.Panel):
 
         if gaf_props.SoloActive != "":
             try:
-                # Will cause exception if object by that name doesn't exist
+                # Will cause KeyError if object by that name doesn't exist
                 bpy.data.objects[gaf_props.SoloActive]
-            except:
+            except KeyError:
                 if gaf_props.SoloActive != "WorldEnviroLight":
                     # In case solo'd light changes name, theres no other way to exit solo mode
                     col.separator()

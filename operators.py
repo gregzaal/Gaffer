@@ -319,7 +319,7 @@ class GAFFER_OT_solo(bpy.types.Operator):
                 if l[0] != "WorldEnviroLight":
                     try:
                         obj = bpy.data.objects[l[0]]
-                    except:
+                    except KeyError:
                         # TODO not sure if this ever happens, if it does, doesn't it break?
                         fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
                         bpy.ops.gaffer.solo()
@@ -352,7 +352,7 @@ class GAFFER_OT_solo(bpy.types.Operator):
                 if l[0] != "WorldEnviroLight":
                     try:
                         obj = bpy.data.objects[l[0]]
-                    except:
+                    except KeyError:
                         # TODO not sure if this ever happens, if it does, doesn't it break?
                         bpy.ops.gaffer.refresh_lights()
                         fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
@@ -497,7 +497,7 @@ class GAFFER_OT_apply_exposure(bpy.types.Operator):
                                     {"ERROR"},
                                     item[0] + " does not have a valid node. Try refreshing the light list.",
                                 )
-                        except:
+                        except (KeyError, IndexError, AttributeError):
                             self.report(
                                 {"ERROR"},
                                 item[0] + " does not have a valid node. Try refreshing the light list.",
@@ -1922,6 +1922,8 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
         row.label(text="If you already have some of them, those will be skipped")
 
     def download_file(self, context, req, i, hh, h_list, out_folder, num_hdris):
+        import urllib.error
+
         filename = hh + "_1k.hdr"
         if hh not in h_list:
             filepath = os.path.join(out_folder, filename)
@@ -1929,7 +1931,7 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
             try:
                 url = "https://hdrihaven.com/files/hdris/" + filename
                 req.urlretrieve(url, filepath)
-            except:
+            except (urllib.error.HTTPError, urllib.error.URLError, ValueError, IOError):
                 import sys
 
                 print("    Failed to download " + filename + " (" + str(sys.exc_info()[0]) + ")")
@@ -2069,7 +2071,8 @@ class GAFFER_OT_hdri_open_data_folder(bpy.types.Operator):
                 subprocess.check_call(["xdg-open", "--", const.data_dir])
             elif sys.platform == "win32":
                 subprocess.check_call(["explorer", const.data_dir])
-        except:
+        except Exception as e:
+            print(f"Failed to open folder: {e}")
             self.report(
                 {"WARNING"},
                 "This might not have worked :( Navigate to the path manually: " + const.data_dir,

@@ -551,7 +551,7 @@ def do_update_falloff(self):
                 tree.nodes.active = fnode
                 setGafferNode(bpy.context, "STRENGTH", tree, light)
         force_update(bpy.context, light)
-    except:
+    except (KeyError, IndexError, AttributeError):
         print("Warning: do_update_falloff failed, node may not exist anymore")
 
 
@@ -1243,7 +1243,7 @@ def hdri_enable(self, context):
                     if n.name != ow:
                         if hasattr(n, "is_active_output"):
                             n.is_active_output = False
-            except:
+            except (KeyError, IndexError, AttributeError):
                 print("Failed to reset active world output (node may not exist anymore?)")
 
     gaf_hdri_props = context.scene.world.gaf_hdri_props
@@ -1561,10 +1561,10 @@ def save_image(context, img, filepath, fileformat, exposure=0):
     try:
         # Filmic Blender doesn't have a "Default"
         vs.view_transform = "Default"
-    except:
+    except TypeError:
         try:
             vs.view_transform = "sRGB EOTF"  # Default for Filmic
-        except:
+        except TypeError:
             print("WARNING: Unable to set default for view transform.")
 
     settings = context.scene.render.image_settings
@@ -1838,11 +1838,12 @@ def get_hdri_haven_list(force_update=False):
                 return offline_data
 
     from requests import get as requests_get
+    from requests.exceptions import RequestException, Timeout, HTTPError
 
     print("Getting HDRI list from Poly Haven...")
     try:
         hdrihaven_hdris = requests_get("https://hdrihaven.com/php/json_list.php", timeout=10).json()
-    except:
+    except (RequestException, Timeout, HTTPError):
         if force_update:
             print("    Can't fetch list from Poly Haven")
             return {}
