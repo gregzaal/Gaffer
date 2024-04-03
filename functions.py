@@ -1544,7 +1544,8 @@ def update_clamp(self, context):
 
 def update_background_rotation(self, context):
     gaf_hdri_props = context.scene.world.gaf_hdri_props
-    if not gaf_hdri_props.hdri_handler_enabled:
+    if not gaf_hdri_props.hdri_handler_enabled or not gaf_hdri_props.hdri_use_separate_rotation:
+        update_rotation(self, context)
         return None  # Don't do anything if handler is disabled
 
     n = handler_node(context, "ShaderNodeMapping", background=True)
