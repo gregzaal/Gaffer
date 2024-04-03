@@ -875,7 +875,7 @@ def get_variation(hdri, mode=None, var=None):
         return "ERROR: Unsupported mode!"
 
 
-def handler_node(context, t, background=False):
+def handler_node(context, t, background=False, fetch_only=False):
     def warmth_node(context):
         group_name = "Warmth (Gaffer)"
         n = context.scene.world.node_tree.nodes.new("ShaderNodeGroup")
@@ -980,6 +980,11 @@ def handler_node(context, t, background=False):
     for n in nodes:
         if n.name == name:
             return n
+
+    if fetch_only:
+        # Sometimes we only want to fetch existing nodes, not create new ones,
+        # for example when the context does not allow creating new nodes.
+        return None
 
     if t == "Warmth":
         n = warmth_node(context)
