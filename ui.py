@@ -1320,10 +1320,13 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
                 sub.active = any(
                     [
                         gaf_hdri_props.hdri_use_jpg_background,
+                        gaf_hdri_props.hdri_use_separate_rotation,
                         gaf_hdri_props.hdri_use_separate_brightness,
                         gaf_hdri_props.hdri_use_separate_contrast,
                         gaf_hdri_props.hdri_use_separate_saturation,
                         gaf_hdri_props.hdri_use_separate_warmth,
+                        gaf_hdri_props.hdri_use_separate_tint,
+                        gaf_hdri_props.hdri_use_separate_color,
                     ]
                 )
                 sub.prop(gaf_hdri_props, "hdri_use_bg_reflections")

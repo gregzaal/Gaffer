@@ -1007,7 +1007,7 @@ def handler_node(context, t, background=False, fetch_only=False):
         "ShaderNodeBackground": (10, 48 - y_offset),
         "ShaderNodeMixShader": (220, 59),
         "ShaderNodeLightPath": (-1760, 426),
-        "ShaderNodeMath": (-191, 309) if background else (-392, -501),
+        "ShaderNodeMath": (-1570, 309) if background else (-392, -501),
         "ShaderNodeSeparateHSV": (-605, -404),
         "ShaderNodeValue": (-604, -540),
         "ShaderNodeMixRGB": (-194, -492),
@@ -1150,12 +1150,11 @@ def setup_hdri(self, context):
         n_warm_b = handler_node(context, "Warmth", background=True)
         n_shader_b = handler_node(context, "ShaderNodeBackground", background=True)
         n_mix = handler_node(context, "ShaderNodeMixShader")
-        n_lp = handler_node(context, "ShaderNodeLightPath")
-        if gaf_hdri_props.hdri_use_bg_reflections:
-            n_math = handler_node(context, "ShaderNodeMath", background=True)
 
     if extra_nodes or gaf_hdri_props.hdri_use_separate_rotation:
         n_lp = handler_node(context, "ShaderNodeLightPath")
+        if gaf_hdri_props.hdri_use_bg_reflections:
+            n_math = handler_node(context, "ShaderNodeMath", background=True)
 
     if gaf_hdri_props.hdri_clamp:
         n_shsv = handler_node(context, "ShaderNodeSeparateHSV")
@@ -1178,8 +1177,11 @@ def setup_hdri(self, context):
         new_link(links, n_mapping.outputs[0], n_mixrot.inputs[4], force=True)
         new_link(links, n_mapping_b.outputs[0], n_mixrot.inputs[5], force=True)
         new_link(links, n_mixrot.outputs[1], n_img.inputs[0], force=True)
-        new_link(links, n_lp.outputs[0], n_mixrot.inputs[0], force=True)
         coords_socket = n_mixrot.outputs[1]
+        if gaf_hdri_props.hdri_use_bg_reflections:
+            new_link(links, n_math.outputs[0], n_mixrot.inputs[0], force=True)
+        else:
+            new_link(links, n_lp.outputs[0], n_mixrot.inputs[0], force=True)
     else:
         new_link(links, n_mapping.outputs[0], n_img.inputs[0], force=True)
         coords_socket = n_mapping.outputs[0]
@@ -1195,13 +1197,16 @@ def setup_hdri(self, context):
         new_link(links, n_shader_b.outputs[0], n_mix.inputs[2], force=True)
         if gaf_hdri_props.hdri_use_bg_reflections:
             new_link(links, n_math.outputs[0], n_mix.inputs[0], force=True)
-            new_link(links, n_lp.outputs[0], n_math.inputs[0], force=True)  # Camera Ray
-            new_link(links, n_lp.outputs[3], n_math.inputs[1], force=True)  # Glossy Ray
         else:
             new_link(links, n_lp.outputs[0], n_mix.inputs[0], force=True)
         new_link(links, n_mix.outputs[0], n_out.inputs[0], force=True)
     else:
         new_link(links, n_shader.outputs[0], n_out.inputs[0], force=True)
+
+    if extra_nodes or gaf_hdri_props.hdri_use_separate_rotation:
+        if gaf_hdri_props.hdri_use_bg_reflections:
+            new_link(links, n_lp.outputs[0], n_math.inputs[0], force=True)  # Camera Ray
+            new_link(links, n_lp.outputs[3], n_math.inputs[1], force=True)  # Glossy Ray
 
     if gaf_hdri_props.hdri_clamp:
         new_link(links, n_col.outputs[2], n_shsv.inputs[0])
@@ -1546,7 +1551,7 @@ def update_background_rotation(self, context):
     gaf_hdri_props = context.scene.world.gaf_hdri_props
     if not gaf_hdri_props.hdri_handler_enabled or not gaf_hdri_props.hdri_use_separate_rotation:
         update_rotation(self, context)
-        return None  # Don't do anything if handler is disabled
+        return None
 
     n = handler_node(context, "ShaderNodeMapping", background=True)
 
