@@ -25,6 +25,7 @@ import time
 import datetime
 from collections import OrderedDict
 from mathutils import Vector, Euler
+from bpy.app.handlers import persistent
 
 from . import constants as const
 
@@ -554,6 +555,30 @@ def do_update_falloff(self):
 
 def _update_falloff(self, context):
     do_update_falloff(self)
+
+
+@persistent
+def depsgraph_update_post_handler(scene, depsgraph):
+    # Keep background mix node blend mode in sync when it should be.
+    if depsgraph.id_type_updated("WORLD"):
+        gaf_hdri_props = scene.world.gaf_hdri_props
+        context = bpy.context
+        extra_nodes = any(
+            [
+                gaf_hdri_props.hdri_use_jpg_background,
+                gaf_hdri_props.hdri_use_separate_brightness,
+                gaf_hdri_props.hdri_use_separate_contrast,
+                gaf_hdri_props.hdri_use_separate_saturation,
+                gaf_hdri_props.hdri_use_separate_warmth,
+                gaf_hdri_props.hdri_use_separate_tint,
+                gaf_hdri_props.hdri_use_separate_color,
+            ]
+        )
+        if not gaf_hdri_props.hdri_use_separate_color and extra_nodes:
+            n = handler_node(context, "ShaderNodeMix", fetch_only=True)
+            bn = handler_node(context, "ShaderNodeMix", background=True, fetch_only=True)
+            if n and bn and n.blend_type != bn.blend_type:
+                bn.blend_type = n.blend_type
 
 
 # World vis functions
@@ -1525,10 +1550,11 @@ def update_color(self, context):
         ]
     )
     if not gaf_hdri_props.hdri_use_separate_color and extra_nodes:
-        n = handler_node(context, "ShaderNodeMix", background=True)
-        n.inputs[0].default_value = value[3]
-        n.inputs[7].default_value = value[:-1] + (1,)
-        n.mute = value[3] == 0
+        bn = handler_node(context, "ShaderNodeMix", background=True)
+        bn.blend_type = n.blend_type
+        bn.inputs[0].default_value = value[3]
+        bn.inputs[7].default_value = value[:-1] + (1,)
+        bn.mute = value[3] == 0
 
     return None
 

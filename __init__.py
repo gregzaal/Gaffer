@@ -744,12 +744,14 @@ def register():
     bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
     bpy.types.World.gaf_hdri_props = bpy.props.PointerProperty(type=GafferHDRIProperties)
     bpy.app.handlers.load_post.append(operators.load_handler)
+    bpy.app.handlers.depsgraph_update_post.append(functions.depsgraph_update_post_handler)
 
 
 def unregister():
     addon_updater_ops.unregister()
 
     bpy.app.handlers.load_post.remove(operators.load_handler)
+    bpy.app.handlers.depsgraph_update_post.remove(functions.depsgraph_update_post_handler)
 
     functions.previews_unregister()
 
