@@ -1272,6 +1272,11 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
 
                 col.label(text="Control background separately:")
                 row = col.row(align=True)
+                row.prop(gaf_hdri_props, "hdri_use_separate_rotation", toggle=True)
+                sub = row.row(align=True)
+                sub.active = gaf_hdri_props.hdri_use_separate_rotation
+                sub.prop(gaf_hdri_props, "hdri_background_rotation", slider=True)
+                row = col.row(align=True)
                 row.prop(gaf_hdri_props, "hdri_use_separate_brightness", toggle=True)
                 sub = row.row(align=True)
                 sub.active = gaf_hdri_props.hdri_use_separate_brightness

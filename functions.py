@@ -987,14 +987,16 @@ def handler_node(context, t, background=False):
     if t == "Warmth":
         n = warmth_node(context)
     else:
-        n = nodes.new(t)
+        actual_t = t.split("__")[0]
+        n = nodes.new(actual_t)
     n.name = name
     n.select = False
 
-    y_offset = 220 if background else 0
+    y_offset = 250 if background else 0
     positions = {
-        "ShaderNodeTexCoord": (-951.031, 100.387),
-        "ShaderNodeMapping": (-759.744, 140.973),
+        "ShaderNodeTexCoord": (-1250, 100.387),
+        "ShaderNodeMapping": (-1060, 140.973 - y_offset * 1.5),
+        "ShaderNodeMix__rot": (-800, 75),
         "ShaderNodeTexEnvironment": (-567.9, 91.765 - y_offset),
         "ShaderNodeGamma": (-71.785, 59.522 - y_offset),
         "ShaderNodeHueSaturation": (118.214, 81.406 - y_offset),
@@ -1002,7 +1004,7 @@ def handler_node(context, t, background=False):
         "Warmth": (-262.389, 72.821 - y_offset),
         "ShaderNodeBackground": (520, 48.494 - y_offset),
         "ShaderNodeMixShader": (730, 59.349),
-        "ShaderNodeLightPath": (123.77, 426.489),
+        "ShaderNodeLightPath": (-1250, 426.489),
         "ShaderNodeMath": (318.213, 309.207) if background else (110.564, -501.938),
         "ShaderNodeSeparateHSV": (-94.990, -404.268),
         "ShaderNodeValue": (-94.990, -540.5),
@@ -1017,6 +1019,8 @@ def handler_node(context, t, background=False):
 
     if t == "ShaderNodeMix":
         n.data_type = "RGBA"
+    elif t == "ShaderNodeMix__rot":
+        n.data_type = "VECTOR"
 
     return n
 
@@ -1129,6 +1133,10 @@ def setup_hdri(self, context):
     n_shader = handler_node(context, "ShaderNodeBackground")
     n_out = handler_node(context, "ShaderNodeOutputWorld")
 
+    if gaf_hdri_props.hdri_use_separate_rotation:
+        n_mapping_b = handler_node(context, "ShaderNodeMapping", background=True)
+        n_mixrot = handler_node(context, "ShaderNodeMix__rot")
+
     if extra_nodes:
         n_img_b = handler_node(
             context,
@@ -1145,6 +1153,9 @@ def setup_hdri(self, context):
         if gaf_hdri_props.hdri_use_bg_reflections:
             n_math = handler_node(context, "ShaderNodeMath", background=True)
 
+    if extra_nodes or gaf_hdri_props.hdri_use_separate_rotation:
+        n_lp = handler_node(context, "ShaderNodeLightPath")
+
     if gaf_hdri_props.hdri_clamp:
         n_shsv = handler_node(context, "ShaderNodeSeparateHSV")
         n_clamp_val = handler_node(context, "ShaderNodeValue")
@@ -1155,15 +1166,25 @@ def setup_hdri(self, context):
     # Links
     links = w.node_tree.links
     new_link(links, n_coord.outputs[0], n_mapping.inputs[0])
-    new_link(links, n_mapping.outputs[0], n_img.inputs[0])
     new_link(links, n_img.outputs[0], n_warm.inputs[0])
     new_link(links, n_warm.outputs[0], n_cont.inputs[0])
     new_link(links, n_cont.outputs[0], n_sat.inputs[4])
     new_link(links, n_sat.outputs[0], n_col.inputs[6])
     new_link(links, n_col.outputs[2], n_shader.inputs[0], force=True)
 
+    if gaf_hdri_props.hdri_use_separate_rotation:
+        new_link(links, n_coord.outputs[0], n_mapping_b.inputs[0], force=True)
+        new_link(links, n_mapping.outputs[0], n_mixrot.inputs[4], force=True)
+        new_link(links, n_mapping_b.outputs[0], n_mixrot.inputs[5], force=True)
+        new_link(links, n_mixrot.outputs[1], n_img.inputs[0], force=True)
+        new_link(links, n_lp.outputs[0], n_mixrot.inputs[0], force=True)
+        coords_socket = n_mixrot.outputs[1]
+    else:
+        new_link(links, n_mapping.outputs[0], n_img.inputs[0], force=True)
+        coords_socket = n_mapping.outputs[0]
+
     if extra_nodes:
-        new_link(links, n_mapping.outputs[0], n_img_b.inputs[0], force=True)
+        new_link(links, coords_socket, n_img_b.inputs[0], force=True)
         new_link(links, n_img_b.outputs[0], n_warm_b.inputs[0], force=True)
         new_link(links, n_warm_b.outputs[0], n_cont_b.inputs[0], force=True)
         new_link(links, n_cont_b.outputs[0], n_sat_b.inputs[4], force=True)
@@ -1215,6 +1236,8 @@ def setup_hdri(self, context):
     update_saturation(self, context)
     update_warmth(self, context)
     update_tint(self, context)
+    update_color(self, context)
+    update_background_rotation(self, context)
     update_background_brightness(self, context)
     update_background_contrast(self, context)
     update_background_saturation(self, context)
@@ -1324,6 +1347,13 @@ def update_rotation(self, context):
     n.mute = uses_default_values(n, "ShaderNodeMapping")
 
     return None
+
+
+def update_horizon(self, context):
+    gaf_hdri_props = context.scene.world.gaf_hdri_props
+    update_rotation(self, context)
+    if gaf_hdri_props.hdri_use_separate_rotation:
+        update_background_rotation(self, context)
 
 
 def update_brightness(self, context):
@@ -1512,6 +1542,32 @@ def update_clamp(self, context):
     n.outputs[0].default_value = value
 
     setup_hdri(self, context)
+
+    return None
+
+
+def update_background_rotation(self, context):
+    gaf_hdri_props = context.scene.world.gaf_hdri_props
+    if not gaf_hdri_props.hdri_handler_enabled:
+        return None  # Don't do anything if handler is disabled
+
+    n = handler_node(context, "ShaderNodeMapping", background=True)
+
+    e = 2
+    rot = math.radians(gaf_hdri_props.hdri_background_rotation)
+    loc = pow(gaf_hdri_props.hdri_horz_shift, e) * 2
+    sca = pow(1 - ((gaf_hdri_props.hdri_horz_exp * 2 - 1) * pow(gaf_hdri_props.hdri_horz_shift, e)), e)
+
+    if NMN:
+        n.inputs["Location"].default_value.z = loc
+        n.inputs["Rotation"].default_value.z = rot
+        n.inputs["Scale"].default_value.z = sca
+    else:
+        n.translation.z = loc
+        n.rotation.z = rot
+        n.scale.z = sca
+
+    n.mute = uses_default_values(n, "ShaderNodeMapping")
 
     return None
 

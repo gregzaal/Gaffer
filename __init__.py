@@ -504,7 +504,7 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         default=0,
         soft_min=0,
         soft_max=1,
-        update=functions.update_rotation,
+        update=functions.update_horizon,
     )
     hdri_horz_exp: bpy.props.FloatProperty(
         name="Warp",
@@ -512,7 +512,7 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         default=0,
         soft_min=-1,
         soft_max=1,
-        update=functions.update_rotation,
+        update=functions.update_horizon,
     )
     hdri_use_jpg_background: bpy.props.BoolProperty(
         name="High-res JPG background",
@@ -536,6 +536,20 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         default=False,
         description="Use these settings for the appearance of reflections as well",
         update=functions.setup_hdri,
+    )
+    hdri_use_separate_rotation: bpy.props.BoolProperty(
+        name="Rotation",
+        default=False,
+        description="Adjust the rotation for the background separately from the lighting",
+        update=functions.setup_hdri,
+    )
+    hdri_background_rotation: bpy.props.FloatProperty(
+        name="Value",
+        description="Rotate the HDRI (in degrees) around the Z-axis",
+        default=0,
+        soft_min=-180,
+        soft_max=180,
+        update=functions.update_background_rotation,
     )
     hdri_use_separate_brightness: bpy.props.BoolProperty(
         name="Brightness",
