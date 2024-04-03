@@ -28,9 +28,6 @@ from mathutils import Vector, Euler
 
 from . import constants as const
 
-# New mapping node with dynamic inputs (https://developer.blender.org/rBbaaa89a0bc54)
-NMN = bpy.app.version >= (2, 81, 8)
-
 
 # Utils
 
@@ -1059,10 +1056,9 @@ def uses_default_values(node, node_type):
             "_socket_2": 0,
         },
     }
-    if NMN:
-        defaults_dict["ShaderNodeMapping"]["_socket_1"] = defaults_dict["ShaderNodeMapping"]["translation"]
-        defaults_dict["ShaderNodeMapping"]["_socket_2"] = defaults_dict["ShaderNodeMapping"]["rotation"]
-        defaults_dict["ShaderNodeMapping"]["_socket_3"] = defaults_dict["ShaderNodeMapping"]["scale"]
+    defaults_dict["ShaderNodeMapping"]["_socket_1"] = defaults_dict["ShaderNodeMapping"]["translation"]
+    defaults_dict["ShaderNodeMapping"]["_socket_2"] = defaults_dict["ShaderNodeMapping"]["rotation"]
+    defaults_dict["ShaderNodeMapping"]["_socket_3"] = defaults_dict["ShaderNodeMapping"]["scale"]
 
     defaults = defaults_dict[node_type]
     for d in defaults:
@@ -1335,14 +1331,9 @@ def update_rotation(self, context):
     loc = pow(gaf_hdri_props.hdri_horz_shift, e) * 2
     sca = pow(1 - ((gaf_hdri_props.hdri_horz_exp * 2 - 1) * pow(gaf_hdri_props.hdri_horz_shift, e)), e)
 
-    if NMN:
-        n.inputs["Location"].default_value.z = loc
-        n.inputs["Rotation"].default_value.z = rot
-        n.inputs["Scale"].default_value.z = sca
-    else:
-        n.translation.z = loc
-        n.rotation.z = rot
-        n.scale.z = sca
+    n.inputs["Location"].default_value.z = loc
+    n.inputs["Rotation"].default_value.z = rot
+    n.inputs["Scale"].default_value.z = sca
 
     n.mute = uses_default_values(n, "ShaderNodeMapping")
 
@@ -1558,14 +1549,9 @@ def update_background_rotation(self, context):
     loc = pow(gaf_hdri_props.hdri_horz_shift, e) * 2
     sca = pow(1 - ((gaf_hdri_props.hdri_horz_exp * 2 - 1) * pow(gaf_hdri_props.hdri_horz_shift, e)), e)
 
-    if NMN:
-        n.inputs["Location"].default_value.z = loc
-        n.inputs["Rotation"].default_value.z = rot
-        n.inputs["Scale"].default_value.z = sca
-    else:
-        n.translation.z = loc
-        n.rotation.z = rot
-        n.scale.z = sca
+    n.inputs["Location"].default_value.z = loc
+    n.inputs["Rotation"].default_value.z = rot
+    n.inputs["Scale"].default_value.z = sca
 
     n.mute = uses_default_values(n, "ShaderNodeMapping")
 
