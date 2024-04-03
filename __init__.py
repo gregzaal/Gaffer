@@ -489,7 +489,7 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         update=functions.update_tint,
     )
     hdri_color: bpy.props.FloatVectorProperty(
-        name="Color",
+        name="Mix Color",
         description="Tint, or fully color, the environment. Use Alpha to control strength/opacity",
         subtype="COLOR",
         size=4,
@@ -622,7 +622,7 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         update=functions.update_background_tint,
     )
     hdri_use_separate_color: bpy.props.BoolProperty(
-        name="Color",
+        name="Mix Color",
         default=False,
         description="Adjust the color value for the background separately from the lighting",
         update=functions.setup_hdri,

@@ -1258,10 +1258,13 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
                 )
             if (gaf_hdri_props.hdri_advanced and not layout_panels_supported) or (layout_panels_supported and panel):
                 col = box.column(align=True)
-                col.prop(gaf_hdri_props, "hdri_tint", slider=True)
-                row = col.row(align=True)
-                row.prop(gaf_hdri_props, "hdri_color")
+                split = col.split(factor=0.5)
+                r = split.row()
+                r.prop(gaf_hdri_props, "hdri_tint", slider=True)
+                r = split.row()
+                r.prop(gaf_hdri_props, "hdri_color")
                 col.separator()
+
                 col.prop(gaf_hdri_props, "hdri_clamp", slider=True)
                 split = col.split(factor=0.75, align=True)
                 r = split.row(align=True)
