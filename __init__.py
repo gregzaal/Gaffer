@@ -111,6 +111,15 @@ class GafferPreferences(bpy.types.AddonPreferences):
         description=("Stop Gaffer from checking polyhaven.com for the latest HDRI and tag lists"),
         default=False,
     )
+    auto_refresh_light_list: bpy.props.BoolProperty(
+        name="Auto-Refresh Light List",
+        description=(
+            "Watch for changes to the scene and automatically refresh the light list. "
+            "May impact performance in heavy scenes. If disabled, "
+            "you'll need to manually refresh the light list when you add or remove lights"
+        ),
+        default=True,
+    )
 
     show_debug: bpy.props.BoolProperty(
         name="Show Debug Tools",
@@ -196,6 +205,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         col = main_col.column()
         col.prop(self, "panel_category")
         col.prop(self, "offline_mode")
+        col.prop(self, "auto_refresh_light_list")
 
         addon_updater_ops.update_settings_ui(self, context)
 

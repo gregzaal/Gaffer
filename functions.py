@@ -29,6 +29,8 @@ from bpy.app.handlers import persistent
 
 from . import constants as const
 
+TAG_REFRESH_LIGHT_LIST = False
+
 
 # Utils
 
@@ -118,6 +120,9 @@ def refresh_light_list(scene):
                     else:
                         current_node = s.links[0].from_node
         return found_node, found_socket
+
+    global TAG_REFRESH_LIGHT_LIST
+    TAG_REFRESH_LIGHT_LIST = False
 
     detected_lights = []
 
@@ -557,8 +562,31 @@ def _update_falloff(self, context):
     do_update_falloff(self)
 
 
+def tag_refresh_light_list():
+    global TAG_REFRESH_LIGHT_LIST
+    TAG_REFRESH_LIGHT_LIST = True
+
+
+def depsgraph_update_includes_all(depsgraph, types):
+    for id_type in types:
+        if not depsgraph.id_type_updated(id_type):
+            return False
+    return True
+
+
 @persistent
 def depsgraph_update_post_handler(scene, depsgraph):
+    prefs = bpy.context.preferences.addons[__package__].preferences
+    if prefs.auto_refresh_light_list:
+        # A light has been added
+        if depsgraph_update_includes_all(depsgraph, ["COLLECTION", "LIGHT", "OBJECT", "SCENE"]):
+            refresh_light_list(scene)
+
+        global TAG_REFRESH_LIGHT_LIST
+        if TAG_REFRESH_LIGHT_LIST:
+            TAG_REFRESH_LIGHT_LIST = False
+            refresh_light_list(scene)
+
     # Keep background mix node blend mode in sync when it should be.
     if depsgraph.id_type_updated("WORLD"):
         gaf_hdri_props = scene.world.gaf_hdri_props

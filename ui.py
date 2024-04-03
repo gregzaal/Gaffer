@@ -627,6 +627,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
             box = maincol.box()
             row = box.row(align=True)
             row.label(text="Light list out of date")
+            fn.tag_refresh_light_list()  # We can't refresh the list here, so we tag it for the next depsgraph update
             row.operator(ops.GAFFER_OT_refresh_light_list.bl_idname, icon="FILE_REFRESH", text="")
 
     # Don't show lights that share the same data
