@@ -495,7 +495,7 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         size=4,
         soft_min=0.0,
         soft_max=1.0,
-        default=(0.0, 0.0, 0.0, 0.0),
+        default=(0.5, 0.15, 0.075, 0.0),
         update=functions.update_color,
     )
     hdri_horz_shift: bpy.props.FloatProperty(
@@ -634,7 +634,7 @@ class GafferHDRIProperties(bpy.types.PropertyGroup):
         size=4,
         soft_min=0.0,
         soft_max=1.0,
-        default=(0.0, 0.0, 0.0, 0.0),
+        default=(0.5, 0.15, 0.075, 0.0),
         update=functions.update_background_color,
     )
     hdri_clamp: bpy.props.FloatProperty(
