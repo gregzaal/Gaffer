@@ -39,7 +39,7 @@ def update_category(self, context):
 
 
 # UI stuff that's shown for all renderers
-def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):
+def draw_renderer_independant(gaf_props, row, light, icons, users=[None, 1]):
 
     if bpy.context.scene.render.engine in const.supported_renderers:
         if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
@@ -67,6 +67,13 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):
                 row.operator(ops.GAFFER_OT_rename.bl_idname, text=data_name).light = light.name
         else:
             if prefs.auto_refresh_light_list:
+                op = row.operator(
+                    ops.GAFFER_OT_set_light_data_user_names.bl_idname,
+                    text="",
+                    icon_value=icons[f"num_{str(min(10, users[1]))}"].icon_id,
+                )
+                op.data_name = data_name
+                op.data_type = "lights" if users[0].startswith("LIGHT") else "materials"
                 if light.type == "LIGHT":
                     row.prop(light.data, "name", text="")
                 else:
@@ -713,7 +720,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 socket_strength_type = "i"
                 socket_strength = int(socket_strength_str)
 
-            draw_renderer_independant(gaf_props, row, light, users)
+            draw_renderer_independant(gaf_props, row, light, icons, users)
 
             if not is_portal:
                 draw_strength_cycles(col, light, material, node_strength, socket_strength_type, socket_strength)
@@ -730,7 +737,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
             col = split.column()
             row = col.row(align=True)
 
-            draw_renderer_independant(gaf_props, row, light, users)
+            draw_renderer_independant(gaf_props, row, light, icons, users)
 
             if not is_portal:
                 draw_strength_eevee(col, light)
@@ -814,7 +821,7 @@ def draw_unsupported_renderer_UI(context, layout, lights):
             users = ["LIGHT" + light.data.name, duplicates["LIGHT" + light.data.name]]
         else:
             users = ["MAT" + light.name, duplicates["MAT" + light.name]]
-        draw_renderer_independant(gaf_props, row, light, users)
+        draw_renderer_independant(gaf_props, row, light, icons, users)
         i += 1
 
     if len(lights_to_show) == 0:

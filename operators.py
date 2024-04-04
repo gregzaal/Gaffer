@@ -420,6 +420,40 @@ class GAFFER_OT_refresh_light_list(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class GAFFER_OT_set_light_data_user_names(bpy.types.Operator):
+
+    "This light data is used by multiple objects. This sets the names for each object to match the data name"
+    bl_idname = "gaffer.set_light_data_user_names"
+    bl_label = "Match Object Names to Data Name"
+
+    data_name: bpy.props.StringProperty()
+    data_type: bpy.props.StringProperty()
+
+    def execute(self, context):
+        data = getattr(bpy.data, self.data_type)[self.data_name]
+        i = 0
+        to_rename = {}  # To avoid modifying object list while we're iterating over it
+        for obj in bpy.data.objects:
+            if self.data_type == "lights":
+                if obj.data == data:
+                    i += 1
+                    to_rename[obj.name] = self.data_name + "." + str(i).zfill(3)
+            else:
+                for slot in obj.material_slots:
+                    if slot.material == data:
+                        i += 1
+                        to_rename[obj.name] = self.data_name + "." + str(i).zfill(3)
+        for obj in to_rename:
+            if bpy.data.objects[obj].name != to_rename[obj]:
+                bpy.data.objects[obj].name = to_rename[obj]
+        if i != 0:
+            fn.refresh_light_list(context.scene)
+            return {"FINISHED"}
+        else:
+            self.report({"ERROR"}, "No objects use this data")
+            return {"CANCELLED"}
+
+
 class GAFFER_OT_apply_exposure(bpy.types.Operator):
 
     "Apply Exposure\nAdjust the brightness of all lights by the exposure amount and set the exposure slider back to 0"
