@@ -592,6 +592,20 @@ def depsgraph_update_includes_all(depsgraph, types):
 
 @persistent
 def depsgraph_update_post_handler(scene, depsgraph):
+
+    # Debug mode to see what depsgraph updates are happening
+    if bpy.app.debug_value == 666:
+        types_updated = [id_type for id_type in const.depsgraph_id_types if depsgraph.id_type_updated(id_type)]
+        print("Updated types:", types_updated)
+        for update in depsgraph.updates:
+            print(
+                "  Update:",
+                update.id,
+                update.is_updated_geometry,
+                update.is_updated_transform,
+                update.is_updated_shading,
+            )
+
     prefs = bpy.context.preferences.addons[__package__].preferences
     if prefs.auto_refresh_light_list:
         # A light has been added
