@@ -304,6 +304,10 @@ def refresh_light_list(scene):
                     bpy.data.objects[light[0]].GafferFalloff = "quadratic"
     scene.gaf_props.Lights = str(detected_lights)
 
+    if scene.gaf_props.SoloActive == "":
+        getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
+    refresh_bgl()  # update the radius/label as well
+
 
 def force_update(context, obj=None):
     if not obj:

@@ -312,7 +312,7 @@ class GAFFER_OT_solo(bpy.types.Operator):
         statelist = fn.stringToNestedList(scene.gaf_props.LightsHiddenRecord, True)
 
         if showhide:  # Enter Solo mode
-            bpy.ops.gaffer.refresh_lights()
+            fn.refresh_light_list(scene)
             scene.gaf_props.SoloActive = light
             fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
             for l in statelist:  # first check if lights still exist
@@ -354,7 +354,7 @@ class GAFFER_OT_solo(bpy.types.Operator):
                         obj = bpy.data.objects[l[0]]
                     except KeyError:
                         # TODO not sure if this ever happens, if it does, doesn't it break?
-                        bpy.ops.gaffer.refresh_lights()
+                        fn.refresh_light_list(scene)
                         fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
                         scene.gaf_props.SoloActive = oldlight
                         bpy.ops.gaffer.solo()
@@ -380,7 +380,7 @@ class GAFFER_OT_light_use_nodes(bpy.types.Operator):
         obj = bpy.data.objects[self.light]
         if obj.type == "LIGHT":
             obj.data.use_nodes = True
-        bpy.ops.gaffer.refresh_lights()
+        fn.refresh_light_list(context.scene)
         return {"FINISHED"}
 
 
@@ -414,9 +414,6 @@ class GAFFER_OT_refresh_light_list(bpy.types.Operator):
         fn.refresh_light_list(scene)
 
         self.report({"INFO"}, "Light list refreshed")
-        if scene.gaf_props.SoloActive == "":
-            fn.getHiddenStatus(scene, fn.stringToNestedList(scene.gaf_props.Lights, True))
-        fn.refresh_bgl()  # update the radius/label as well
         return {"FINISHED"}
 
 
