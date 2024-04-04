@@ -92,9 +92,25 @@ def dpifac():
     return bpy.context.preferences.system.dpi / (72 / retinafac)
 
 
+def time_execution(func):
+    """Decorator to log execution time of a function if it takes longer than 100 ms"""
+
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = (end_time - start_time) * 1000  # in milliseconds
+        if execution_time > 100:
+            log(f"Function '{func.__name__}' took {execution_time:.2f} ms")
+        return result
+
+    return wrapper
+
+
 # Light list functions
 
 
+@time_execution
 def refresh_light_list(scene):
     def get_next_available_value_socket(node):
         current_node = node
