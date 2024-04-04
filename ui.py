@@ -154,7 +154,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 op.material = material.name if material else ""
                 op.socket_strength = socket_strength
                 op.socket_strength_type = socket_strength_type
-                op.mult = 0.5
+                op.increase = False
                 row.prop(strength_sockets[socket_strength], "default_value", text="Strength")
                 op = row.operator(ops.GAFFER_OT_set_strength.bl_idname, text="", icon="ADD")
                 op.light = light.name
@@ -162,7 +162,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
                 op.material = material.name if material else ""
                 op.socket_strength = socket_strength
                 op.socket_strength_type = socket_strength_type
-                op.mult = 2
+                op.increase = True
             else:
                 row.label(text="  Node Invalid")
         except (KeyError, IndexError, AttributeError):
@@ -183,7 +183,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
         op.material = ""
         op.socket_strength = 0
         op.socket_strength_type = ""
-        op.mult = 0.5
+        op.increase = False
         row.prop(light.data, "energy", text="Strength")
         op = row.operator(ops.GAFFER_OT_set_strength.bl_idname, text="", icon="ADD")
         op.light = light.name
@@ -191,7 +191,7 @@ def draw_cycles_eevee_UI(context, layout, lights):
         op.material = ""
         op.socket_strength = 0
         op.socket_strength_type = ""
-        op.mult = 2
+        op.increase = True
 
     def draw_color_cycles(gaf_props, i, icons, col, row, light, material):
         if light.type == "LIGHT":

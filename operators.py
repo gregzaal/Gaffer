@@ -92,14 +92,26 @@ class GAFFER_OT_rename(bpy.types.Operator):
 class GAFFER_OT_set_strength(bpy.types.Operator):
 
     "Double/half the power of this light"
-    bl_idname = "gaffer.col_set_strength"
+    bl_idname = "gaffer.increase_decrease_strength"
     bl_label = "Increase/Decrease Strength"
-    mult: bpy.props.FloatProperty()
+    mult = 0
+    increase: bpy.props.BoolProperty()
     light: bpy.props.StringProperty()
     socket_strength: bpy.props.IntProperty()
     node: bpy.props.StringProperty()
     material: bpy.props.StringProperty()
     socket_strength_type: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        if event.shift:
+            self.mult = 1.1
+        elif event.ctrl:
+            self.mult = 8
+        else:
+            self.mult = 2
+        if not self.increase:
+            self.mult = 1 / self.mult
+        return self.execute(context)
 
     def execute(self, context):
         light = context.scene.objects[self.light]
