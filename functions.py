@@ -606,7 +606,7 @@ def depsgraph_update_post_handler(scene, depsgraph):
             refresh_light_list(scene)
 
     # Keep background mix node blend mode in sync when it should be.
-    if depsgraph.id_type_updated("WORLD"):
+    if depsgraph_update_includes_all(depsgraph, ["WORLD", "NODETREE"]):
         gaf_hdri_props = scene.world.gaf_hdri_props
         context = bpy.context
         extra_nodes = any(
