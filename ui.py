@@ -1263,8 +1263,9 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
                 r = split.row()
                 r.prop(gaf_hdri_props, "hdri_tint", slider=True)
                 r = split.row(align=True)
-                mix_node = fn.handler_node(context, "ShaderNodeMix")
-                r.prop(mix_node, "blend_type", text="")
+                mix_node = fn.handler_node(context, "ShaderNodeMix", fetch_only=True)
+                if mix_node:
+                    r.prop(mix_node, "blend_type", text="")
                 r.prop(gaf_hdri_props, "hdri_color", text="")
                 col.separator()
 
@@ -1313,7 +1314,10 @@ def draw_hdri_handler(context, layout, gaf_props, gaf_hdri_props, hdri_paths, pr
                 r = split.row(align=True)
                 r.active = gaf_hdri_props.hdri_use_separate_color
                 mix_node_bg = fn.handler_node(context, "ShaderNodeMix", background=True, fetch_only=True)
-                r.prop(mix_node_bg if mix_node_bg is not None else mix_node, "blend_type", text="")
+                if mix_node_bg:
+                    r.prop(mix_node_bg, "blend_type", text="")
+                elif mix_node:
+                    r.prop(mix_node, "blend_type", text="")
                 r.prop(gaf_hdri_props, "hdri_background_color", text="")
 
                 col.separator()
