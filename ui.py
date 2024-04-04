@@ -66,14 +66,14 @@ def draw_renderer_independant(gaf_props, row, light, icons, users=[None, 1]):
             else:
                 row.operator(ops.GAFFER_OT_rename.bl_idname, text=data_name).light = light.name
         else:
+            op = row.operator(
+                ops.GAFFER_OT_set_light_data_user_names.bl_idname,
+                text="",
+                icon_value=icons[f"num_{str(min(10, users[1]))}"].icon_id,
+            )
+            op.data_name = data_name
+            op.data_type = "lights" if users[0].startswith("LIGHT") else "materials"
             if prefs.auto_refresh_light_list:
-                op = row.operator(
-                    ops.GAFFER_OT_set_light_data_user_names.bl_idname,
-                    text="",
-                    icon_value=icons[f"num_{str(min(10, users[1]))}"].icon_id,
-                )
-                op.data_name = data_name
-                op.data_type = "lights" if users[0].startswith("LIGHT") else "materials"
                 if light.type == "LIGHT":
                     row.prop(light.data, "name", text="")
                 else:
@@ -81,7 +81,7 @@ def draw_renderer_independant(gaf_props, row, light, icons, users=[None, 1]):
             else:
                 op = row.operator(
                     ops.GAFFER_OT_rename.bl_idname,
-                    text="[" + str(users[1]) + "] " + data_name,
+                    text=data_name,
                 )
                 op.multiuser = users[0]
                 op.light = data_name
