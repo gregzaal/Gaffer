@@ -104,7 +104,7 @@ class GAFFER_OT_set_strength(bpy.types.Operator):
 
     def invoke(self, context, event):
         if event.shift:
-            self.mult = 1.1
+            self.mult = 2 ** (1 / 4)
         elif event.ctrl:
             self.mult = 8
         else:
