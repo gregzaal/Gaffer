@@ -67,7 +67,10 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):
                 row.operator(ops.GAFFER_OT_rename.bl_idname, text=data_name).light = light.name
         else:
             if prefs.auto_refresh_light_list:
-                row.prop(light.data, "name", text="")
+                if light.type == "LIGHT":
+                    row.prop(light.data, "name", text="")
+                else:
+                    row.prop(bpy.data.materials[data_name], "name", text="")
             else:
                 op = row.operator(
                     ops.GAFFER_OT_rename.bl_idname,
