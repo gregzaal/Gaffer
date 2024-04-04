@@ -45,14 +45,14 @@ def draw_renderer_independant(gaf_props, row, light, icons, users=[None, 1]):
         if "_Light:_(" + light.name + ")_" in gaf_props.MoreExpand and not gaf_props.MoreExpandAll:
             row.operator(
                 ops.GAFFER_OT_hide_more.bl_idname,
-                icon="TRIA_DOWN",
+                icon="DOWNARROW_HLT",
                 text="",
                 emboss=False,
             ).light = light.name
         elif not gaf_props.MoreExpandAll:
             row.operator(
                 ops.GAFFER_OT_show_more.bl_idname,
-                icon="TRIA_RIGHT",
+                icon="RIGHTARROW",
                 text="",
                 emboss=False,
             ).light = light.name
