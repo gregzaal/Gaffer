@@ -580,11 +580,13 @@ def depsgraph_update_post_handler(scene, depsgraph):
     if prefs.auto_refresh_light_list:
         # A light has been added
         if depsgraph_update_includes_all(depsgraph, ["COLLECTION", "LIGHT", "OBJECT", "SCENE"]):
+            log("Gaffer light list auto-refresh triggered by depsgraph update", also_print=True)
             refresh_light_list(scene)
 
         global TAG_REFRESH_LIGHT_LIST
         if TAG_REFRESH_LIGHT_LIST:
             TAG_REFRESH_LIGHT_LIST = False
+            log("Gaffer light list auto-refresh triggered by TAG_REFRESH_LIGHT_LIST", also_print=True)
             refresh_light_list(scene)
 
     # Keep background mix node blend mode in sync when it should be.
