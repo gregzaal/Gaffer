@@ -612,12 +612,29 @@ def depsgraph_update_post_handler(scene, depsgraph):
         if depsgraph_update_includes_all(depsgraph, ["COLLECTION", "LIGHT", "OBJECT", "SCENE"]):
             log("Gaffer light list auto-refresh triggered by depsgraph update", also_print=True)
             refresh_light_list(scene)
+            return
 
+        # A UI draw function has requested a refresh, usually when a light is deleted
         global TAG_REFRESH_LIGHT_LIST
         if TAG_REFRESH_LIGHT_LIST:
             TAG_REFRESH_LIGHT_LIST = False
             log("Gaffer light list auto-refresh triggered by TAG_REFRESH_LIGHT_LIST", also_print=True)
             refresh_light_list(scene)
+
+        # Light has been renamed
+        if (
+            depsgraph.id_type_updated("OBJECT")
+            and len(depsgraph.updates) == 1
+            and not depsgraph.updates[0].is_updated_transform
+            and not depsgraph.id_type_updated("SCENE")
+        ):
+            lights_str = scene.gaf_props.Lights
+            lights = stringToNestedList(lights_str)
+            all_objects = {obj.name for obj in bpy.data.objects}
+            if any(light[0][1:-1] not in all_objects for light in lights):
+                log("Gaffer light list auto-refresh triggered by light rename", also_print=True)
+                refresh_light_list(scene)
+                return
 
     # Keep background mix node blend mode in sync when it should be.
     if depsgraph_update_includes_all(depsgraph, ["WORLD", "NODETREE"]):

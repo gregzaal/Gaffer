@@ -59,15 +59,22 @@ def draw_renderer_independant(gaf_props, row, light, users=[None, 1]):
 
     data_name = light.name if users[1] == 1 else (users[0][5:] if users[0].startswith("LIGHT") else users[0][3:])
     if gaf_props.SoloActive == "":
+        prefs = bpy.context.preferences.addons[__package__].preferences
         if users[1] == 1:
-            row.operator(ops.GAFFER_OT_rename.bl_idname, text=data_name).light = light.name
+            if prefs.auto_refresh_light_list:
+                row.prop(light, "name", text="")
+            else:
+                row.operator(ops.GAFFER_OT_rename.bl_idname, text=data_name).light = light.name
         else:
-            op = row.operator(
-                ops.GAFFER_OT_rename.bl_idname,
-                text="[" + str(users[1]) + "] " + data_name,
-            )
-            op.multiuser = users[0]
-            op.light = data_name
+            if prefs.auto_refresh_light_list:
+                row.prop(light.data, "name", text="")
+            else:
+                op = row.operator(
+                    ops.GAFFER_OT_rename.bl_idname,
+                    text="[" + str(users[1]) + "] " + data_name,
+                )
+                op.multiuser = users[0]
+                op.light = data_name
     else:
         # Don't allow names to be edited during solo, will break the record of what was originally hidden
         row.label(text=data_name)
