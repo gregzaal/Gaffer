@@ -94,6 +94,8 @@ class GAFFER_OT_set_strength(bpy.types.Operator):
     "Double/half the power of this light"
     bl_idname = "gaffer.increase_decrease_strength"
     bl_label = "Increase/Decrease Strength"
+    bl_options = {"REGISTER", "UNDO"}
+
     mult = 0
     increase: bpy.props.BoolProperty()
     light: bpy.props.StringProperty()
@@ -139,6 +141,8 @@ class GAFFER_OT_set_temp(bpy.types.Operator):
     "Set the color temperature to a preset"
     bl_idname = "gaffer.col_temp_preset"
     bl_label = "Color Temperature Preset"
+    bl_options = {"REGISTER", "UNDO"}
+
     temperature: bpy.props.StringProperty()
     light: bpy.props.StringProperty()
     material: bpy.props.StringProperty()
@@ -213,6 +217,8 @@ class GAFFER_OT_hide_show_light(bpy.types.Operator):
     "Hide/Show this light (in viewport and in render)"
     bl_idname = "gaffer.hide_light"
     bl_label = "Hide Light"
+    bl_options = {"REGISTER", "UNDO"}
+
     light: bpy.props.StringProperty()
     hide: bpy.props.BoolProperty()
     dataname: bpy.props.StringProperty()
@@ -248,6 +254,8 @@ class GAFFER_OT_select_light(bpy.types.Operator):
     "Select this light"
     bl_idname = "gaffer.select_light"
     bl_label = "Select"
+    bl_options = {"REGISTER", "UNDO"}
+
     light: bpy.props.StringProperty()
     dataname: bpy.props.StringProperty()
 
@@ -288,6 +296,8 @@ class GAFFER_OT_solo(bpy.types.Operator):
     ("Solo: Hide all other lights but this one.\nClick again to restore previous light visibility")
     bl_idname = "gaffer.solo"
     bl_label = "Solo Light"
+    bl_options = {"REGISTER", "UNDO"}
+
     light: bpy.props.StringProperty()
     showhide: bpy.props.BoolProperty()
     worldsolo: bpy.props.BoolProperty(default=False)
@@ -386,6 +396,8 @@ class GAFFER_OT_light_use_nodes(bpy.types.Operator):
     "Make this light use nodes"
     bl_idname = "gaffer.light_use_nodes"
     bl_label = "Use Nodes"
+    bl_options = {"REGISTER", "UNDO"}
+
     light: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -401,6 +413,7 @@ class GAFFER_OT_node_set_strength(bpy.types.Operator):
     "Use this node's first Value input as the Strength slider for this light in the Gaffer panel"
     bl_idname = "gaffer.node_set_strength"
     bl_label = "Set as Gaffer Strength"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -436,6 +449,7 @@ class GAFFER_OT_set_light_data_user_names(bpy.types.Operator):
 
     bl_idname = "gaffer.set_light_data_user_names"
     bl_label = "Match Object Names and Data Name"
+    bl_options = {"REGISTER", "UNDO"}
 
     data_name: bpy.props.StringProperty()
     data_type: bpy.props.StringProperty()
@@ -795,6 +809,8 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
     "Point the selected lights at a target"
     bl_idname = "gaffer.aim"
     bl_label = "Aim"
+    bl_options = {"REGISTER", "UNDO"}
+
     target_type: bpy.props.StringProperty()
 
     def aim(self, context, obj, target=[0, 0, 0]):
@@ -877,6 +893,7 @@ class GAFFER_OT_aim_light_with_view(bpy.types.Operator):
     "Aim the active object using the 3D view camera"
     bl_idname = "gaffer.aim_view"
     bl_label = "Aim With View"
+    bl_options = {"REGISTER", "UNDO"}
 
     old_cam = None
     old_lock = None
@@ -1406,6 +1423,7 @@ class GAFFER_OT_add_blacklisted(bpy.types.Operator):
     "Add the selected objects to the blacklist"
     bl_idname = "gaffer.blacklist_add"
     bl_label = "Add"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -1428,6 +1446,7 @@ class GAFFER_OT_remove_blacklisted(bpy.types.Operator):
     "Remove the active list item from the blacklist"
     bl_idname = "gaffer.blacklist_remove"
     bl_label = "Remove"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -1779,7 +1798,7 @@ class GAFFER_OT_hdri_clear_search(bpy.types.Operator):
     "Clear the search, show all HDRIs"
     bl_idname = "gaffer.clear_search"
     bl_label = "Clear"
-    bl_options = {"INTERNAL"}
+    bl_options = {"INTERNAL", "REGISTER", "UNDO"}
 
     def execute(self, context):
         context.scene.world.gaf_hdri_props.hdri_search = ""
@@ -1882,7 +1901,7 @@ class GAFFER_OT_hdri_random(bpy.types.Operator):
     "Switch to a random HDRI"
     bl_idname = "gaffer.hdri_random"
     bl_label = "Random"
-    bl_options = {"INTERNAL"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         gaf_hdri_props = context.scene.world.gaf_hdri_props
@@ -1911,7 +1930,7 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
     )
     bl_idname = "gaffer.hdri_reset"
     bl_label = "Reset"
-    bl_options = {"INTERNAL"}
+    bl_options = {"REGISTER", "UNDO"}
 
     hdri: bpy.props.StringProperty()
     factory: bpy.props.BoolProperty()
