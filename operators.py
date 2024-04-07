@@ -430,37 +430,75 @@ class GAFFER_OT_refresh_light_list(bpy.types.Operator):
 
 
 class GAFFER_OT_set_light_data_user_names(bpy.types.Operator):
+    """This light data is used by multiple objects.
+    Click to set the data name to match the object names.
+    Shift-click to set the names for each object to match the data name"""
 
-    "This light data is used by multiple objects. This sets the names for each object to match the data name"
     bl_idname = "gaffer.set_light_data_user_names"
-    bl_label = "Match Object Names to Data Name"
+    bl_label = "Match Object Names and Data Name"
 
     data_name: bpy.props.StringProperty()
     data_type: bpy.props.StringProperty()
+    set_object_names: bpy.props.BoolProperty()
+
+    def invoke(self, context, event):
+        self.set_object_names = event.shift or event.ctrl  # Shift or Ctrl in case they can't remember which.
+        return self.execute(context)
 
     def execute(self, context):
         data = getattr(bpy.data, self.data_type)[self.data_name]
-        i = 0
-        to_rename = {}  # To avoid modifying object list while we're iterating over it
-        for obj in bpy.data.objects:
-            if self.data_type == "lights":
-                if obj.data == data:
-                    i += 1
-                    to_rename[obj.name] = self.data_name + "." + str(i).zfill(3)
-            else:
-                for slot in obj.material_slots:
-                    if slot.material == data:
+
+        if self.set_object_names:
+            i = 0
+            to_rename = {}  # To avoid modifying object list while we're iterating over it
+            for obj in bpy.data.objects:
+                if self.data_type == "lights":
+                    if obj.data == data:
                         i += 1
                         to_rename[obj.name] = self.data_name + "." + str(i).zfill(3)
-        for obj in to_rename:
-            if bpy.data.objects[obj].name != to_rename[obj]:
-                bpy.data.objects[obj].name = to_rename[obj]
-        if i != 0:
+                else:
+                    for slot in obj.material_slots:
+                        if slot.material == data:
+                            i += 1
+                            to_rename[obj.name] = self.data_name + "." + str(i).zfill(3)
+            for obj in to_rename:
+                if bpy.data.objects[obj].name != to_rename[obj]:
+                    bpy.data.objects[obj].name = to_rename[obj]
+            if i != 0:
+                fn.refresh_light_list(context.scene)
+                return {"FINISHED"}
+            else:
+                self.report({"ERROR"}, "No objects use this data")
+                return {"CANCELLED"}
+        else:
+            objects = []
+            for obj in bpy.data.objects:
+                if self.data_type == "lights":
+                    if obj.data == data:
+                        objects.append(obj.name)
+                else:
+                    for slot in obj.material_slots:
+                        if slot.material == data:
+                            objects.append(obj.name)
+            if not objects:
+                self.report({"ERROR"}, "No objects use this data")
+                return {"CANCELLED"}
+
+            # Try to find the best name for the data
+            numberless_obj_names = []
+            for obj in objects:
+                # Remove any number at the end in the regex pattern of name.### (e.g. Light.001)
+                if len(obj) > 4:
+                    if obj[-4] == "." and obj[-3:].isdigit():
+                        numberless_obj_names.append(obj[:-4])
+                    else:
+                        numberless_obj_names.append(obj)
+                else:
+                    numberless_obj_names.append(obj)
+            # Find the most common name
+            data.name = max(set(numberless_obj_names), key=numberless_obj_names.count)
             fn.refresh_light_list(context.scene)
             return {"FINISHED"}
-        else:
-            self.report({"ERROR"}, "No objects use this data")
-            return {"CANCELLED"}
 
 
 class GAFFER_OT_apply_exposure(bpy.types.Operator):
