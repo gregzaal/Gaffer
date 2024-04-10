@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gaffer",
     "description": "Master your lighting workflow with easy access to light properties, HDRIs and other tools",
     "author": "Greg Zaal",
-    "version": (3, 1, 19),
+    "version": (3, 2, 0),
     "blender": (3, 4, 0),
     "location": "3D View > Sidebar  &  World Settings > HDRI",
     "warning": "",
@@ -39,7 +39,7 @@ if "bpy" in locals():
     imp.reload(addon_updater)
     imp.reload(addon_updater_ops)
 else:
-    from . import constants, functions, operators, ui
+    from . import constants, functions, operators, ui  # noqa: F401 (imported but unused, needed for reload)
 
 import bpy
 import os
@@ -106,6 +106,20 @@ class GafferPreferences(bpy.types.AddonPreferences):
         default="Gaffer",
         update=ui.update_category,
     )
+    offline_mode: bpy.props.BoolProperty(
+        name="Offline Mode",
+        description=("Stop Gaffer from checking polyhaven.com for the latest HDRI and tag lists"),
+        default=False,
+    )
+    auto_refresh_light_list: bpy.props.BoolProperty(
+        name="Auto-Refresh Light List",
+        description=(
+            "Watch for changes to the scene and automatically refresh the light list. "
+            "May impact performance in heavy scenes. If disabled, "
+            "you'll need to manually refresh the light list when you add or remove lights"
+        ),
+        default=True,
+    )
 
     show_debug: bpy.props.BoolProperty(
         name="Show Debug Tools",
@@ -122,10 +136,10 @@ class GafferPreferences(bpy.types.AddonPreferences):
         main_col = layout.column()
 
         ui.draw_trial(main_col)
-
-        hdri_paths = functions.get_persistent_setting("hdri_paths")
+        
         row = main_col.row(align=True)
         row.label(text="HDRI Folders:")
+        hdri_paths = functions.get_persistent_setting("hdri_paths")
         if hdri_paths[0] != "":
             sub = row.column(align=True)
             sub.alignment = "RIGHT"
@@ -133,83 +147,67 @@ class GafferPreferences(bpy.types.AddonPreferences):
         hp_col = main_col.column(align=True)
         for i, hp in enumerate(hdri_paths):
             row = hp_col.row(align=True)
-            row.operator("gaffer.hdri_path_edit", text=hp).folder_index = i
-            if len(hdri_paths) > 1:
-                row.operator(
-                    "gaffer.hdri_path_remove", text="", icon="X"
-                ).folder_index = i
             row.operator(
-                "gaffer.hdri_path_edit", text="", icon="FILE_FOLDER"
+                "gaffer.hdri_path_edit",
+                text=hp + (" (missing!)" if not os.path.exists(hp) else ""),
+                icon=("ERROR" if not os.path.exists(hp) else "NONE"),
             ).folder_index = i
+            if len(hdri_paths) > 1:
+                row.operator("gaffer.hdri_path_remove", text="", icon="X").folder_index = i
+            row.operator("gaffer.hdri_path_edit", text="", icon="FILE_FOLDER").folder_index = i
 
         if hdri_paths[0] != "":
-            all_paths_exist = True
-            for hp in hdri_paths:
-                if not os.path.exists(hp):
-                    all_paths_exist = False
-                    break
-            if all_paths_exist:
-                hdris = functions.get_hdri_list()
-                if hdris:
-                    num_files = sum(len(x) for x in hdris.values())
-                    hdris = OrderedDict(
-                        sorted(hdris.items(), key=lambda x: x[0].lower())
-                    )
-                    num_hdris = len(hdris)
-                    row = main_col.row()
-                    row.alignment = "RIGHT"
-                    row.label(
-                        text="Found {} HDRIs ({} files)".format(num_hdris, num_files)
-                    )
-                    if num_hdris > 0:
-                        row.prop(self, "show_hdri_list", toggle=True)
-                    row.operator(
-                        "gaffer.detect_hdris", text="Refresh", icon="FILE_REFRESH"
-                    )
-
-                    if self.show_hdri_list:
-                        col = main_col.column(align=True)
-                        for name in hdris:
-                            col.label(text=name)
-                            variations = hdris[name]
-                            if len(variations) >= 10:
-                                row = col.row()
-                                row.alignment = "CENTER"
-                                row.label(
-                                    text=(
-                                        "There are quite a few varations of this HDRI, "
-                                        "maybe they were wrongly detected?"
-                                    ),
-                                    icon="QUESTION",
-                                )
-                                row = col.row()
-                                row.alignment = "CENTER"
-                                op = row.operator(
-                                    "wm.url_open",
-                                    text="Click here to learn how to fix this",
-                                    icon="URL",
-                                )
-                                op.url = "https://github.com/gregzaal/Gaffer/wiki/HDRI-Detection-and-Grouping"
-                            for v in variations:
-                                col.label(text="    " + v)
-            else:
+            hdris = functions.get_hdri_list()
+            if hdris:
+                num_files = sum(len(x) for x in hdris.values())
+                hdris = OrderedDict(sorted(hdris.items(), key=lambda x: x[0].lower()))
+                num_hdris = len(hdris)
                 row = main_col.row()
                 row.alignment = "RIGHT"
-                row.label(text="Cannot find HDRI folder :(")
+                row.label(text="Found {} HDRIs ({} files)".format(num_hdris, num_files))
+                if num_hdris > 0:
+                    row.prop(self, "show_hdri_list", toggle=True)
+                row.operator("gaffer.detect_hdris", text="Refresh", icon="FILE_REFRESH")
+
+                if self.show_hdri_list:
+                    col = main_col.column(align=True)
+                    for name in hdris:
+                        col.label(text=name)
+                        variations = hdris[name]
+                        if len(variations) >= 10:
+                            row = col.row()
+                            row.alignment = "CENTER"
+                            row.label(
+                                text=(
+                                    "There are quite a few varations of this HDRI, " "maybe they were wrongly detected?"
+                                ),
+                                icon="QUESTION",
+                            )
+                            row = col.row()
+                            row.alignment = "CENTER"
+                            op = row.operator(
+                                "wm.url_open",
+                                text="Click here to learn how to fix this",
+                                icon="URL",
+                            )
+                            op.url = "https://github.com/gregzaal/Gaffer/wiki/HDRI-Detection-and-Grouping"
+                        for v in variations:
+                            col.label(text="    " + v)
         else:
             row = main_col.row()
             row.alignment = "RIGHT"
-            row.label(
-                text="Select the folder that contains all your HDRIs. Subfolders will be included."
-            )
+            row.label(text="Select the folder that contains all your HDRIs. Subfolders will be included.")
 
         row = main_col.row()
         row.alignment = "RIGHT"
         row.prop(self, "include_8bit")
 
         row = main_col.row()
-        row.alignment = "RIGHT"
-        row.prop(self, "panel_category")
+        row.label(text="Settings:")
+        col = main_col.column()
+        col.prop(self, "panel_category")
+        col.prop(self, "offline_mode")
+        col.prop(self, "auto_refresh_light_list")
 
         # addon_updater_ops.update_settings_ui(self, context)
 
@@ -236,9 +234,7 @@ class BlacklistedObject(bpy.types.PropertyGroup):
 
 
 class GafferProperties(bpy.types.PropertyGroup):
-    Lights: bpy.props.StringProperty(
-        name="Lights", default="", description="The objects to include in the isolation"
-    )
+    Lights: bpy.props.StringProperty(name="Lights", default="", description="The objects to include in the isolation")
     ColTempExpand: bpy.props.BoolProperty(
         name="Color Temperature Presets",
         default=False,
@@ -254,15 +250,10 @@ class GafferProperties(bpy.types.PropertyGroup):
         default=False,
         description="Show settings such as MIS, falloff, ray visibility...",
     )
-    LightUIIndex: bpy.props.IntProperty(
-        name="light index", default=0, min=0, description="light index"
-    )
-    LightsHiddenRecord: bpy.props.StringProperty(
-        name="hidden record", default="", description="hidden record"
-    )
-    SoloActive: bpy.props.StringProperty(
-        name="soloactive", default="", description="soloactive"
-    )
+    LightUIIndex: bpy.props.IntProperty(name="light index", default=0, min=0, description="light index")
+    LightsHiddenRecord: bpy.props.StringProperty(name="hidden record", default="", description="hidden record")
+    WorldHiddenRecord: bpy.props.StringProperty(name="hidden record", default="", description="hidden record")
+    SoloActive: bpy.props.StringProperty(name="soloactive", default="", description="soloactive")
     VisibleCollectionsOnly: bpy.props.BoolProperty(
         name="Visible Collections Only",
         default=True,
@@ -353,9 +344,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         max=1,
         description="The opacity of the drawn labels",
     )
-    LabelFontSize: bpy.props.IntProperty(
-        name="Font Size", default=14, min=1, description="How large the text is drawn"
-    )
+    LabelFontSize: bpy.props.IntProperty(name="Font Size", default=14, min=1, description="How large the text is drawn")
     LabelDrawType: bpy.props.EnumProperty(
         name="Draw Type",
         description="How should the label look?",
@@ -414,6 +403,24 @@ class GafferProperties(bpy.types.PropertyGroup):
         description="The light object to use to drive the Sky rotation",
     )
 
+    # Internal vars (not shown in UI)
+    IsShowingRadius: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    IsShowingLabel: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    BlacklistIndex: bpy.props.IntProperty(default=0, options={"HIDDEN"})
+    VarNameCounter: bpy.props.IntProperty(default=0, options={"HIDDEN"})
+    HDRIList: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    RequestJPGGen: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    ShowProgress: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    Progress: bpy.props.FloatProperty(default=0.0, options={"HIDDEN"})
+    ProgressText: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    ProgressBarText: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    ShowHDRIHaven: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    ThumbnailsBigHDRIFound: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    FileNotFoundError: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    Blacklist: bpy.props.CollectionProperty(type=BlacklistedObject)  # must be registered after classes
+
+
+class GafferHDRIProperties(bpy.types.PropertyGroup):
     # HDRI Handler stuffs
     hdri_handler_enabled: bpy.props.BoolProperty(
         name="Enable",
@@ -421,9 +428,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         default=False,
         update=functions.hdri_enable,
     )
-    hdri: bpy.props.EnumProperty(
-        name="HDRIs", items=functions.hdri_enum_previews, update=functions.switch_hdri
-    )
+    hdri: bpy.props.EnumProperty(name="HDRIs", items=functions.hdri_enum_previews, update=functions.switch_hdri)
     hdri_variation: bpy.props.EnumProperty(
         name="Resolution / Variation",
         items=functions.variation_enum_previews,
@@ -432,6 +437,18 @@ class GafferProperties(bpy.types.PropertyGroup):
     hdri_search: bpy.props.StringProperty(
         name="Search",
         description="Show only HDRIs matching this text - name, subfolder and tags will match",
+        default="",
+        update=functions.update_search,
+    )
+    hdri_favorite: bpy.props.BoolProperty(
+        name="Show Only Favorites",
+        description="Filter to show only your favorite HDRIs in the list",
+        default=False,
+        update=functions.update_search,
+    )
+    hdri_folder_filter: bpy.props.StringProperty(
+        name="Folder Filter",
+        description="Show only HDRIs from this subfolder",
         default="",
         update=functions.update_search,
     )
@@ -476,12 +493,22 @@ class GafferProperties(bpy.types.PropertyGroup):
         update=functions.update_warmth,
     )
     hdri_tint: bpy.props.FloatProperty(
-        name="Tint",
-        description="Control the purple/green color balance",
+        name="Purple/Green Tint",
+        description="Control the purple/green color balance, usually used together with the warmth setting",
         default=1,
         soft_min=0,
         soft_max=2,
         update=functions.update_tint,
+    )
+    hdri_color: bpy.props.FloatVectorProperty(
+        name="Mix Color",
+        description="Tint, or fully color, the environment. Use Alpha to control strength/opacity",
+        subtype="COLOR",
+        size=4,
+        soft_min=0.0,
+        soft_max=1.0,
+        default=(0.5, 0.15, 0.075, 0.0),
+        update=functions.update_color,
     )
     hdri_horz_shift: bpy.props.FloatProperty(
         name="Horizon Shift",
@@ -489,7 +516,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         default=0,
         soft_min=0,
         soft_max=1,
-        update=functions.update_rotation,
+        update=functions.update_horizon,
     )
     hdri_horz_exp: bpy.props.FloatProperty(
         name="Warp",
@@ -497,7 +524,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         default=0,
         soft_min=-1,
         soft_max=1,
-        update=functions.update_rotation,
+        update=functions.update_horizon,
     )
     hdri_use_jpg_background: bpy.props.BoolProperty(
         name="High-res JPG background",
@@ -512,8 +539,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         name="Pre-darkened",
         default=False,
         description=(
-            "Use a darker version of the JPG to avoid clipped highlights "
-            "(but at the cost of potential banding)"
+            "Use a darker version of the JPG to avoid clipped highlights (but at the cost of potential banding)"
         ),
         update=functions.setup_hdri,
     )
@@ -522,6 +548,20 @@ class GafferProperties(bpy.types.PropertyGroup):
         default=False,
         description="Use these settings for the appearance of reflections as well",
         update=functions.setup_hdri,
+    )
+    hdri_use_separate_rotation: bpy.props.BoolProperty(
+        name="Rotation",
+        default=False,
+        description="Adjust the rotation for the background separately from the lighting",
+        update=functions.setup_hdri,
+    )
+    hdri_background_rotation: bpy.props.FloatProperty(
+        name="Value",
+        description="Rotate the HDRI (in degrees) around the Z-axis",
+        default=0,
+        soft_min=-180,
+        soft_max=180,
+        update=functions.update_background_rotation,
     )
     hdri_use_separate_brightness: bpy.props.BoolProperty(
         name="Brightness",
@@ -593,6 +633,22 @@ class GafferProperties(bpy.types.PropertyGroup):
         soft_max=2,
         update=functions.update_background_tint,
     )
+    hdri_use_separate_color: bpy.props.BoolProperty(
+        name="Mix Color",
+        default=False,
+        description="Adjust the color value for the background separately from the lighting",
+        update=functions.setup_hdri,
+    )
+    hdri_background_color: bpy.props.FloatVectorProperty(
+        name="Background Color",
+        description="Tint, or fully color, the background. Use Alpha to control strength/opacity",
+        subtype="COLOR",
+        size=4,
+        soft_min=0.0,
+        soft_max=1.0,
+        default=(0.5, 0.15, 0.075, 0.0),
+        update=functions.update_background_color,
+    )
     hdri_clamp: bpy.props.FloatProperty(
         name="Clamp Brightness",
         description=(
@@ -604,9 +660,7 @@ class GafferProperties(bpy.types.PropertyGroup):
         soft_max=50000,
         update=functions.update_clamp,
     )
-    hdri_advanced: bpy.props.BoolProperty(
-        name="Advanced", description="Show/hide advanced settings", default=False
-    )
+    hdri_advanced: bpy.props.BoolProperty(name="Advanced", description="Show/hide advanced settings", default=False)
     hdri_jpg_gen_all: bpy.props.BoolProperty(
         name="Generate for ALL HDRIs",
         description="Generate the JPG and darkened JPG for all HDRIs that you have. This will probably take a while",
@@ -625,30 +679,16 @@ class GafferProperties(bpy.types.PropertyGroup):
     )
 
     # Internal vars (not shown in UI)
-    IsShowingRadius: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    IsShowingLabel: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    BlacklistIndex: bpy.props.IntProperty(default=0, options={"HIDDEN"})
-    VarNameCounter: bpy.props.IntProperty(default=0, options={"HIDDEN"})
-    HDRIList: bpy.props.StringProperty(default="", options={"HIDDEN"})
-    RequestJPGGen: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    ShowProgress: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    Progress: bpy.props.FloatProperty(default=0.0, options={"HIDDEN"})
-    ProgressText: bpy.props.StringProperty(default="", options={"HIDDEN"})
-    ProgressBarText: bpy.props.StringProperty(default="", options={"HIDDEN"})
-    ShowHDRIHaven: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
     OldWorldSettings: bpy.props.StringProperty(default="", options={"HIDDEN"})
-    ThumbnailsBigHDRIFound: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    FileNotFoundError: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
-    Blacklist: bpy.props.CollectionProperty(
-        type=BlacklistedObject
-    )  # must be registered after classes
 
 
 classes = [
     GafferPreferences,
     BlacklistedObject,
     GafferProperties,
+    GafferHDRIProperties,
     operators.GAFFER_OT_rename,
+    operators.GAFFER_OT_set_strength,
     operators.GAFFER_OT_set_temp,
     operators.GAFFER_OT_show_temp_list,
     operators.GAFFER_OT_hide_temp_list,
@@ -660,8 +700,8 @@ classes = [
     operators.GAFFER_OT_light_use_nodes,
     operators.GAFFER_OT_node_set_strength,
     operators.GAFFER_OT_refresh_light_list,
+    operators.GAFFER_OT_set_light_data_user_names,
     operators.GAFFER_OT_apply_exposure,
-    operators.GAFFER_OT_create_enviro_widget,
     operators.GAFFER_OT_link_sky_to_sun,
     operators.GAFFER_OT_aim_light,
     operators.GAFFER_OT_aim_light_with_view,
@@ -677,6 +717,8 @@ classes = [
     operators.GAFFER_OT_hdri_thumb_gen,
     operators.GAFFER_OT_hdri_jpg_gen,
     operators.GAFFER_OT_hdri_clear_search,
+    operators.GAFFER_OT_hdri_set_favorite,
+    operators.GAFFER_OT_hdri_set_folder_filter,
     operators.GAFFER_OT_hdri_paddles,
     operators.GAFFER_OT_hdri_variation_paddles,
     operators.GAFFER_OT_hdri_add_tag,
@@ -692,6 +734,7 @@ classes = [
     operators.GAFFER_OT_debug_upload_hdri_list,
     operators.GAFFER_OT_debug_upload_logs,
     ui.GAFFER_PT_hdris,
+    ui.GAFFER_MT_folder_filter,
     ui.OBJECT_UL_object_list,
 ]
 
@@ -708,33 +751,31 @@ def register():
 
     for cls in classes:
         register_class(cls)
-    ui.update_category(
-        bpy.context.preferences.addons[__name__].preferences, bpy.context
-    )
+    ui.update_category(bpy.context.preferences.addons[__name__].preferences, bpy.context)
 
     bpy.types.Scene.gaf_props = bpy.props.PointerProperty(type=GafferProperties)
+    bpy.types.World.gaf_hdri_props = bpy.props.PointerProperty(type=GafferHDRIProperties)
     bpy.app.handlers.load_post.append(operators.load_handler)
+    bpy.app.handlers.depsgraph_update_post.append(functions.depsgraph_update_post_handler)
 
 
 def unregister():
     addon_updater_ops.unregister()
 
     bpy.app.handlers.load_post.remove(operators.load_handler)
+    bpy.app.handlers.depsgraph_update_post.remove(functions.depsgraph_update_post_handler)
 
     functions.previews_unregister()
 
     if operators.GAFFER_OT_show_light_radius._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(
-            operators.GAFFER_OT_show_light_radius._handle, "WINDOW"
-        )
+        bpy.types.SpaceView3D.draw_handler_remove(operators.GAFFER_OT_show_light_radius._handle, "WINDOW")
         bpy.context.scene.gaf_props.IsShowingRadius = False
     if operators.GAFFER_OT_show_light_label._handle is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(
-            operators.GAFFER_OT_show_light_label._handle, "WINDOW"
-        )
+        bpy.types.SpaceView3D.draw_handler_remove(operators.GAFFER_OT_show_light_label._handle, "WINDOW")
         bpy.context.scene.gaf_props.IsShowingLabel = False
 
     del bpy.types.Scene.gaf_props
+    del bpy.types.World.gaf_hdri_props
 
     bpy.types.NODE_PT_active_node_generic.remove(ui.gaffer_node_menu_func)
 
