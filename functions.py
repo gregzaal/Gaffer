@@ -829,6 +829,8 @@ def polyhaven_asset_lib(context):
 
 def paths_are_equal(p1, p2):
     """Check if two paths are equal, regardless of case or slashes"""
+    if p1 is None or p2 is None:
+        return False
     return os.path.normcase(os.path.normpath(p1)) == os.path.normcase(os.path.normpath(p2))
 
 
