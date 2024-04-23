@@ -306,7 +306,8 @@ def refresh_light_list(scene):
 
     if scene.gaf_props.SoloActive == "":
         getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
-    refresh_bgl()  # update the radius/label as well
+    if bpy.context.area:
+        refresh_bgl()  # update the radius/label as well
 
 
 def force_update(context, obj=None):
