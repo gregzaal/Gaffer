@@ -110,6 +110,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         name="Offline Mode",
         description=("Stop Gaffer from checking polyhaven.com for the latest HDRI and tag lists"),
         default=False,
+        update=functions.update_offline_mode,
     )
     auto_refresh_light_list: bpy.props.BoolProperty(
         name="Auto-Refresh Light List",
