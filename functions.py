@@ -32,6 +32,65 @@ from . import constants as const
 TAG_REFRESH_LIGHT_LIST = False
 
 
+# Persistent settings functions
+
+
+def init_persistent_settings(set_name=None, set_value=None):
+    """Initialize persistent settings file with option to change a default value"""
+
+    settings = {}
+
+    # Some settings might already exist
+    if os.path.exists(const.settings_file):
+        with open(const.settings_file) as f:
+            try:
+                settings = json.load(f)
+            except json.JSONDecodeError:
+                settings = {}
+
+    # First time use in 2.8, copy path from 2.7
+    if "hdri_paths" not in settings and "hdri_path" in settings:
+        settings["hdri_paths"] = [settings["hdri_path"]]
+
+    defaults = {"show_hdri_haven": True, "hdri_path": "", "hdri_paths": [""]}  # Legacy
+    for d in defaults:
+        if d not in settings:
+            settings[d] = defaults[d]
+
+    if set_name is not None:
+        settings[set_name] = set_value
+
+    with open(const.settings_file, "w") as f:
+        f.write(json.dumps(settings, indent=4))
+
+    return settings
+
+
+def get_persistent_setting(name):
+    if os.path.exists(const.settings_file):
+        with open(const.settings_file) as f:
+            try:
+                settings = json.load(f)
+            except json.JSONDecodeError:
+                settings = {}
+        if name in settings:
+            return settings[name]
+
+    initial_settings = init_persistent_settings()
+    return initial_settings[name] if name in initial_settings else None
+
+
+def set_persistent_setting(name, value):
+    if not os.path.exists(const.settings_file):
+        init_persistent_settings(name, value)
+    else:
+        with open(const.settings_file) as f:
+            settings = json.load(f)
+        settings[name] = value
+        with open(const.settings_file, "w") as f:
+            f.write(json.dumps(settings, indent=4))
+
+
 # Utils
 
 
@@ -306,7 +365,8 @@ def refresh_light_list(scene):
 
     if scene.gaf_props.SoloActive == "":
         getHiddenStatus(scene, stringToNestedList(scene.gaf_props.Lights, True))
-    refresh_bgl()  # update the radius/label as well
+    if bpy.context.area:
+        refresh_bgl()  # update the radius/label as well
 
 
 def force_update(context, obj=None):
@@ -2035,6 +2095,11 @@ def set_defaults(context, hdri_name):
         f.write(json.dumps(defaults, indent=4))
 
 
+def update_offline_mode(self, context):
+    prefs = context.preferences.addons[__package__].preferences
+    set_persistent_setting("offline_mode", prefs.offline_mode)
+
+
 def get_hdri_haven_list(force_update=False):
     """Get Poly Haven list from web once per week, otherwise fetch from file"""
 
@@ -2048,8 +2113,8 @@ def get_hdri_haven_list(force_update=False):
 
     prefs = bpy.context.preferences.addons[__package__].preferences
 
-    if prefs and prefs.offline_mode:
-        print("Offline mode enabled, using local data")
+    if (prefs and prefs.offline_mode) or get_persistent_setting("offline_mode"):
+        print("Gaffer not fetching HDRIs from Poly Haven, offline mode enabled, using local data if available")
         return offline_data
 
     if not force_update:
@@ -2152,61 +2217,3 @@ def progress_update(context, value, text):
 def progress_end(context):
     context.scene.gaf_props.Progress = 0
     context.scene.gaf_props.ShowProgress = False
-
-
-# Persistent settings functions
-
-
-def init_persistent_settings(set_name=None, set_value=None):
-    """Initialize persistent settings file with option to change a default value"""
-
-    settings = {}
-
-    # Some settings might already exist
-    if os.path.exists(const.settings_file):
-        with open(const.settings_file) as f:
-            try:
-                settings = json.load(f)
-            except json.JSONDecodeError:
-                settings = {}
-
-    # First time use in 2.8, copy path from 2.7
-    if "hdri_paths" not in settings and "hdri_path" in settings:
-        settings["hdri_paths"] = [settings["hdri_path"]]
-
-    defaults = {"show_hdri_haven": True, "hdri_path": "", "hdri_paths": [""]}  # Legacy
-    for d in defaults:
-        if d not in settings:
-            settings[d] = defaults[d]
-
-    if set_name is not None:
-        settings[set_name] = set_value
-
-    with open(const.settings_file, "w") as f:
-        f.write(json.dumps(settings, indent=4))
-
-    return settings
-
-
-def get_persistent_setting(name):
-    if os.path.exists(const.settings_file):
-        with open(const.settings_file) as f:
-            try:
-                settings = json.load(f)
-            except json.JSONDecodeError:
-                settings = {}
-        if name in settings:
-            return settings[name]
-
-    return init_persistent_settings()[name]
-
-
-def set_persistent_setting(name, value):
-    if not os.path.exists(const.settings_file):
-        init_persistent_settings(name, value)
-    else:
-        with open(const.settings_file) as f:
-            settings = json.load(f)
-        settings[name] = value
-        with open(const.settings_file, "w") as f:
-            f.write(json.dumps(settings, indent=4))

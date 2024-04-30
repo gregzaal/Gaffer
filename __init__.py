@@ -20,7 +20,7 @@ bl_info = {
     "name": "Gaffer",
     "description": "Master your lighting workflow with easy access to light properties, HDRIs and other tools",
     "author": "Greg Zaal",
-    "version": (3, 2, 1),
+    "version": (3, 2, 2),
     "blender": (3, 4, 0),
     "location": "3D View > Sidebar  &  World Settings > HDRI",
     "warning": "",
@@ -110,6 +110,7 @@ class GafferPreferences(bpy.types.AddonPreferences):
         name="Offline Mode",
         description=("Stop Gaffer from checking polyhaven.com for the latest HDRI and tag lists"),
         default=False,
+        update=functions.update_offline_mode,
     )
     auto_refresh_light_list: bpy.props.BoolProperty(
         name="Auto-Refresh Light List",
