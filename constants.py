@@ -19,7 +19,7 @@
 import bpy
 import os
 
-supported_renderers = ["CYCLES", "BLENDER_EEVEE"]
+supported_renderers = ["CYCLES", "BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"]
 
 col_temp = {
     "01_Flame (1700)": 1700,
