@@ -830,7 +830,11 @@ def draw_unsupported_renderer_UI(context, layout, lights):
         row.label(text="No lights to show :)")
 
     # World
-    if context.scene.world and gaf_hdri_props.hdri_handler_enabled and context.scene.render.engine in ["BLENDER_EEVEE"]:
+    if (
+        context.scene.world
+        and gaf_hdri_props.hdri_handler_enabled
+        and context.scene.render.engine in ["BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"]
+    ):
         box = layout.box()
         worldcol = box.column(align=True)
         col = worldcol.column(align=True)
@@ -925,7 +929,7 @@ class GAFFER_PT_lights(bpy.types.Panel):
 
         if scene.render.engine == "CYCLES":
             draw_cycles_eevee_UI(context, layout, lights)
-        elif scene.render.engine == "BLENDER_EEVEE":
+        elif scene.render.engine in ["BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"]:
             draw_cycles_eevee_UI(context, layout, lights)
         else:
             draw_unsupported_renderer_UI(context, layout, lights)
@@ -1398,7 +1402,7 @@ class GAFFER_PT_hdris(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.render.engine in ["CYCLES", "BLENDER_EEVEE"] and context.scene.world
+        return context.scene.render.engine in ["CYCLES", "BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"] and context.scene.world
 
     def draw_header(self, context):
         gaf_hdri_props = context.scene.world.gaf_hdri_props
