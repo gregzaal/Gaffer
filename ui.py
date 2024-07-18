@@ -302,7 +302,10 @@ def draw_cycles_eevee_UI(context, layout, lights):
                     text="MIS",
                     toggle=True,
                 )
-                row.prop(light.data.cycles, "cast_shadow", text="Shadows", toggle=True)
+                if hasattr(light.data.cycles, "cast_shadow"):  # Before Blender 4.2
+                    row.prop(light.data.cycles, "cast_shadow", text="Shadows", toggle=True)
+                else:  # Blender 4.2+
+                    row.prop(light.data, "use_shadow", text="Shadows", toggle=True)
                 row.separator()
                 for v in visibility[1:]:  # All but camera
                     if bpy.app.version_string >= "3.0":
@@ -378,10 +381,6 @@ def draw_cycles_eevee_UI(context, layout, lights):
 
         row = col.row(align=True)
         row.prop(light.data, "use_shadow", text="Shadows", toggle=True)
-        if light.data.use_shadow:
-            row.prop(light.data, "use_contact_shadow", text="Contact", toggle=True)
-            if light.data.use_contact_shadow:
-                row.prop(light.data, "contact_shadow_thickness")
         row.separator()
         row.prop(light.data, "specular_factor")
 
