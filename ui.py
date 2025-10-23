@@ -643,9 +643,6 @@ def draw_cycles_eevee_UI(context, layout, lights):
                         b = bpy.data.materials[light[1][1:-1]]
                         if b.use_nodes:
                             b.node_tree.nodes[light[2][1:-1]]
-                    else:
-                        if a.data.use_nodes:
-                            a.data.node_tree.nodes[light[2][1:-1]]
                     if (gaf_props.VisibleCollectionsOnly and fn.isInVisibleCollection(a, vis_cols)) or (
                         not gaf_props.VisibleCollectionsOnly
                     ):
@@ -691,7 +688,10 @@ def draw_cycles_eevee_UI(context, layout, lights):
         if light.type == "LIGHT":
             material = None
             if light.data.use_nodes:
-                node_strength = light.data.node_tree.nodes[item[2][1:-1]]
+                try:
+                    node_strength = light.data.node_tree.nodes[item[2][1:-1]]
+                except KeyError:
+                    light_uses_nodes = False
             else:
                 light_uses_nodes = False
 

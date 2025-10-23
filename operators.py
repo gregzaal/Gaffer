@@ -17,7 +17,6 @@
 # END GPL LICENSE BLOCK #####
 
 import bpy
-import bgl
 import blf
 import gpu
 import os
@@ -55,8 +54,8 @@ def load_handler(dummy):
 
 
 class GAFFER_OT_rename(bpy.types.Operator):
-
     "Rename this light"
+
     bl_idname = "gaffer.rename"
     bl_label = "Rename This Light"
     bl_options = {"REGISTER", "UNDO"}
@@ -90,8 +89,8 @@ class GAFFER_OT_rename(bpy.types.Operator):
 
 
 class GAFFER_OT_set_strength(bpy.types.Operator):
-
     "Double/half the power of this light"
+
     bl_idname = "gaffer.increase_decrease_strength"
     bl_label = "Increase/Decrease Strength"
     bl_options = {"REGISTER", "UNDO"}
@@ -137,8 +136,8 @@ class GAFFER_OT_set_strength(bpy.types.Operator):
 
 
 class GAFFER_OT_set_temp(bpy.types.Operator):
-
     "Set the color temperature to a preset"
+
     bl_idname = "gaffer.col_temp_preset"
     bl_label = "Color Temperature Preset"
     bl_options = {"REGISTER", "UNDO"}
@@ -159,8 +158,8 @@ class GAFFER_OT_set_temp(bpy.types.Operator):
 
 
 class GAFFER_OT_show_temp_list(bpy.types.Operator):
-
     "Set the color temperature to a preset"
+
     bl_idname = "gaffer.col_temp_show"
     bl_label = "Color Temperature Preset"
     l_index: bpy.props.IntProperty()
@@ -172,8 +171,8 @@ class GAFFER_OT_show_temp_list(bpy.types.Operator):
 
 
 class GAFFER_OT_hide_temp_list(bpy.types.Operator):
-
     "Hide color temperature presets"
+
     bl_idname = "gaffer.col_temp_hide"
     bl_label = "Hide Presets"
 
@@ -183,8 +182,8 @@ class GAFFER_OT_hide_temp_list(bpy.types.Operator):
 
 
 class GAFFER_OT_show_more(bpy.types.Operator):
-
     "Show settings such as MIS, falloff, ray visibility..."
+
     bl_idname = "gaffer.more_options_show"
     bl_label = "Show more options"
     light: bpy.props.StringProperty()
@@ -199,8 +198,8 @@ class GAFFER_OT_show_more(bpy.types.Operator):
 
 
 class GAFFER_OT_hide_more(bpy.types.Operator):
-
     "Hide settings such as MIS, falloff, ray visibility..."
+
     bl_idname = "gaffer.more_options_hide"
     bl_label = "Hide more options"
     light: bpy.props.StringProperty()
@@ -213,8 +212,8 @@ class GAFFER_OT_hide_more(bpy.types.Operator):
 
 
 class GAFFER_OT_hide_show_light(bpy.types.Operator):
-
     "Hide/Show this light (in viewport and in render)"
+
     bl_idname = "gaffer.hide_light"
     bl_label = "Hide Light"
     bl_options = {"REGISTER", "UNDO"}
@@ -250,8 +249,8 @@ class GAFFER_OT_hide_show_light(bpy.types.Operator):
 
 
 class GAFFER_OT_select_light(bpy.types.Operator):
-
     "Select this light"
+
     bl_idname = "gaffer.select_light"
     bl_label = "Select"
     bl_options = {"REGISTER", "UNDO"}
@@ -392,8 +391,8 @@ class GAFFER_OT_solo(bpy.types.Operator):
 
 
 class GAFFER_OT_light_use_nodes(bpy.types.Operator):
-
     "Make this light use nodes"
+
     bl_idname = "gaffer.light_use_nodes"
     bl_label = "Use Nodes"
     bl_options = {"REGISTER", "UNDO"}
@@ -409,8 +408,8 @@ class GAFFER_OT_light_use_nodes(bpy.types.Operator):
 
 
 class GAFFER_OT_node_set_strength(bpy.types.Operator):
-
     "Use this node's first Value input as the Strength slider for this light in the Gaffer panel"
+
     bl_idname = "gaffer.node_set_strength"
     bl_label = "Set as Gaffer Strength"
     bl_options = {"REGISTER", "UNDO"}
@@ -428,8 +427,8 @@ class GAFFER_OT_node_set_strength(bpy.types.Operator):
 
 
 class GAFFER_OT_refresh_light_list(bpy.types.Operator):
-
     "Refresh the list of lights"
+
     bl_idname = "gaffer.refresh_lights"
     bl_label = "Refresh Light List"
 
@@ -516,8 +515,8 @@ class GAFFER_OT_set_light_data_user_names(bpy.types.Operator):
 
 
 class GAFFER_OT_apply_exposure(bpy.types.Operator):
-
     "Apply Exposure\nAdjust the brightness of all lights by the exposure amount and set the exposure slider back to 0"
+
     bl_idname = "gaffer.apply_exposure"
     bl_label = "Apply Exposure"
     bl_options = {"REGISTER", "UNDO"}
@@ -713,8 +712,8 @@ class GAFFER_OT_link_sky_to_sun(bpy.types.Operator):
 
 
 class GAFFER_OT_aim_light(bpy.types.Operator):
-
     "Point the selected lights at a target"
+
     bl_idname = "gaffer.aim"
     bl_label = "Aim"
     bl_options = {"REGISTER", "UNDO"}
@@ -797,8 +796,8 @@ class GAFFER_OT_aim_light(bpy.types.Operator):
 
 
 class GAFFER_OT_aim_light_with_view(bpy.types.Operator):
-
     "Aim the active object using the 3D view camera"
+
     bl_idname = "gaffer.aim_view"
     bl_label = "Aim With View"
     bl_options = {"REGISTER", "UNDO"}
@@ -873,8 +872,8 @@ class GAFFER_OT_aim_light_with_view(bpy.types.Operator):
 
 
 class GAFFER_OT_show_light_radius(bpy.types.Operator):
-
     "Display a circle around each light showing their radius"
+
     bl_idname = "gaffer.show_radius"
     bl_label = "Show Radius"
 
@@ -929,7 +928,7 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
                                         color = scene.gaf_props.DefaultRadiusColor
 
                                     if scene.gaf_props.LightRadiusXray:
-                                        bgl.glClear(bgl.GL_DEPTH_BUFFER_BIT)
+                                        gpu.state.depth_test_set("ALWAYS")
 
                                     radius = obj.data.shadow_soft_size
                                     origin = obj.matrix_world.translation
@@ -1072,8 +1071,8 @@ class GAFFER_OT_show_light_radius(bpy.types.Operator):
 
 
 class GAFFER_OT_show_light_label(bpy.types.Operator):
-
     "Display the name of each light in the viewport"
+
     bl_idname = "gaffer.show_label"
     bl_label = "Show Label"
 
@@ -1312,8 +1311,8 @@ class GAFFER_OT_show_light_label(bpy.types.Operator):
 
 
 class GAFFER_OT_refresh_bgl(bpy.types.Operator):
-
     "Update the radius and label display to account for undetected changes"
+
     bl_idname = "gaffer.refresh_bgl"
     bl_label = "Refresh Radius/Label"
 
@@ -1327,8 +1326,8 @@ class GAFFER_OT_refresh_bgl(bpy.types.Operator):
 
 
 class GAFFER_OT_add_blacklisted(bpy.types.Operator):
-
     "Add the selected objects to the blacklist"
+
     bl_idname = "gaffer.blacklist_add"
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
@@ -1350,8 +1349,8 @@ class GAFFER_OT_add_blacklisted(bpy.types.Operator):
 
 
 class GAFFER_OT_remove_blacklisted(bpy.types.Operator):
-
     "Remove the active list item from the blacklist"
+
     bl_idname = "gaffer.blacklist_remove"
     bl_label = "Remove"
     bl_options = {"REGISTER", "UNDO"}
@@ -1376,8 +1375,8 @@ class GAFFER_OT_remove_blacklisted(bpy.types.Operator):
 
 
 class GAFFER_OT_detect_hdris(bpy.types.Operator):
-
     "Look for HDRIs in the chosen folder, matching different resolutions and variants together based on filename"
+
     bl_idname = "gaffer.detect_hdris"
     bl_label = "Detect HDRIs"
 
@@ -1387,8 +1386,8 @@ class GAFFER_OT_detect_hdris(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_path_edit(bpy.types.Operator, ImportHelper):
-
     "Select a folder to scan for HDRIs"
+
     bl_idname = "gaffer.hdri_path_edit"
     bl_label = "Select Folder"
     bl_options = {"INTERNAL"}
@@ -1424,8 +1423,8 @@ class GAFFER_OT_hdri_path_edit(bpy.types.Operator, ImportHelper):
 
 
 class GAFFER_OT_hdri_path_add(bpy.types.Operator, ImportHelper):
-
     "Add multiple HDRI folders to detect HDRIs in multiple locations or on different drives"
+
     bl_idname = "gaffer.hdri_path_add"
     bl_label = "Select Folder"
     bl_options = {"INTERNAL"}
@@ -1459,8 +1458,8 @@ class GAFFER_OT_hdri_path_add(bpy.types.Operator, ImportHelper):
 
 
 class GAFFER_OT_hdri_path_remove(bpy.types.Operator):
-
     "Remove this HDRI folder, don't detect HDRIs from it"
+
     bl_idname = "gaffer.hdri_path_remove"
     bl_label = "Remove HDRI folder"
     bl_options = {"INTERNAL"}
@@ -1485,8 +1484,8 @@ class GAFFER_OT_hdri_path_remove(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
-
     "Generate missing thumbnail images for all HDRIs"
+
     bl_idname = "gaffer.generate_hdri_thumbs"
     bl_label = "Generate Thumbnails"
     bl_options = {"INTERNAL"}
@@ -1649,8 +1648,8 @@ class GAFFER_OT_hdri_thumb_gen(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
-
     "Generate regular JPG and darkened JPG from HDRI"
+
     bl_idname = "gaffer.generate_jpgs"
     bl_label = "Generate JPGs"
     bl_options = {"INTERNAL"}
@@ -1702,8 +1701,8 @@ class GAFFER_OT_hdri_jpg_gen(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_clear_search(bpy.types.Operator):
-
     "Clear the search, show all HDRIs"
+
     bl_idname = "gaffer.clear_search"
     bl_label = "Clear"
     bl_options = {"INTERNAL", "REGISTER", "UNDO"}
@@ -1714,8 +1713,8 @@ class GAFFER_OT_hdri_clear_search(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_set_favorite(bpy.types.Operator):
-
     "Mark/unmark this HDRI as a favorite"
+
     bl_idname = "gaffer.set_favorite"
     bl_label = "Favorite/Unfavorite"
     bl_options = {"INTERNAL"}
@@ -1728,8 +1727,8 @@ class GAFFER_OT_hdri_set_favorite(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_set_folder_filter(bpy.types.Operator):
-
     "Show only HDRIs from this subfolder"
+
     bl_idname = "gaffer.set_folder_filter"
     bl_label = "Folder Filter"
     bl_options = {"INTERNAL"}
@@ -1742,8 +1741,8 @@ class GAFFER_OT_hdri_set_folder_filter(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_paddles(bpy.types.Operator):
-
     "Switch to the next/previous HDRI"
+
     bl_idname = "gaffer.hdri_paddles"
     bl_label = "Next/Previous"
     bl_options = {"INTERNAL"}
@@ -1771,8 +1770,8 @@ class GAFFER_OT_hdri_paddles(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_variation_paddles(bpy.types.Operator):
-
     "Switch to the next/previous HDRI variation"
+
     bl_idname = "gaffer.hdri_variation_paddles"
     bl_label = "Next/Previous"
     bl_options = {"INTERNAL"}
@@ -1790,8 +1789,8 @@ class GAFFER_OT_hdri_variation_paddles(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_add_tag(bpy.types.Operator):
-
     "Add this tag to the current HDRI"
+
     bl_idname = "gaffer.add_tag"
     bl_label = "Add Tag"
     bl_options = {"INTERNAL"}
@@ -1805,8 +1804,8 @@ class GAFFER_OT_hdri_add_tag(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_random(bpy.types.Operator):
-
     "Switch to a random HDRI"
+
     bl_idname = "gaffer.hdri_random"
     bl_label = "Random"
     bl_options = {"REGISTER", "UNDO"}
@@ -1866,8 +1865,8 @@ class GAFFER_OT_hdri_reset(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_save(bpy.types.Operator):
-
     "Save the current adjustments (rotation, brightness, etc.) as the default for this HDRI"
+
     bl_idname = "gaffer.hdri_save"
     bl_label = "Save Adjustments"
     bl_options = {"INTERNAL"}
@@ -1884,8 +1883,8 @@ class GAFFER_OT_hdri_save(bpy.types.Operator):
 
 
 class GAFFER_OT_fix_mis(bpy.types.Operator):
-
     "Set the Multiple Importance Map resolution to 1024"
+
     bl_idname = "gaffer.fix_mis"
     bl_label = "Fix"
     bl_options = {"INTERNAL"}
@@ -1896,8 +1895,8 @@ class GAFFER_OT_fix_mis(bpy.types.Operator):
 
 
 class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
-
     "Instantly download free HDRIs from polyhaven.com"
+
     bl_idname = "gaffer.get_hdri_haven"
     bl_label = "Get Free HDRIs"
 
@@ -2035,8 +2034,8 @@ class GAFFER_OT_get_hdrihaven(bpy.types.Operator):
 
 
 class GAFFER_OT_hide_hdrihaven(bpy.types.Operator):
-
     "Hide this button for good."
+
     bl_idname = "gaffer.hide_hdri_haven"
     bl_label = "Hide"
     bl_options = {"INTERNAL"}
@@ -2063,8 +2062,8 @@ class GAFFER_OT_open_hdrihaven(bpy.types.Operator):
 
 
 class GAFFER_OT_hdri_open_data_folder(bpy.types.Operator):
-
     "Open Gaffer's data folder in your system file explorer"
+
     bl_idname = "gaffer.open_data_folder"
     bl_label = "Open Gaffer's Data Folder"
 
@@ -2090,8 +2089,8 @@ class GAFFER_OT_hdri_open_data_folder(bpy.types.Operator):
 
 
 class GAFFER_OT_debug_delete_thumbs(bpy.types.Operator):
-
     "Delete all thumbnail images"
+
     bl_idname = "gaffer.dbg_delete_thumbs"
     bl_label = "Delete thumbnails"
 
@@ -2124,8 +2123,8 @@ class GAFFER_OT_debug_delete_thumbs(bpy.types.Operator):
 
 
 class GAFFER_OT_debug_upload_hdri_list(bpy.types.Operator):
-
     "Upload your list of HDRIs to the internet"
+
     bl_idname = "gaffer.dbg_upload_hdri_list"
     bl_label = "Upload HDRI List"
 
@@ -2169,8 +2168,8 @@ class GAFFER_OT_debug_upload_hdri_list(bpy.types.Operator):
 
 
 class GAFFER_OT_debug_upload_logs(bpy.types.Operator):
-
     "Upload Gaffer's debugging logs to the internet"
+
     bl_idname = "gaffer.dbg_upload_logs"
     bl_label = "Upload Logs"
 

@@ -242,6 +242,7 @@ def refresh_light_list(scene):
                         elif light_dict[obj.name] not in obj.data.node_tree.nodes:
                             invalid_node = True
                     if obj.name not in light_dict or invalid_node:
+                        emission_found = False
                         for node in obj.data.node_tree.nodes:
                             if node.name != "Emission Viewer":
                                 if node.type == "EMISSION":
@@ -258,7 +259,11 @@ def refresh_light_list(scene):
                                                 "i" + str(socket_index),
                                             ]
                                         )
+                                        emission_found = True
                                         break
+                        if not emission_found:
+                            # Default to same behaviour as non-node lights
+                            detected_lights.append([obj.name, None, None])
                     else:
                         node = obj.data.node_tree.nodes[light_dict[obj.name]]
                         if node.inputs:
