@@ -1876,7 +1876,9 @@ def save_image(context, img, filepath, fileformat, exposure=0):
     settings.quality = old_quality
     settings.file_format = old_format
     for a in old_vs:
-        setattr(vs, a, old_vs[a])
+        # Only set if they're not the same:
+        if getattr(vs, a) != old_vs[a]:
+            setattr(vs, a, old_vs[a])
 
 
 def nice_hdri_name(name):
