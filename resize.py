@@ -37,7 +37,7 @@ context = bpy.context
 scene = context.scene
 
 scene.use_nodes = True
-node_tree = scene.node_tree
+node_tree = getattr(scene, "compositing_node_group", None) or scene.node_tree
 
 # Remove default nodes, except composite
 n_comp = None
