@@ -1181,16 +1181,21 @@ def handler_node(context, t, background=False, fetch_only=False):
         "ShaderNodeMixShader": (220, 59),
         "ShaderNodeLightPath": (-1760, 426),
         "ShaderNodeMath": (-1570, 309) if background else (-392, -501),
-        "ShaderNodeSeparateHSV": (-605, -404),
+        "ShaderNodeSeparateHSV": (-605, -404),  # Blender < 5.0
+        "ShaderNodeSeparateColor": (-605, -404),  # Blender >= 5.0
         "ShaderNodeValue": (-604, -540),
         "ShaderNodeMixRGB": (-194, -492),
-        "ShaderNodeCombineHSV": (19, -404),
+        "ShaderNodeCombineHSV": (19, -404),  # Blender < 5.0
+        "ShaderNodeCombineColor": (19, -404),  # Blender >= 5.0
         "ShaderNodeOutputWorld": (430, 34),
     }
     n.location = positions[t]
 
     if t == "ShaderNodeMath" and not background:
         n.operation = "GREATER_THAN"
+
+    if t == "ShaderNodeSeparateColor" or t == "ShaderNodeCombineColor":
+        n.mode = "HSV"
 
     if t == "ShaderNodeMix":
         n.data_type = "RGBA"
@@ -1330,11 +1335,15 @@ def setup_hdri(self, context):
             n_math = handler_node(context, "ShaderNodeMath", background=True)
 
     if gaf_hdri_props.hdri_clamp:
-        n_shsv = handler_node(context, "ShaderNodeSeparateHSV")
+        n_shsv = handler_node(
+            context, "ShaderNodeSeparateHSV" if bpy.app.version < (5, 0, 0) else "ShaderNodeSeparateColor"
+        )
         n_clamp_val = handler_node(context, "ShaderNodeValue")
         n_greater = handler_node(context, "ShaderNodeMath")
         n_mix_clamp = handler_node(context, "ShaderNodeMixRGB")
-        n_chsv = handler_node(context, "ShaderNodeCombineHSV")
+        n_chsv = handler_node(
+            context, "ShaderNodeCombineHSV" if bpy.app.version < (5, 0, 0) else "ShaderNodeCombineColor"
+        )
 
     # Links
     links = w.node_tree.links
@@ -1867,7 +1876,9 @@ def save_image(context, img, filepath, fileformat, exposure=0):
     settings.quality = old_quality
     settings.file_format = old_format
     for a in old_vs:
-        setattr(vs, a, old_vs[a])
+        # Only set if they're not the same:
+        if getattr(vs, a) != old_vs[a]:
+            setattr(vs, a, old_vs[a])
 
 
 def nice_hdri_name(name):
