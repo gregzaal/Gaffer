@@ -36,29 +36,49 @@ SIZE_X = int(SIZE_X)
 context = bpy.context
 scene = context.scene
 
-scene.use_nodes = True
-node_tree = getattr(scene, "compositing_node_group", None) or scene.node_tree
+if hasattr(scene, "use_nodes"):  # Deprecated in Blender 5.0
+    scene.use_nodes = True
 
-# Remove default nodes, except composite
+if hasattr(scene, "compositing_node_group"):
+    node_tree = scene.compositing_node_group
+    if not node_tree:
+        # We need to create it first
+        node_tree = bpy.data.node_groups.new(name="COMP", type="CompositorNodeTree")
+        scene.compositing_node_group = node_tree
+else:
+    # Pre Blender 5.0
+    node_tree = scene.node_tree
+
 n_comp = None
-for n in node_tree.nodes:
-    if not n.type == "COMPOSITE":
-        node_tree.nodes.remove(n)
-    else:
-        n_comp = n
+if bpy.app.version < (5, 0, 0):
+    # Remove default nodes, except composite
+    for n in node_tree.nodes:
+        if not n.type == "COMPOSITE":
+            node_tree.nodes.remove(n)
+        else:
+            n_comp = n
+else:
+    # In Blender 5, there are no default nodes, so we need to make the group output node.
+    n_comp = node_tree.nodes.new("NodeGroupOutput")
+    node_tree.interface.new_socket(name="Output", in_out="OUTPUT", socket_type="NodeSocketColor")
 
 img = bpy.data.images.load(FILEPATH)
 n_img = node_tree.nodes.new("CompositorNodeImage")
 n_img.image = img
 
 n_blur = node_tree.nodes.new("CompositorNodeBlur")
-n_blur.filter_type = "FLAT"
-n_blur.size_x = floor(img.size[0] / SIZE_X / 2)
-n_blur.size_y = n_blur.size_x
+if bpy.app.version < (5, 0, 0):
+    n_blur.filter_type = "FLAT"
+    n_blur.size_x = floor(img.size[0] / SIZE_X / 2)
+    n_blur.size_y = n_blur.size_x
 
 n_scale = node_tree.nodes.new("CompositorNodeScale")
-n_scale.space = "RENDER_SIZE"
-n_scale.frame_method = "CROP"
+if bpy.app.version < (5, 0, 0):
+    n_scale.space = "RENDER_SIZE"
+    n_scale.frame_method = "CROP"
+else:
+    n_scale.inputs["Type"].default_value = "Render Size"
+    n_scale.inputs["Frame Type"].default_value = "Crop"
 
 # Links
 links = node_tree.links
