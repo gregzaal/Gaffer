@@ -588,14 +588,6 @@ def draw_cycles_eevee_UI(context, layout, lights):
                         lg.name == world.lightgroup for lg in context.view_layer.lightgroups
                     ):
                         row.operator("scene.view_layer_add_lightgroup", icon="ADD", text="").name = world.lightgroup
-            else:
-                worldcol.separator()
-                col = worldcol.column(align=True)
-                col.prop(scene.eevee, "use_gtao", text="Ambient Occlusion")
-                if scene.eevee.use_gtao:
-                    row = col.row(align=True)
-                    row.prop(scene.eevee, "gtao_factor")
-                    row.prop(scene.eevee, "gtao_distance")
 
             if not gaf_hdri_props.hdri_handler_enabled:
                 if color_node:
